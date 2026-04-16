@@ -14,7 +14,8 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 |-----------|----------|--------|
 | PRD + specs + plans | `docs/`, `plans/` | Implemented |
 | Flutter app shell | `lib/`, `android/`, `windows/` | Implemented (empty Phase 0 app shell) |
-| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime skeleton) |
+| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime skeleton; P1-01 content parsing/validation) |
+| Rust content module | `rust/src/content/`, `rust/tests/content_validation.rs` | Implemented (P1-01 Lesson, InstrumentLayout, and ScoringProfile parsing/validation) |
 | Flutter↔Rust bridge | `rust/`, `lib/src/rust/`, `rust_builder/` | Implemented (Phase 0 `greet` bridge) |
 | Windows MIDI adapter | `windows/runner/windows_midi_adapter.*`, `lib/platform/midi/windows_midi_adapter.dart`, `native/windows/` | Implemented (Phase 0 NoteOn capture and latency benchmark validated) |
 | Windows latency harness | `lib/platform/latency/`, `rust/src/api/simple.rs`, `artifacts/phase-0/` | Implemented (P0-05 release measurement captured) |
@@ -240,6 +241,8 @@ All content (lessons, courses, packs) is defined by typed Rust structs and seria
 | Scoring Profile | Timing windows, grade weights, combo rules | [content-schemas.md](docs/specs/content-schemas.md) |
 | Device Profile | MIDI note→lane mapping, calibration, velocity curve | [midi-mapping.md](docs/specs/midi-mapping.md) |
 
+The implemented Rust content module currently loads and validates `Lesson`, `InstrumentLayout`, and `ScoringProfile` JSON. It materializes the documented Lesson defaults for `assets`, `references`, and `optional_lanes`, validates the P1-01-owned schema invariants, and leaves lesson compilation/runtime use to later Phase 1 tasks.
+
 ### Content Representations
 
 Content exists in three forms:
@@ -328,6 +331,7 @@ taal/
 │   ├── Cargo.toml
 │   └── src/
 │       ├── api/            # Phase 0 bridge API surface
+│       ├── content/        # P1-01 content schemas and validation
 │       ├── runtime/        # Phase 0 session/grading skeleton
 │       ├── frb_generated.rs
 │       └── lib.rs

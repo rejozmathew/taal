@@ -1,4 +1,5 @@
 pub mod api;
+pub mod content;
 mod frb_generated;
 pub mod runtime;
 

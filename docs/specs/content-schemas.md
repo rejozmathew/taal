@@ -40,10 +40,11 @@ pub struct Lesson {
     pub sections: Vec<Section>,
     pub practice: PracticeDefaults,
     pub metadata: LessonMeta,
+    pub optional_lanes: Vec<String>,  // Optional in JSON; default: empty (all lanes required)
     pub scoring_profile_id: Option<String>,
 
-    pub assets: AssetRefs,
-    pub references: ContentRefs,
+    pub assets: AssetRefs,            // Optional in JSON; default: no asset refs
+    pub references: ContentRefs,      // Optional in JSON; default: empty refs object
 
     // Optional marketplace fields
     pub publisher: Option<PublisherRef>,
@@ -60,6 +61,27 @@ pub struct TimingConfig {
     pub time_signature: TimeSignature,  // { num: 4, den: 4 }
     pub ticks_per_beat: u16,            // 480 (MIDI PPQ)
     pub tempo_map: Vec<TempoEntry>,     // [{ pos, bpm }]
+}
+
+pub struct TimeSignature {
+    pub num: u8,  // Beats per bar
+    pub den: u8,  // Beat unit denominator
+}
+
+pub struct TempoEntry {
+    pub pos: MusicalPos,
+    pub bpm: f32,
+}
+
+pub struct MusicalPos {
+    pub bar: u32,  // 1-based
+    pub beat: u8,  // 1-based within the bar
+    pub tick: u16, // 0-based within the beat
+}
+
+pub struct TimeRange {
+    pub start: MusicalPos,
+    pub end: MusicalPos,  // Exclusive
 }
 
 pub struct Lane {
@@ -97,7 +119,30 @@ pub struct LessonMeta {
     pub prerequisites: Vec<String>,  // Skills assumed
     pub estimated_minutes: Option<u16>,
 }
+
+pub struct AssetRefs {
+    pub backing: Option<String>,  // User-provided backing audio label or relink key; no audio bytes in v1 packs
+    pub artwork: Option<String>,  // Relative artwork asset path when packaged or present in a workspace
+}
+
+pub struct ContentRefs {}
+
+pub type PublisherRef = serde_json::Map<String, serde_json::Value>;
 ```
+
+### Lesson Ancillary Types and Defaults
+
+`MusicalPos` uses 1-based `bar` and `beat` values and a 0-based `tick` value. When validating a position against a lesson's timing config, `bar >= 1`, `1 <= beat <= time_signature.num`, and `tick < ticks_per_beat`. Position ordering is lexicographic by `(bar, beat, tick)`.
+
+`TimeRange.end` is exclusive. A valid range has `end > start`, as also required by the lesson invariants.
+
+`assets`, `references`, and `optional_lanes` are optional in Lesson JSON for schema version `1.0`, but the canonical Rust load result materializes defaults:
+
+- Missing `assets` defaults to `AssetRefs { backing: None, artwork: None }`.
+- Missing `references` defaults to `ContentRefs {}`. `ContentRefs` intentionally has no fields in schema version `1.0`; future reference metadata requires an explicit schema update.
+- Missing `optional_lanes` defaults to an empty list, which means all lanes used by the lesson are required.
+
+`publisher` is optional marketplace metadata. If present, it must be a JSON object. Local Phase 1 loading parses it as `PublisherRef` and ignores it for validation, playback, scoring, and layout compatibility.
 
 ### Event Payloads (instrument-specific)
 
@@ -179,6 +224,7 @@ pub struct GateConfig {
 ## 3. Instrument Layout
 
 Defines the semantic lanes and visual mapping for an instrument family.
+`visual` is required. It provides the stable slot mapping used by the visual drum kit in mapping, calibration, settings, and practice flows.
 
 ```rust
 pub struct InstrumentLayout {
@@ -201,11 +247,29 @@ pub struct MidiHint {
     pub hint_type: String,  // "note" | "cc"
     pub values: Vec<u8>,
 }
+
+pub struct ArticulationDef {
+    pub id: String,       // "closed", "open", "pedal"
+    pub label: String,
+    pub midi_note: u8,    // Representative note hint for this articulation
+}
+
+pub struct VisualConfig {
+    pub lane_slots: Vec<VisualSlot>,
+}
+
+pub struct VisualSlot {
+    pub lane_id: String,  // Must reference a lane in `lanes`
+    pub slot_id: String,  // Stable widget slot token, e.g. "kick", "snare", "hihat"
+}
 ```
 
 ---
 
 ## 4. Scoring Profile
+
+Scoring profiles parameterize timing windows, relative grade weights, and encouragement thresholds.
+Combo accumulation/reset behavior is frozen by `docs/specs/analytics-model.md` §8 and `docs/specs/visual-language.md` C.4; the profile configures milestone thresholds, not which grades increment or reset combo.
 
 ```rust
 pub struct ScoringProfile {
@@ -223,7 +287,23 @@ pub struct TimingWindows {
     pub outer_ms: f32,      // Hits within this window → Grade::Early or Grade::Late (by delta sign)
                             // Hits beyond outer_ms → Grade::Miss
 }
+
+pub struct GradeWeights {
+    pub perfect: f32,       // Relative weight before score normalization to 0-100
+    pub good: f32,
+    pub early: f32,
+    pub late: f32,
+    pub miss: f32,
+}
+
+pub struct ComboConfig {
+    pub encouragement_milestones: Vec<u32>,  // Starter default: [8, 16, 32]
+}
+
+pub struct ScoringRules {}
 ```
+
+`ScoringRules` is intentionally an empty object in schema version `1.0`. It keeps the rules boundary explicit for future additive fields without forcing P1-01 to guess behavior that is not yet specified elsewhere.
 
 ---
 
@@ -309,6 +389,24 @@ These rules are enforced by validation. They apply to both workspace content and
 | Gate `min_score` in range 0-100 | Required | Required |
 | At least one node | Not required | Required |
 
+### Instrument Layout Invariants
+
+| Rule | Enforcement |
+|------|-------------|
+| `lane_id` unique within layout | Required |
+| Every lane appears exactly once in `visual.lane_slots` | Required |
+| Every `visual.lane_slots[*].lane_id` references a defined lane | Required |
+| `slot_id` unique within layout | Required |
+| `ArticulationDef.id` unique within a lane | Required |
+
+### Scoring Profile Invariants
+
+| Rule | Enforcement |
+|------|-------------|
+| `0 < perfect_ms <= good_ms <= outer_ms` | Required |
+| `encouragement_milestones` contains strictly increasing positive integers | Required |
+| `rules` serializes as an object (empty `{}` in schema version `1.0`) | Required |
+
 ### Pack Invariants
 
 | Rule | Enforcement |
@@ -336,7 +434,7 @@ When a lesson is loaded for playback, the runtime checks which lanes the lesson 
 - `missing_required`: `required_lanes - mapped_lanes`
 - `missing_optional`: `optional_lanes - mapped_lanes`
 
-**Lesson schema addition:**
+**Lesson field used by layout compatibility:**
 ```rust
 pub struct Lesson {
     // ... existing fields ...
@@ -441,6 +539,8 @@ my-pack.taalpack (ZIP)
 
 ### Minimal Drum Lesson
 
+This example omits JSON-optional/defaulted ancillary fields such as `optional_lanes`, `assets`, `references`, `publisher`, and `extensions`.
+
 ```json
 {
   "schema_version": "1.0",
@@ -515,6 +615,7 @@ my-pack.taalpack (ZIP)
     "tags": ["rock", "backbeat"],
     "skills": ["timing.backbeat", "subdivision.8ths"],
     "objectives": ["Play kick on 1&3, snare on 2&4, 8th-note hi-hats"],
+    "prerequisites": [],
     "estimated_minutes": 3
   }
 }
@@ -556,6 +657,18 @@ my-pack.taalpack (ZIP)
   "id": "std-5pc-v1",
   "family": "drums",
   "variant": "kit",
+  "visual": {
+    "lane_slots": [
+      { "lane_id": "kick", "slot_id": "kick" },
+      { "lane_id": "snare", "slot_id": "snare" },
+      { "lane_id": "hihat", "slot_id": "hihat" },
+      { "lane_id": "ride", "slot_id": "ride" },
+      { "lane_id": "crash", "slot_id": "crash" },
+      { "lane_id": "tom_high", "slot_id": "tom_high" },
+      { "lane_id": "tom_low", "slot_id": "tom_low" },
+      { "lane_id": "tom_floor", "slot_id": "tom_floor" }
+    ]
+  },
   "lanes": [
     { "lane_id": "kick", "label": "Kick", "midi_hints": [{ "hint_type": "note", "values": [36] }] },
     { "lane_id": "snare", "label": "Snare", "midi_hints": [{ "hint_type": "note", "values": [38, 40] }] },

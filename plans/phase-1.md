@@ -42,7 +42,7 @@
 **Acceptance criteria:**
 - Valid lesson JSON loads successfully
 - Invalid lesson JSON (missing fields, duplicate lane_ids, overlapping sections) produces clear error
-- All bundled starter content passes validation
+- P1-01 validation fixtures for lesson/layout/scoring-profile deserialization pass validation; bundled starter content validation is completed in P1-18/P1-19
 
 ---
 
