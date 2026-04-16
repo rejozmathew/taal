@@ -2,6 +2,7 @@ pub mod api;
 pub mod content;
 mod frb_generated;
 pub mod runtime;
+pub mod time;
 
 #[cfg(test)]
 mod tests {

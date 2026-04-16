@@ -14,8 +14,9 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 |-----------|----------|--------|
 | PRD + specs + plans | `docs/`, `plans/` | Implemented |
 | Flutter app shell | `lib/`, `android/`, `windows/` | Implemented (empty Phase 0 app shell) |
-| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime skeleton; P1-01 content parsing/validation) |
+| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime skeleton; P1-01 content parsing/validation; P1-02 time indexing/conversion) |
 | Rust content module | `rust/src/content/`, `rust/tests/content_validation.rs` | Implemented (P1-01 Lesson, InstrumentLayout, and ScoringProfile parsing/validation) |
+| Rust time module | `rust/src/time/`, `rust/tests/time_conversion.rs` | Implemented (P1-02 MusicalPos tick arithmetic and TimingIndex musical <-> millisecond conversion) |
 | Flutter↔Rust bridge | `rust/`, `lib/src/rust/`, `rust_builder/` | Implemented (Phase 0 `greet` bridge) |
 | Windows MIDI adapter | `windows/runner/windows_midi_adapter.*`, `lib/platform/midi/windows_midi_adapter.dart`, `native/windows/` | Implemented (Phase 0 NoteOn capture and latency benchmark validated) |
 | Windows latency harness | `lib/platform/latency/`, `rust/src/api/simple.rs`, `artifacts/phase-0/` | Implemented (P0-05 release measurement captured) |
@@ -262,6 +263,8 @@ The `compile_lesson()` function transforms authoring → compiled form. This is 
 - **Authoring** uses musical time (intuitive for editing)
 - **Playback** uses compiled ms times (required for scoring)
 
+The implemented Rust time module reuses the content schema's `MusicalPos`, `TimeSignature`, and `TempoEntry` structs. It provides tick-based musical-position arithmetic and a `TimingIndex` that converts musical positions to floating-point milliseconds and converts milliseconds back to the nearest tick-aligned musical position. The index supports constant-tempo maps and multiple tempo entries; later lesson compilation will use it to produce runtime `t_ms` values.
+
 ---
 
 ## Engine API
@@ -333,6 +336,7 @@ taal/
 │       ├── api/            # Phase 0 bridge API surface
 │       ├── content/        # P1-01 content schemas and validation
 │       ├── runtime/        # Phase 0 session/grading skeleton
+│       ├── time/           # P1-02 musical time arithmetic and TimingIndex
 │       ├── frb_generated.rs
 │       └── lib.rs
 ├── rust_builder/           # Cargokit Flutter plugin glue for Rust builds

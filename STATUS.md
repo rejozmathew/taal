@@ -4,9 +4,9 @@
 - Name: Taal
 - Repository: taal (fresh repo; legacy prototype archived as taal-legacy)
 - PRD version: 1.9
-- Current phase: Phase 1 in progress (P1-00 and P1-01 complete; P1-02 ready to proceed)
-- Current task: P1-02 Rust Time Module - Musical <-> Millisecond Conversion (ready to proceed)
-- Overall status: Phase 0 completed with conditional go via CR-001, and P1-00 resolved the required Android Native-to-Rust jitter follow-up. Two Android release-mode runs now show p99 tail latency localized to the pre-Rust delivery segment (`Native T0 -> Rust T1`), with Rust processing and Rust-to-Flutter return below 0.11 ms even at max. Repeat-run total p99 was 28.873 ms and max was 31.348 ms, still below the 40 ms no-go line. The current Android platform-channel path is acceptable for continuing Phase 1 with a documented caveat; no architecture change or direct JNI hot-path task is required now. Frame-drop validation remains deferred to the first real animated Practice Mode path. CR-002 is applied: the content schema defines the missing nested layout/scoring types, `InstrumentLayout.visual` remains required and is example-consistent, and P1-01 acceptance is narrowed to P1-01-owned validation fixtures. CR-003 is applied: Lesson ancillary nested types are defined, `assets`/`references`/`optional_lanes` have explicit JSON absence defaults. P1-01 is complete: the Rust content module now strictly parses and validates Lesson, InstrumentLayout, and ScoringProfile JSON for the clarified Phase 1 contracts.
+- Current phase: Phase 1 in progress (P1-00, P1-01, and P1-02 complete; P1-03 ready to proceed)
+- Current task: P1-03 Rust Compile Module - Lesson to Execution Timeline (ready to proceed)
+- Overall status: Phase 0 completed with conditional go via CR-001, and P1-00 resolved the required Android Native-to-Rust jitter follow-up. Two Android release-mode runs now show p99 tail latency localized to the pre-Rust delivery segment (`Native T0 -> Rust T1`), with Rust processing and Rust-to-Flutter return below 0.11 ms even at max. Repeat-run total p99 was 28.873 ms and max was 31.348 ms, still below the 40 ms no-go line. The current Android platform-channel path is acceptable for continuing Phase 1 with a documented caveat; no architecture change or direct JNI hot-path task is required now. Frame-drop validation remains deferred to the first real animated Practice Mode path. CR-002 is applied: the content schema defines the missing nested layout/scoring types, `InstrumentLayout.visual` remains required and is example-consistent, and P1-01 acceptance is narrowed to P1-01-owned validation fixtures. CR-003 is applied: Lesson ancillary nested types are defined, `assets`/`references`/`optional_lanes` have explicit JSON absence defaults. P1-01 is complete: the Rust content module now strictly parses and validates Lesson, InstrumentLayout, and ScoringProfile JSON for the clarified Phase 1 contracts. P1-02 is complete: the Rust time module now provides MusicalPos tick arithmetic and TimingIndex musical-position <-> millisecond conversion over constant and multi-tempo maps.
 
 ## Release Boundary
 - **MVP (Phases 0-2):** Playable + creatable + course runtime. Not yet distributed.
@@ -14,7 +14,7 @@
 
 ## Phase Gates
 - [x] Phase 0: Foundation + Latency Spike (9 tasks; conditional go via CR-001)
-- [ ] Phase 1: Core Practice Loop (2/28 tasks complete)
+- [ ] Phase 1: Core Practice Loop (3/28 tasks complete)
 - [ ] Phase 2: Creator Studio + Content System + Course Runtime (18 tasks)
 - [ ] Phase 3: Analytics + Polish + Distribution (23 tasks)
 - [ ] Phase 4: AI Coach + Marketplace Prep + Multi-Platform
@@ -47,7 +47,7 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 |----------|---------|----------------|
 | AGENTS.md | v1 | When execution rules change |
 | CLAUDE.md | v1 | Thin shim — rarely changes |
-| ARCHITECTURE.md | v2 | When components/flows/boundaries change |
+| ARCHITECTURE.md | v3 | When components/flows/boundaries change |
 | README.md | v2 | When user-visible capabilities land |
 | docs/prd.md | v1.9 | When scope or product rules change |
 | docs/adr/001-platform-architecture.md | v1 | Immutable (status line only) |
@@ -74,6 +74,7 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 - P0-09 ADR-001 finalization: CR-001 records Phase 0 conditional go. ADR-001 status changed to accepted with conditional caveat. Phase 1 now starts with P1-00 Android Native-to-Rust jitter investigation.
 - P1-00 Android Native-to-Rust Jitter Investigation: Analysis of two Android release-mode latency runs confirmed the p99 tail is dominated by `Native T0 -> Rust T1` delivery. Original run: total p99 25.161 ms, max 30.982 ms. Repeat run: total p99 28.873 ms, max 31.348 ms. Combined 200-hit view: total p99 28.873 ms, max 31.348 ms, 7/200 hits exceeded 25 ms, 0/200 exceeded 40 ms. Rust processing remained <= 0.088 ms and Rust-to-Flutter return <= 0.107 ms. The current Android path is acceptable for Phase 1 with a stronger caveat; no ADR-001 update or architecture change required. Analysis artifact: `artifacts/phase-1/p1-00-android-native-to-rust-jitter-20260416-analysis.md`.
 - P1-01 Rust Content Module - Parse Lesson, Layout, Scoring Profile: `rust/src/content/` now defines typed Rust structs and strict JSON load/validation entry points for `Lesson`, `InstrumentLayout`, and `ScoringProfile`. Validation covers required serde shapes, schema version `1.0`, Lesson lane/event/section/timing invariants, CR-003 defaults for `assets`/`references`/`optional_lanes`, required `InstrumentLayout.visual`, layout slot/articulation invariants, and scoring window/combo invariants. Focused Rust tests validate the present canonical lesson/layout examples and P1-01 scoring fixture plus invalid content cases.
+- P1-02 Rust Time Module - Musical <-> Millisecond Conversion: `rust/src/time/` now reuses the canonical content timing structs and provides `MusicalPos` tick arithmetic plus `TimingIndex` conversion between musical positions and absolute milliseconds. Focused Rust tests cover constant 120 BPM conversion, 480-tick subdivision precision, beat/bar-boundary arithmetic, grid-aligned round trips, multi-tempo conversion at and between tempo changes, and invalid tempo-map origin handling.
 
 ## Maintenance
 - 2026-04-16: `.gitignore` coverage updated for Flutter, Dart, Rust, Android, Gradle, Windows, and native build outputs; app/tool lockfiles and Gradle wrapper files remain visible to Git while generated build artifacts stay ignored.
@@ -82,9 +83,10 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 - 2026-04-16: P1-01 implementation paused before code changes. CR-003 records the remaining Lesson content-contract gap for ancillary nested type definitions and required-field/default behavior.
 - 2026-04-16: CR-003 applied. `docs/specs/content-schemas.md` now defines the missing Lesson ancillary types (`TimeSignature`, `TempoEntry`, `MusicalPos`, `TimeRange`, `AssetRefs`, `ContentRefs`, `PublisherRef`), documents JSON absence defaults for `assets`, `references`, and `optional_lanes`, and keeps P1-01 scoped to later strict Rust parsing without starting implementation.
 - 2026-04-16: P1-01 implemented. Added Rust serde/JSON/UUID dependencies, the Rust content module, and focused content validation tests. `ARCHITECTURE.md` now records the concrete Rust content component.
+- 2026-04-16: P1-02 implemented. Added Rust time indexing/conversion, focused time conversion tests, and `ARCHITECTURE.md` now records the concrete Rust time component.
 
 ## Blockers
-- None currently blocking P1-02. P1-01 is complete and the repo is ready for the next dependency-ordered Phase 1 task.
+- None currently blocking P1-03. P1-02 is complete and the repo is ready for the next dependency-ordered Phase 1 task.
 
 ## Operational Caveats
 - P0-08 merge blocking: CI workflow is present and locally validated, but GitHub branch protection / required status checks could not be verified from this environment (`gh` CLI unavailable; connector does not expose branch-protection settings). If not already enabled, require the CI checks in GitHub repository settings.
