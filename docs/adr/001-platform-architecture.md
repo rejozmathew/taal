@@ -1,6 +1,6 @@
 # ADR-001: Platform Architecture — Flutter + Rust Core
 
-**Status:** Proposed (pending Phase 0 latency spike)
+**Status:** Accepted with conditional caveat (CR-001: Android p99 jitter follow-up required in Phase 1)
 **Date:** 2026-04-08
 **Decision Makers:** Rejo Z. Mathew
 

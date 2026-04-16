@@ -4,25 +4,25 @@
 - Name: Taal
 - Repository: taal (fresh repo; legacy prototype archived as taal-legacy)
 - PRD version: 1.9
-- Current phase: Phase 0 (Foundation + Latency Spike)
-- Current task: P0-09 ADR-001 finalization (blocked)
-- Overall status: Phase 0 code tranche is implemented through CI. Windows MIDI adapter smoke validation and release latency measurement passed with a Roland TD-27. Android MIDI adapter smoke validation and release latency measurement passed artifact collection on a Samsung Fold 4 with the Roland TD-27. ADR-001 finalization is blocked by a marginal Android p99 result against the stated go criterion and by the ADR frame-drop check not represented in the Phase 0 task plan.
+- Current phase: Phase 1 ready (implementation not started)
+- Current task: P1-00 Android Native-to-Rust Jitter Investigation (next)
+- Overall status: Phase 0 completed with conditional go via CR-001. Windows passed cleanly. Android p99 measured 25.161 ms, a marginal 0.161 ms miss against the strict `< 25ms` line but well below the `> 40ms` no-go line. ADR-001 is accepted with a Phase 1 Android jitter follow-up; frame-drop validation is deferred to the first real animated Practice Mode path.
 
 ## Release Boundary
 - **MVP (Phases 0-2):** Playable + creatable + course runtime. Not yet distributed.
 - **v1.0 (Phases 0-3):** Analytics, polish, backing tracks, packaged builds. First public release.
 
 ## Phase Gates
-- [ ] Phase 0: Foundation + Latency Spike (9 tasks)
-- [ ] Phase 1: Core Practice Loop (27 tasks)
+- [x] Phase 0: Foundation + Latency Spike (9 tasks; conditional go via CR-001)
+- [ ] Phase 1: Core Practice Loop (28 tasks)
 - [ ] Phase 2: Creator Studio + Content System + Course Runtime (18 tasks)
 - [ ] Phase 3: Analytics + Polish + Distribution (23 tasks)
 - [ ] Phase 4: AI Coach + Marketplace Prep + Multi-Platform
 - [ ] Phase 5+: Marketplace + Keyboard + ML + Teacher/Classroom + Community
 
 ## Architecture Decision
-- ADR-001 (Flutter + Rust): Proposed, pending Phase 0 spike results
-- Go criterion: end-to-end MIDI latency < 25ms on Windows + Android (release build)
+- ADR-001 (Flutter + Rust): Accepted with conditional caveat via CR-001
+- Conditional go criterion: Windows clean pass; Android p99 25.161 ms accepted as marginal with required P1-00 jitter investigation
 - No-go criterion: > 40ms or consistent frame drops
 
 ## Task Ordering
@@ -58,7 +58,7 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 | docs/specs/visual-language.md | v1 | When visual contracts change |
 | docs/coding-model.md | v1 | When task execution rules change |
 | plans/phase-0.md | v1.1 | Via CR when tasks need revision |
-| plans/phase-1.md | v1.7 | Via CR when tasks need revision |
+| plans/phase-1.md | v1.8 | Via CR when tasks need revision |
 | plans/phase-2.md | v1.5 | Via CR when tasks need revision |
 | plans/phase-3.md | v1.3 | Via CR when tasks need revision |
 
@@ -71,17 +71,21 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 - P0-06 Android MIDI Adapter: Samsung Fold 4 (`SM-F936U1`, Android 16/API 36) running the release APK enumerated `Roland TD-27` as Android MIDI device `2`; the app received NoteOn events with channel, note, velocity, and `System.nanoTime()` nanosecond timestamps.
 - P0-07 Android latency measurement: Release build captured 10 warm-up hits plus 100 measured hits with Samsung Fold 4 and Roland TD-27 after aligning Rust Android timing to `CLOCK_MONOTONIC`. Total MIDI callback to Flutter return latency measured p50 2.218 ms, p95 14.180 ms, p99 25.161 ms. Raw CSV and summary report are under `artifacts/phase-0/`, and ADR-001 records the Android evidence.
 - P0-08 CI Pipeline: GitHub Actions workflow runs on push to `main` and pull requests with Rust `cargo check`, `cargo test`, `cargo clippy`, Flutter `analyze`, Flutter `test`, Windows build, and Android APK build. Local equivalents passed.
+- P0-09 ADR-001 finalization: CR-001 records Phase 0 conditional go. ADR-001 status changed to accepted with conditional caveat. Phase 1 now starts with P1-00 Android Native-to-Rust jitter investigation.
 
 ## Maintenance
 - 2026-04-16: `.gitignore` coverage updated for Flutter, Dart, Rust, Android, Gradle, Windows, and native build outputs; app/tool lockfiles and Gradle wrapper files remain visible to Git while generated build artifacts stay ignored.
 
 ## Blockers
+*(none blocking Phase 1 start after CR-001)*
+
+## Operational Caveats
 - P0-08 merge blocking: CI workflow is present and locally validated, but GitHub branch protection / required status checks could not be verified from this environment (`gh` CLI unavailable; connector does not expose branch-protection settings). If not already enabled, require the CI checks in GitHub repository settings.
-- P0-09 ADR-001 finalization: blocked by a marginal Android latency result and a scope mismatch. Android total p99 is 25.161 ms, narrowly above the ADR go criterion of `< 25ms` but below the no-go criterion of `> 40ms`; the smallest unblocking decision is whether to accept this as pass with caveat, require a repeat measurement policy, or trigger the bounded Android transport fallback investigation. ADR-001 also lists an animation/frame-drop spike check that is not represented as a Phase 0 task; before finalizing ADR-001, either satisfy that check or clarify the Phase 0 plan/ADR scope.
+- CR-001 conditional go: P1-00 must characterize Android Native-to-Rust jitter before Android Practice Mode depends on the current MIDI hot path.
 
 ## Open Questions
-1. Windows MIDI capture and latency path is validated with Roland TD-27.
-2. Android USB MIDI capture and latency artifacts are collected; ADR finalization needs a decision on Android p99 25.161 ms versus the `< 25ms` go criterion.
+1. Android p99 jitter follow-up is required in P1-00 per CR-001.
+2. Frame-drop / animation validation is deferred to the first real animated Practice Mode path.
 3. Metronome audio output latency — deferred to Phase 1 (P1-15)
 4. Theme detection thresholds — TBD values in analytics-model.md, tuned during Phase 3
 5. Velocity/dynamics scoring formula — deferred post-v1

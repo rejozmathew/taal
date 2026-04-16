@@ -2,11 +2,29 @@
 
 **Objective:** A user can connect their kit, play a lesson, and get real-time feedback. This is the minimum lovable product for the Practice Player.
 
-**Prerequisite:** Phase 0 complete. ADR-001 finalized (architecture confirmed).
+**Prerequisite:** Phase 0 complete. ADR-001 accepted with conditional caveat per CR-001.
 
 ---
 
 ## Tasks
+
+### P1-00: Android Native-to-Rust Jitter Investigation
+
+**Deps:** P0-07
+
+**Objective:** Characterize the Android p99 jitter seen in Phase 0 before relying on the Android MIDI hot path for user-facing Practice Mode flows.
+
+**Outputs:**
+- Repeat or targeted release-mode measurements on Android using the existing Phase 0 latency harness or the first available Phase 1 MIDI path
+- Segment-level analysis for native MIDI callback -> Dart event delivery -> Rust bridge entry -> Rust processing -> Flutter callback return
+- Recommendation: keep the current Android platform-channel path with documented caveat, or file a targeted implementation task for Native-to-Rust hot-path optimization
+- STATUS.md updated with the investigation result before calibration and Practice Mode rely on Android latency behavior
+
+**Acceptance criteria:**
+- Android p99 jitter source is documented by segment or dominant suspected segment
+- Decision recorded on whether the current Android path is acceptable for Phase 1 Practice Mode
+- No UI framework, Rust-core ownership, or overall platform architecture decision is reopened
+- Frame-drop validation remains deferred to the first real animated Practice Mode path
 
 ### P1-01: Rust Content Module — Parse Lesson, Layout, Scoring Profile
 
@@ -113,7 +131,7 @@
 
 ### P1-06: MIDI Mapping Engine — Note to Lane, Hi-Hat CC4
 
-**Deps:** P0-03, P0-06
+**Deps:** P0-03, P0-06, P1-00
 
 **Objective:** Map raw MIDI note/CC events to semantic lane_ids using a device profile.
 
