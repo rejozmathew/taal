@@ -1,1 +1,8 @@
 include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    # Cargokit is vendored by flutter_rust_bridge and has its own pubspec.
+    # Root `flutter analyze` in CI only runs `flutter pub get` for the app, so
+    # analyzing this nested package from the app context reports missing deps.
+    - rust_builder/cargokit/build_tool/**

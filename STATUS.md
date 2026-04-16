@@ -75,6 +75,7 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 
 ## Maintenance
 - 2026-04-16: `.gitignore` coverage updated for Flutter, Dart, Rust, Android, Gradle, Windows, and native build outputs; app/tool lockfiles and Gradle wrapper files remain visible to Git while generated build artifacts stay ignored.
+- 2026-04-16: Root `flutter analyze` excludes `rust_builder/cargokit/build_tool/**` because that vendored Cargokit package has its own pubspec/dependencies and is not resolved by app-level `flutter pub get` in CI.
 
 ## Blockers
 *(none blocking Phase 1 start after CR-001)*
