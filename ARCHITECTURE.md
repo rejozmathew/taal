@@ -13,11 +13,14 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Component | Location | Status |
 |-----------|----------|--------|
 | PRD + specs + plans | `docs/`, `plans/` | Implemented |
-| Flutter app shell | `lib/` | Planned (Phase 0, P0-01) |
-| Rust core engine | `rust/` | Planned (Phase 0, P0-02, P0-04) |
-| Flutter↔Rust bridge | `rust/` + generated Dart | Planned (Phase 0, P0-02) |
-| Windows MIDI adapter | `native/windows/` | Planned (Phase 0, P0-03) |
-| Android MIDI adapter | `native/android/` | Planned (Phase 0, P0-06) |
+| Flutter app shell | `lib/`, `android/`, `windows/` | Implemented (empty Phase 0 app shell) |
+| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime skeleton) |
+| Flutter↔Rust bridge | `rust/`, `lib/src/rust/`, `rust_builder/` | Implemented (Phase 0 `greet` bridge) |
+| Windows MIDI adapter | `windows/runner/windows_midi_adapter.*`, `lib/platform/midi/windows_midi_adapter.dart`, `native/windows/` | Implemented (Phase 0 NoteOn capture and latency benchmark validated) |
+| Windows latency harness | `lib/platform/latency/`, `rust/src/api/simple.rs`, `artifacts/phase-0/` | Implemented (P0-05 release measurement captured) |
+| Android MIDI adapter | `android/app/src/main/kotlin/dev/taal/taal/MainActivity.kt`, `lib/platform/midi/android_midi_adapter.dart`, `native/android/` | Implemented (Phase 0 NoteOn capture and latency benchmark validated) |
+| Android latency artifact export | `android/app/src/main/kotlin/dev/taal/taal/MainActivity.kt`, `lib/platform/latency/` | Implemented (writes Phase 0 CSV/report to Android Downloads via MediaStore) |
+| CI pipeline | `.github/workflows/ci.yml` | Implemented (Rust + Flutter checks/builds, locally validated) |
 | Metronome audio output | `native/*/audio/` | Planned (Phase 1, P1-15) |
 | SQLite persistence | `rust/src/storage/` | Planned (Phase 1, P1-08, P1-21) |
 | MIDI mapping engine | `rust/src/midi/` | Planned (Phase 1, P1-06) |
@@ -137,6 +140,89 @@ This is the critical path — the one that must complete in < 20ms perceived.
 
 See [ADR-001](docs/adr/001-platform-architecture.md) for the latency spike that validates this.
 
+### Current Phase 0 Bridge Flow
+
+The implemented bridge scaffold proves the Flutter-to-Rust call path before the MIDI spike:
+
+```
+Flutter test / app
+       ↓
+lib/src/rust/frb_generated.dart
+       ↓
+rust_builder Cargokit plugin
+       ↓
+rust/src/api/simple.rs::greet(name)
+       ↓
+Dart receives "Hello, {name}!"
+```
+
+Flutter tests load the Rust release library from `rust/target/release/`, so CI builds that library before running `flutter test`.
+
+### Current Phase 0 Runtime Skeleton
+
+The implemented Rust runtime skeleton lives in `rust/src/runtime/session.rs`. It is intentionally narrow:
+
+| Function | Purpose |
+|----------|---------|
+| `start_session()` | Creates a session with one hardcoded expected `kick` event at 1s |
+| `submit_hit(session, InputHit)` | Grades a pre-resolved lane hit and queues `EngineEvent::HitGraded` |
+| `session_tick(session, now_ns)` | Emits `EngineEvent::Missed` after the miss window if no hit was graded |
+| `drain_events(session, max)` | Drains queued engine events for the UI/bridge harness |
+
+The Phase 0 `InputHit` path bypasses MIDI note mapping and uses a pre-resolved `lane_id`, matching the spike constraint. The Rust enum definitions follow the frozen `engine-api.md` Grade and EngineEvent shapes even though only `HitGraded`, `Missed`, and `Warning` are used by the skeleton.
+
+### Current Phase 0 Latency Harness
+
+The latency harness records the P0-05/P0-07 measurement path in release builds:
+
+```
+Native MIDI callback
+       ↓  T0: platform monotonic timestamp
+Dart EventChannel listener
+       ↓
+flutter_rust_bridge synchronous call
+       ↓  T1: Rust platform monotonic timestamp
+Phase 0 Rust runtime skeleton submit_hit + drain_events
+       ↓  T2: Rust platform monotonic timestamp
+Flutter callback resumes
+       ↓  T3: Dart Stopwatch timestamp calibrated to platform monotonic clock
+CSV + summary report written under artifacts/phase-0/
+```
+
+On Windows, T0/T1/T2 use `QueryPerformanceCounter`. On Android, T0 is `System.nanoTime()` and Rust T1/T2 use `clock_gettime(CLOCK_MONOTONIC)`, matching the Android monotonic clock domain. T3 is calibrated from Dart `Stopwatch` to the platform monotonic clock for both platforms.
+
+The harness uses a pre-resolved `kick` lane for every hit. It measures bridge and engine-path latency only; full MIDI note-to-lane mapping remains owned by the Rust MIDI mapping engine planned for Phase 1. Android release builds export CSV and summary artifacts to `Downloads/Taal/phase-0` via MediaStore so ADB can retrieve the measured data.
+
+---
+
+## Native MIDI Adapters
+
+### Windows
+
+The Phase 0 Windows MIDI adapter uses WinMM in the Flutter Windows runner. It exposes:
+
+| Channel | Direction | Purpose |
+|---------|-----------|---------|
+| `taal/windows_midi` | Dart method channel | `listDevices`, `openDevice`, `closeDevice` |
+| `taal/windows_midi/events` | Native event channel | Streams structured `note_on` maps |
+
+The native callback filters MIDI NoteOn messages (`0x90` with velocity > 0), captures a monotonic `QueryPerformanceCounter` timestamp converted to nanoseconds, and posts the event to the runner window so Dart receives events on the Flutter platform thread.
+
+Current validation status: the adapter compiles in the Windows release build. Runtime NoteOn validation passed with a Roland TD-27 exposed by WinMM as input device `0`; the Flutter Windows app received NoteOn events with channel, note, velocity, and monotonic nanosecond timestamps. P0-05 release measurement with 100 measured hits reported total native-to-Flutter latency p50 0.154 ms, p95 1.006 ms, p99 2.064 ms.
+
+### Android
+
+The Phase 0 Android MIDI adapter uses `android.media.midi.MidiManager` in the Flutter Android host activity. It exposes:
+
+| Channel | Direction | Purpose |
+|---------|-----------|---------|
+| `taal/android_midi` | Dart method channel | `listDevices`, `openDevice`, `closeDevice` |
+| `taal/android_midi/events` | Native event channel | Streams structured `note_on` maps |
+
+The adapter enumerates MIDI devices with readable output ports, opens output port 0, connects it to a `MidiReceiver`, filters MIDI NoteOn messages (`0x90` with velocity > 0), and timestamps events with `System.nanoTime()` inside the receiver before posting structured events to Dart.
+
+Current validation status: the adapter compiles in the Android release APK. Runtime NoteOn validation passed on a Samsung Fold 4 (`SM-F936U1`, Android 16/API 36) with a Roland TD-27 connected through USB-C OTG; the Flutter Android app received NoteOn events with device id, channel, note, velocity, and `System.nanoTime()` nanosecond timestamps. P0-07 release measurement with 100 measured hits reported total native-to-Flutter latency p50 2.218 ms, p95 14.180 ms, p99 25.161 ms.
+
 ---
 
 ## Content Model
@@ -236,14 +322,16 @@ taal/
 │   ├── features/           # Player, Studio, Library, Insights, Settings, Onboarding
 │   ├── widgets/            # Shared: timeline, drum kit, transport, note highway
 │   └── design/             # Design system tokens
-├── rust/                   # Rust core engine
+├── android/                # Flutter Android host app
+├── windows/                # Flutter Windows host app
+├── rust/                   # Rust core engine crate
+│   ├── Cargo.toml
 │   └── src/
-│       ├── content/        # Parse, validate, compile
-│       ├── runtime/        # Session, grading, scoring
-│       ├── time/           # Musical ↔ ms conversion
-│       ├── analytics/      # Aggregation, themes
-│       ├── midi/           # Mapping, device profiles
-│       └── storage/        # SQLite persistence
+│       ├── api/            # Phase 0 bridge API surface
+│       ├── runtime/        # Phase 0 session/grading skeleton
+│       ├── frb_generated.rs
+│       └── lib.rs
+├── rust_builder/           # Cargokit Flutter plugin glue for Rust builds
 ├── native/                 # Platform-specific MIDI/audio
 │   ├── android/
 │   ├── windows/

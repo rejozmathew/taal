@@ -136,6 +136,48 @@ If Android USB MIDI latency exceeds threshold but Windows passes:
 
 Do not reopen the entire architecture unless both Windows AND Android fail the latency threshold.
 
+## Phase 0 Spike Results
+
+### Windows USB MIDI
+
+**Status:** Passed for the Phase 0 MIDI input path.
+
+**Measurement date:** 2026-04-16
+**Raw data:** `artifacts/phase-0/p0-05-windows-latency-20260416T080136954965.csv`
+**Summary report:** `artifacts/phase-0/p0-05-windows-latency-20260416T080136954965-summary.md`
+**Samples:** 10 warm-up hits discarded, 100 measured hits retained
+
+| Segment | p50 ms | p95 ms | p99 ms |
+|---------|--------|--------|--------|
+| Native T0 -> Rust T1 | 0.149 | 1.002 | 2.059 |
+| Rust T1 -> Rust T2 | 0.002 | 0.003 | 0.007 |
+| Rust T2 -> Flutter T3 | 0.003 | 0.004 | 0.012 |
+| Native T0 -> Flutter T3 total | 0.154 | 1.006 | 2.064 |
+
+**Hardware/software matrix:** MicroElectronics G482 desktop, Intel(R) Core(TM) Ultra 9 285K, 63.7 GB RAM, Microsoft Windows 11 Pro 10.0.26200 build 26200, Roland TD-27 USB MIDI input, Flutter 3.41.6 stable, Dart 3.11.4, Rust 1.91.0.
+
+**Interpretation:** Windows is below the 25 ms go criterion for the measured MIDI input -> Rust -> Flutter path. The Rust engine skeleton work itself measured under 0.01 ms at p99 for this spike.
+
+### Android USB MIDI
+
+**Status:** Measured for the Phase 0 MIDI input path; final go/no-go decision pending because the result is marginal against the stated go criterion.
+
+**Measurement date:** 2026-04-16
+**Raw data:** `artifacts/phase-0/p0-07-android-latency-20260416T084225229443.csv`
+**Summary report:** `artifacts/phase-0/p0-07-android-latency-20260416T084225229443-summary.md`
+**Samples:** 10 warm-up hits discarded, 100 measured hits retained
+
+| Segment | p50 ms | p95 ms | p99 ms |
+|---------|--------|--------|--------|
+| Native T0 -> Rust T1 | 2.137 | 14.121 | 25.133 |
+| Rust T1 -> Rust T2 | 0.011 | 0.022 | 0.072 |
+| Rust T2 -> Flutter T3 | 0.026 | 0.071 | 0.099 |
+| Native T0 -> Flutter T3 total | 2.218 | 14.180 | 25.161 |
+
+**Hardware/software matrix:** Samsung SM-F936U1, Android 16 / API 36, build `samsung/q4quew/q4q:16/BP2A.250605.031.A3/F936U1UES9IZC1:user/release-keys`, Roland TD-27 USB MIDI input, Flutter 3.41.6 stable, Dart 3.11.4, Rust 1.91.0.
+
+**Interpretation:** Android p50 and p95 are below the 25 ms go criterion, but total p99 is 25.161 ms, narrowly above the stated `< 25ms` go criterion. This does not hit the `> 40ms` no-go criterion, but it prevents unqualified acceptance without a small architecture/ADR decision or a repeat measurement policy. The measured Rust engine skeleton work itself remained below 0.1 ms at p99.
+
 ### Frame-Rate Acceptance
 
 - Android: stable 60fps during active hit feedback (no visible stutters during 30-second practice)
