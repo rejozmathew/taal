@@ -6,6 +6,52 @@
 
 ---
 
+## Execution Order
+
+Task IDs remain stable references. Execute Phase 1 in the order below unless a blocker, approved CR, or newly discovered contradiction requires a narrower clarification pass.
+
+### Completed execution order to date
+1. **P1-00** Android Native-to-Rust Jitter Investigation
+2. **P1-01** Rust Content Module — Parse Lesson, Layout, Scoring Profile
+3. **P1-02** Rust Time Module — Musical ↔ Millisecond Conversion
+4. **P1-03** Rust Compile Module — Lesson to Execution Timeline
+5. **P1-04** Rust Runtime — Session Lifecycle
+6. **P1-05** Rust Scoring — Timing Windows, Grades, Combos
+7. **P1-06** MIDI Mapping Engine — Note to Lane, Hi-Hat CC4
+
+### Recommended remaining execution order
+8. **P1-16** Local Profiles
+9. **P1-08** Device Profile Persistence
+10. **P1-19** Standard 5-Piece Layout Definition
+11. **P1-18** Starter Lesson Content
+12. **P1-15** Metronome Audio Output
+13. **P1-07** Calibration Wizard UI + Logic
+14. **P1-09** Note-Highway Widget
+15. **P1-10** Notation View Widget
+16. **P1-11** Visual Drum Kit Widget
+17. **P1-12** Practice Mode Screen
+18. **P1-14** Post-Lesson Review Screen
+19. **P1-21** Practice Attempt Persistence
+20. **P1-13** Play Mode Screen
+21. **P1-22** App Shell — Home Screen, Navigation, Profile Switcher
+22. **P1-20** Settings Screen
+23. **P1-23** On-Screen Tap Pads (No-Kit Practice Mode)
+24. **P1-24** Practice Streaks and Daily Goal Tracking
+25. **P1-25** Listen-First Playback
+26. **P1-26** Auto-Pause on Player Inactivity
+27. **P1-17** Onboarding Flow
+28. **P1-27** Layout Compatibility Check + Missing-Lane Handling
+
+**Execution notes**
+- `P1-07` stays after `P1-15` because calibration depends on actual metronome audio.
+- `P1-08` stays after `P1-16` because device profiles are owned by local profiles.
+- `P1-18` stays after `P1-19` because starter lessons reference the standard layout.
+- `P1-13` stays after `P1-14` and `P1-21` because Play Mode needs review and attempt persistence to be real.
+- `P1-17` is intentionally late because onboarding depends on calibration, starter content, practice mode, and tap pads.
+- `P1-27` is intentionally late because it crosses compile, mapping, practice, play, and review behavior.
+
+---
+
 ## Tasks
 
 ### P1-00: Android Native-to-Rust Jitter Investigation

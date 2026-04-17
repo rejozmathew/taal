@@ -6,6 +6,43 @@
 
 ---
 
+## Execution Order
+
+Task IDs remain stable references. Execute Phase 3 in the order below unless a blocker, approved CR, or newly discovered contradiction requires a narrower clarification pass.
+
+1. **P3-01** Practice Attempt Query Layer
+2. **P3-03** Performance Theme Detection Engine
+3. **P3-04** Theme-to-Learning-Outcome Mapping Config
+4. **P3-02** Practice History Dashboard Screen
+5. **P3-05** Insights Dashboard — Weekly Summary + Trends
+6. **P3-06** Insights Dashboard — Tempo Ceiling Chart
+7. **P3-07** Insights Dashboard — Time-of-Day Effectiveness
+8. **P3-08** Insights Dashboard — Lane Heatmap + Focus Areas
+9. **P3-09** Lesson Recommendations from Themes
+10. **P3-14** Profile Export
+11. **P3-15** Profile Import
+12. **P3-16** Extended Instrument Layout — 7-Piece Kit
+13. **P3-17** Extended Starter Content
+14. **P3-10** Backing Track — Audio File Loading + Playback
+15. **P3-12** Backing Track — Sync Engine
+16. **P3-13** Backing Track — Volume Controls + Mute on Tempo Change
+17. **P3-11** Backing Track — Beatmap Authoring in Studio
+18. **P3-23** Backing Track — Missing-File Detection + Relink Flow
+19. **P3-20** Update-Check Notification
+20. **P3-18** UI Polish Pass
+21. **P3-19** Error States and Empty States
+22. **P3-21** Windows Installer Packaging
+23. **P3-22** Android Play Store Build + Listing
+
+**Execution notes**
+- `P3-01`/`P3-03`/`P3-04` come first because the rest of analytics builds on queryable attempt data and theme mapping.
+- `P3-02` follows after the query layer so the first dashboard surface can be built before richer insights panels.
+- `P3-14`/`P3-15` and `P3-16`/`P3-17` are independent mid-phase slices that can proceed once the analytics foundation is stable.
+- The backing-track tranche is intentionally ordered `P3-10 → P3-12 → P3-13 → P3-11 → P3-23` so sync exists before authoring and relink UX.
+- Packaging remains at the end: `P3-21` and `P3-22` should not start until polish/error-state work is complete.
+
+---
+
 ## Tasks
 
 ### P3-01: Practice Attempt Query Layer
@@ -24,7 +61,7 @@
 - Query returns correct results for all filter combinations
 - Performance acceptable for 1000+ stored attempts (< 100ms)
 
----
+--- 
 
 ### P3-02: Practice History Dashboard Screen
 
@@ -42,7 +79,7 @@
 - Dashboard loads within 1 second for typical history size
 - Scores match stored attempt data exactly
 
----
+--- 
 
 ### P3-03: Performance Theme Detection Engine
 
@@ -63,7 +100,7 @@
 - No themes detected with < 5 attempts (insufficient data)
 - Severity and confidence values are deterministic for same input
 
----
+--- 
 
 ### P3-04: Theme-to-Learning-Outcome Mapping Config
 
@@ -80,7 +117,7 @@
 - Every detected theme maps to at least one learning outcome
 - Mapping is editable as a config file (not hardcoded)
 
----
+--- 
 
 ### P3-05: Insights Dashboard — Weekly Summary + Trends
 
@@ -97,7 +134,7 @@
 - Chart renders correctly with 30+ data points
 - Trend direction matches actual data
 
----
+--- 
 
 ### P3-06: Insights Dashboard — Tempo Ceiling Chart
 
@@ -114,7 +151,7 @@
 - Correctly identifies highest BPM bucket with score ≥ 85
 - Updates as new attempts are added
 
----
+--- 
 
 ### P3-07: Insights Dashboard — Time-of-Day Effectiveness
 
@@ -131,7 +168,7 @@
 - Buckets with < 3 attempts show "insufficient data" rather than misleading averages
 - Matches stored local_hour data from attempts
 
----
+--- 
 
 ### P3-08: Insights Dashboard — Lane Heatmap + Focus Areas
 
@@ -148,7 +185,7 @@
 - Heatmap correctly reflects per-lane stats from recent attempts
 - Focus areas match highest-severity detected themes
 
----
+--- 
 
 ### P3-09: Lesson Recommendations from Themes
 
@@ -167,7 +204,7 @@
 - Recently mastered lessons (score ≥ 92, last 3 attempts) are deprioritized
 - Recommendations only appear when sufficient data exists (5+ attempts)
 
----
+--- 
 
 ### P3-10: Backing Track — Audio File Loading + Playback
 
@@ -187,7 +224,7 @@
 - Volume adjustable without audio glitch
 - Playback does not affect MIDI input latency
 
----
+--- 
 
 ### P3-11: Backing Track — Beatmap Authoring in Studio
 
@@ -206,7 +243,7 @@
 - Offset adjustable in fine increments (1ms steps)
 - Multiple lessons can reference same audio with different offsets
 
----
+--- 
 
 ### P3-12: Backing Track — Sync Engine
 
@@ -223,7 +260,7 @@
 - Audio stays in sync for full lesson duration (no perceptible drift over 5 minutes)
 - Tempo change mutes audio cleanly (no click/pop)
 
----
+--- 
 
 ### P3-13: Backing Track — Volume Controls + Mute on Tempo Change
 
@@ -241,7 +278,7 @@
 - Volume changes are smooth (no stepping artifacts)
 - Mute/unmute transition is click-free
 
----
+--- 
 
 ### P3-23: Backing Track — Missing-File Detection + Relink Flow
 
@@ -261,7 +298,7 @@
 - User links a local file → backing track plays with correct beatmap sync
 - No error or crash when audio is missing — graceful degradation
 
----
+--- 
 
 ### P3-14: Profile Export
 
@@ -278,7 +315,7 @@
 - Export produces valid file that can be imported
 - File size reasonable (< 5MB for 1000 attempts + profiles)
 
----
+--- 
 
 ### P3-15: Profile Import
 
@@ -296,7 +333,7 @@
 - Export from device A → import on device B → history and settings preserved
 - Merge mode combines attempt history without duplicates
 
----
+--- 
 
 ### P3-16: Extended Instrument Layout — 7-Piece Kit
 
@@ -314,7 +351,7 @@
 - Visual kit shows all pads correctly
 - Mapping works for extended kits
 
----
+--- 
 
 ### P3-17: Extended Starter Content
 
@@ -333,7 +370,7 @@
 - Courses playable end-to-end with correct gating
 - Content covers diverse styles (rock, funk, blues, at minimum)
 
----
+--- 
 
 ### P3-18: UI Polish Pass
 
@@ -352,7 +389,7 @@
 - No visual rough edges on primary flows (onboarding, practice, review, library)
 - Animations maintain 60fps
 
----
+--- 
 
 ### P3-19: Error States and Empty States
 
@@ -373,7 +410,7 @@
 - No blank screens or cryptic error messages
 - Error recovery does not lose user data
 
----
+--- 
 
 ### P3-20: Update-Check Notification
 
@@ -393,7 +430,7 @@
 - Does not slow app startup
 - Works offline (no error, just skips)
 
----
+--- 
 
 ### P3-21: Windows Installer Packaging
 
@@ -413,7 +450,7 @@
 - Uninstall removes app cleanly
 - Installer size < 100MB
 
----
+--- 
 
 ### P3-22: Android Play Store Build + Listing
 
@@ -433,7 +470,7 @@
 - Installs and runs on at least 2 Android tablet models
 - USB MIDI works on installed Play Store build (not just debug)
 
----
+--- 
 
 ## Exit Criteria for Phase 3 (v1 Release)
 

@@ -22,7 +22,7 @@ Use relevant approved ADRs under `docs/adr/` as authoritative architectural over
 
 Use relevant specs under `docs/specs/` as authoritative contract definitions where applicable.
 
-Use `plans/<phase-file>.md` as the execution contract for this run.
+Use `plans/<phase-file>.md` as the execution contract for this run, including its `Execution Order` section if present.
 
 Use `STATUS.md` as the running project state file to update after each completed task.
 
@@ -61,7 +61,7 @@ Execution rules:
    - validation to run
    - acceptance criteria
 2. Inspect the current plan, specs, ADRs, and `STATUS.md` before editing.
-3. Follow dependency order where stated; task IDs are identifiers, not execution order.
+3. If the selected phase plan contains an `Execution Order` section, follow that sequence first. Use dependency notes to confirm that each task in the sequence is actually ready. Task IDs remain stable identifiers and are not themselves the execution order.
 4. Make only the minimum changes needed to satisfy the task.
 5. Update documentation as required by `AGENTS.md`, including:
    - `STATUS.md`

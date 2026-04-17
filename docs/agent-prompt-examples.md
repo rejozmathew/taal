@@ -31,11 +31,11 @@ Current state for this run:
 - Do not start Phase 1 in this run.
 
 Goal of this run:
-Execute Phase 0 in dependency order. Establish the initial Flutter + Rust + native-adapter scaffold, prove the MIDI → Rust → UI feedback loop on the target platforms defined in the plan, and finalize the platform architecture decision only if the Phase 0 acceptance criteria are met.
+Execute Phase 0 in the plan's `Execution Order` section, using dependency notes to confirm readiness as you go. Establish the initial Flutter + Rust + native-adapter scaffold, prove the MIDI → Rust → UI feedback loop on the target platforms defined in the plan, and finalize the platform architecture decision only if the Phase 0 acceptance criteria are met.
 
 Required scope for this run:
 - Execute only Phase 0 tasks.
-- Follow dependency order, not task ID order.
+- Follow the phase plan's `Execution Order` section first, then use dependency notes to confirm readiness.
 - Finalize ADR-001 only if the spike results justify it.
 - Do not begin any Phase 1 feature implementation.
 
@@ -60,7 +60,7 @@ Execution rules:
    - validation to run
    - acceptance criteria
 2. Inspect `plans/phase-0.md`, ADR-001, relevant specs, and `STATUS.md` before editing.
-3. Execute Phase 0 in dependency order.
+3. Execute Phase 0 in the plan's `Execution Order` section, using dependency notes to confirm readiness.
 4. Update `STATUS.md` after each completed task.
 5. Update `ARCHITECTURE.md` whenever a component, boundary, or ownership model becomes concrete.
 6. Update specs only when required by code or contract clarification.

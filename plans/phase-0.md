@@ -6,6 +6,26 @@
 
 ---
 
+## Execution Order
+
+Task IDs remain stable references. Execute Phase 0 in the order below unless a blocker, approved CR, or newly discovered contradiction requires a narrower clarification pass.
+
+1. **P0-01** Monorepo Scaffold
+2. **P0-02** flutter_rust_bridge Integration
+3. **P0-03** Windows MIDI Adapter
+4. **P0-04** Rust Engine Skeleton
+5. **P0-05** End-to-End Latency Measurement (Windows)
+6. **P0-06** Android MIDI Adapter
+7. **P0-07** Android Latency Measurement
+8. **P0-08** CI Pipeline
+9. **P0-09** ADR-001 Finalization
+
+**Execution notes**
+- `P0-08` is intentionally listed near the end even though it depends only on `P0-01`; this keeps the scaffold and latency spike path moving first while still making CI part of the Phase 0 completion tranche.
+- If a task in this order is already complete, continue with the next dependency-ready task rather than renumbering anything.
+
+---
+
 ## Tasks
 
 ### P0-01: Monorepo Scaffold

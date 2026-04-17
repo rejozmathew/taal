@@ -6,6 +6,37 @@
 
 ---
 
+## Execution Order
+
+Task IDs remain stable references. Execute Phase 2 in the order below unless a blocker, approved CR, or newly discovered contradiction requires a narrower clarification pass.
+
+1. **P2-01** Lesson Editor — Grid Canvas and Lane Rendering
+2. **P2-02** Lesson Editor — Event CRUD
+3. **P2-03** Lesson Editor — Copy/Paste, Multi-Select, Undo/Redo
+4. **P2-04** Lesson Editor — Velocity and Articulation Editing
+5. **P2-05** Lesson Editor — Sections, Grid Resolution, Tempo
+6. **P2-06** Lesson Editor — Preview
+7. **P2-07** Lesson Editor — Metadata
+8. **P2-08** Course Designer — Lesson List with Reorder and Gate Rules
+9. **P2-09** Course Designer — Validation and Preview
+10. **P2-17** Course Runtime and Progression in Player
+11. **P2-10** Pack Builder — Dependency Resolution and Validation
+12. **P2-11** Pack Builder — Export `.taalpack`
+13. **P2-12** MusicXML Import
+14. **P2-13** `.taalpack` Import
+15. **P2-14** Content Library Browser
+16. **P2-15** Print Sheet Music (PDF Export)
+17. **P2-16** Help Tooltips and About Page
+18. **P2-18** Speed Training Mode
+
+**Execution notes**
+- `P2-01` through `P2-07` are the core Lesson Editor tranche and should be completed before course, pack, and import features build on top.
+- `P2-17` is intentionally placed immediately after `P2-09` because it completes the course subsystem before pack/export workflows depend on course content operationally.
+- `P2-12` can technically start earlier once `P2-02` exists, but it is recommended after the editor core is stable so imported drafts have a mature surface to land in.
+- `P2-18` is intentionally late because it depends only on Phase 1, but it is a phase-quality enhancement rather than a Creator Studio foundation.
+
+---
+
 ## Tasks
 
 ### P2-01: Lesson Editor — Grid Canvas and Lane Rendering
@@ -26,7 +57,7 @@
 - Lanes match the standard 5-piece layout
 - Scroll/zoom is smooth (60fps)
 
----
+--- 
 
 ### P2-02: Lesson Editor — Event CRUD
 
@@ -46,7 +77,7 @@
 - Events placed at correct musical position (verified by loading lesson in Player)
 - Multi-event selection does not cause performance issues (up to 500 events)
 
----
+--- 
 
 ### P2-03: Lesson Editor — Copy/Paste, Multi-Select, Undo/Redo
 
@@ -66,7 +97,7 @@
 - Undo reverses last N operations accurately
 - Redo restores undone operations
 
----
+--- 
 
 ### P2-04: Lesson Editor — Velocity and Articulation Editing
 
@@ -84,7 +115,7 @@
 - Velocity changes reflected in Player preview (louder/softer hit sounds)
 - Articulation changes affect hi-hat behavior correctly
 
----
+--- 
 
 ### P2-05: Lesson Editor — Sections, Grid Resolution, Tempo
 
@@ -105,7 +136,7 @@
 - Tempo change updates grid spacing immediately
 - Section boundaries snap to bar lines
 
----
+--- 
 
 ### P2-06: Lesson Editor — Preview
 
@@ -126,7 +157,7 @@
 - Tempo, sections, and events all correctly previewed
 - Can edit while preview is paused without data loss
 
----
+--- 
 
 ### P2-07: Lesson Editor — Metadata
 
@@ -147,7 +178,7 @@
 - Skills/tags searchable and multi-select
 - Custom skills created inline and persisted
 
----
+--- 
 
 ### P2-08: Course Designer — Lesson List with Reorder and Gate Rules
 
@@ -168,7 +199,7 @@
 - Gate rules validated (score 0-100, retries ≥ 0)
 - Course loads in Player and enforces gates correctly
 
----
+--- 
 
 ### P2-09: Course Designer — Validation and Preview
 
@@ -187,7 +218,7 @@
 - Impossible gate (score > 100) produces error
 - Preview simulation accurately reflects gate logic
 
----
+--- 
 
 ### P2-10: Pack Builder — Dependency Resolution and Validation
 
@@ -207,7 +238,7 @@
 - Dangling reference (course → deleted lesson) produces blocking error
 - Instrument family mismatch (drum course referencing keyboard lesson) produces blocking error
 
----
+--- 
 
 ### P2-11: Pack Builder — Export .taalpack
 
@@ -223,7 +254,7 @@
 - Write `.taalpack` file to user-chosen location
 
 **Pack structure:**
-```
+``` 
 my-pack.taalpack (ZIP)
 ├── pack.json
 ├── lessons/
@@ -244,7 +275,7 @@ my-pack.taalpack (ZIP)
 - Content hash matches on re-export of identical content
 - Pack can be imported on a different device running Taal
 
----
+--- 
 
 ### P2-12: MusicXML Import
 
@@ -265,7 +296,7 @@ my-pack.taalpack (ZIP)
 - Imported lesson opens in Lesson Editor for cleanup
 - This is best-effort: complex or non-standard files may import partially
 
----
+--- 
 
 ### P2-13: .taalpack Import
 
@@ -284,7 +315,7 @@ my-pack.taalpack (ZIP)
 - Invalid pack shows clear error and does not partially install
 - Duplicate content handled gracefully
 
----
+--- 
 
 ### P2-14: Content Library Browser
 
@@ -305,7 +336,7 @@ my-pack.taalpack (ZIP)
 - Filter and sort work correctly
 - Navigation to Player/Editor from library is seamless
 
----
+--- 
 
 ### P2-15: Print Sheet Music (PDF Export)
 
@@ -324,7 +355,7 @@ my-pack.taalpack (ZIP)
 - Practice-sheet quality (not engraving-grade — this is not MuseScore)
 - Works for lessons up to 100 bars
 
----
+--- 
 
 ### P2-16: Help Tooltips and About Page
 
@@ -343,7 +374,7 @@ my-pack.taalpack (ZIP)
 - About page shows correct version from build metadata
 - License text accessible
 
----
+--- 
 
 ### P2-17: Course Runtime and Progression in Player
 
@@ -370,7 +401,7 @@ my-pack.taalpack (ZIP)
 - Course lesson with missing required lane → blocked with explanation
 - Course lesson with missing optional lane → allowed, scoring adjusted
 
----
+--- 
 
 ### P2-18: Speed Training Mode
 
@@ -391,7 +422,7 @@ my-pack.taalpack (ZIP)
 - Fail a loop → BPM stays at current value
 - Highest BPM reached is recorded and shown in review
 
----
+--- 
 
 ## Exit Criteria for Phase 2
 
