@@ -138,6 +138,12 @@ pub enum MappingResult {
 }
 ```
 
+### Runtime Session Handoff
+
+`MidiMapper` does not grade or score hits. A Practice Mode runtime adapter converts `MappingResult::Hit(MappedHit)` into the existing `InputHit` contract from `engine-api.md` by copying `lane_id`, `velocity`, and `timestamp_ns`, and setting `midi_note` to the preserved `raw_note`.
+
+Touch input does not flow through `MidiMapper`. The P1-23 tap-pad surface already represents a semantic lane from the active layout, so the runtime adapter creates an `InputHit` with that `lane_id`, a fixed or touch-estimated velocity, the touch input timestamp, and `midi_note: None`. MIDI and touch hits are then submitted to the same Rust `Session`.
+
 ---
 
 ## 4. Note Mapping

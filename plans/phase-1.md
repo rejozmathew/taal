@@ -534,7 +534,8 @@ Task IDs remain stable references. Execute Phase 1 in the order below unless a b
 
 **Outputs:**
 - Touch-responsive drum pad layout on screen (kick, snare, hi-hat, toms, cymbals)
-- Taps generate the same InputHit events as MIDI (with touch timestamp)
+- Thin Flutter-facing Practice Mode runtime-session adapter/bridge that routes both MIDI-derived hits and touch-generated hits into the Rust `Session`
+- Taps generate the same source-neutral `InputHit` events as MIDI after lane resolution (with touch timestamp)
 - Same timing feedback and scoring as MIDI input
 - Available when no MIDI device is connected, or as a user-selected mode
 - Velocity: fixed or estimated from touch pressure (platform-dependent)
@@ -542,8 +543,15 @@ Task IDs remain stable references. Execute Phase 1 in the order below unless a b
 **Acceptance criteria:**
 - Practice a lesson using only touch input — scoring works
 - Feedback animations identical to MIDI input
+- MIDI and touch input are submitted through the same Rust session lifecycle and engine event stream; Flutter does not compute grades, score, combo, or attempt summaries
 - Usable on tablet (touch targets large enough)
 - Not a replacement for real kit (noted in UI: "Connect your kit for the best experience")
+
+**Contract note (CR-007):**
+- P1-23 owns the reusable tap-pad input surface and the minimum Practice Mode runtime-session adapter/bridge needed to submit both MIDI-derived and touch-generated hits to the Rust `Session`.
+- The adapter converts Rust `MappedHit` values and touch pad selections into the existing `InputHit` contract from `docs/specs/engine-api.md`.
+- Touch hits use `midi_note: None`; MIDI-derived hits preserve the raw MIDI note for debugging.
+- Rust remains authoritative for session lifecycle, timing, grading, scoring, summaries, and persistence APIs.
 
 ---
 

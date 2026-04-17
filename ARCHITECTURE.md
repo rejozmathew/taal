@@ -21,6 +21,7 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Flutter notation view widget | `lib/features/player/notation/`, `test/notation_view_test.dart` | Implemented (P1-10 drum-staff painter, standard 5-piece lane placements, scrolling/page display geometry, grade-colored hit markers) |
 | Flutter visual drum kit widget | `lib/features/player/drum_kit/`, `test/drum_kit_test.dart` | Implemented (P1-11 overhead kit painter, standard 5-piece pad geometry, custom layout adaptation, grade-colored hit flashes) |
 | Flutter Practice Mode screen | `lib/features/player/practice_mode/`, `test/practice_mode_screen_test.dart` | Implemented (P1-12 transport, tempo, metronome/loop controls, A-B loop state, combo/encouragement display, switchable practice views) |
+| Flutter Practice runtime input adapter | `lib/features/player/` + Rust bridge API | Planned (P1-23 clarified by CR-007: route MIDI-derived and touch-generated hits into the same Rust `Session` without moving scoring into Flutter) |
 | Flutter Play Mode screen | `lib/features/player/play_mode/`, `test/play_mode_screen_test.dart` | Implemented (P1-13 locked-tempo scored runs, count-in, review handoff, and post-run attempt recording hook) |
 | Flutter post-lesson review screen | `lib/features/player/review/`, `test/post_lesson_review_screen_test.dart` | Implemented (P1-14 score/accuracy summary, timing histogram, lane breakdown, best-stat highlight, improvement suggestions, review actions) |
 | Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime session; P1-01 content parsing/validation; P1-02 time indexing/conversion; P1-03 lesson compilation; P1-04 session lifecycle; P1-05 scoring; P1-06 MIDI mapping; P1-16 local profile persistence; P1-08 device profile persistence; P1-21 practice attempt persistence; P1-20 settings persistence) |
@@ -414,7 +415,7 @@ The widget does not read MIDI directly and does not compute grade state. Parent 
 The P1-12 Practice Mode screen is the first integrated player surface. It owns only UI transport state, view selection, tempo control state, metronome/loop toggles, A-B loop ranges, and display of combo/encouragement values. It does not compile lessons, map MIDI, grade hits, or compute scores.
 
 ```
-Runtime/content adapter (P1-12 callers; bridge expansion remains separate)
+Runtime/content adapter (P1-23 for scored Practice Mode input)
        ↓
 PracticeModeController
        - play/pause/resume transport state
@@ -430,7 +431,25 @@ PracticeModeScreen
        - combo and encouragement display fed by runtime events
 ```
 
-Practice Mode consumes prepared timeline notes and engine feedback markers as inputs. A later runtime adapter can wire the existing Rust session and MIDI mapper into this screen without changing the practice-view widgets. This keeps Rust authoritative for scoring and timing semantics while Flutter owns rendering and operator controls.
+Practice Mode consumes prepared timeline notes and engine feedback markers as inputs. CR-007 assigns the minimum scored Practice Mode runtime adapter to P1-23, so the tap-pad task wires the existing Rust session and MIDI mapper into this screen without changing the practice-view widgets. This keeps Rust authoritative for scoring and timing semantics while Flutter owns rendering, touch interaction, and bridge calls.
+
+P1-23's runtime input adapter has two input paths that converge before scoring:
+
+```
+Native MIDI adapter -> RawMidiEvent -> Rust MidiMapper -> MappedHit
+       |                                            |
+       v                                            v
+       Flutter bridge/orchestration                 InputHit { lane_id, velocity, timestamp_ns, midi_note: Some(raw_note) }
+
+Touch tap pad -> selected lane_id + touch timestamp/velocity
+       |
+       v
+       InputHit { lane_id, velocity, timestamp_ns, midi_note: None }
+
+InputHit -> Rust Session::on_hit -> EngineEvent stream -> Practice Mode feedback renderers
+```
+
+The adapter may own session handles, ticking/draining cadence, and conversion between bridge DTOs and the existing Rust contracts. It must not compute grades, score, combo, misses, or attempt summaries in Flutter.
 
 The P1-13 Play Mode screen reuses the same practice-view renderers for scored assessment runs. It removes Practice Mode's operator controls that would change assessment conditions: no pause/resume, no tempo slider, no metronome toggle, and no A-B loop controls.
 

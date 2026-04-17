@@ -106,12 +106,14 @@ pub struct SessionOpts {
 ### Input: InputHit
 ```rust
 pub struct InputHit {
-    pub lane_id: String,        // Already mapped from MIDI note
+    pub lane_id: String,        // Semantic lane resolved from MIDI mapping or touch input
     pub velocity: u8,
-    pub timestamp_ns: i128,     // Monotonic, from native MIDI layer
-    pub midi_note: Option<u8>,  // Debug/logging only
+    pub timestamp_ns: i128,     // Monotonic input timestamp aligned to SessionOpts.start_time_ns
+    pub midi_note: Option<u8>,  // Some(raw MIDI note) for MIDI hits, None for touch input
 }
 ```
+
+`InputHit` is source-neutral after lane resolution. MIDI input reaches this shape after the Rust `MidiMapper` produces a `MappedHit`. Touch input reaches this shape when the P1-23 tap-pad surface selects a semantic `lane_id` from the active layout. Both sources must use monotonic timestamps in the same clock domain as `SessionOpts.start_time_ns` so `session_on_hit()` can apply identical Rust timing and scoring semantics.
 
 ### Output: EngineEvent
 ```rust
