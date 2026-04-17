@@ -504,10 +504,7 @@ fn build_metronome_schedule(compiled: &CompiledLesson) -> Vec<MetronomeScheduleE
     let mut pos = MusicalPos::new(1, 1, 0);
     let mut clicks = Vec::new();
 
-    loop {
-        let Ok(t_ms) = compiled.timing_index.pos_to_ms(pos) else {
-            break;
-        };
+    while let Ok(t_ms) = compiled.timing_index.pos_to_ms(pos) {
         if !t_ms.is_finite() || t_ms >= compiled.total_duration_ms as f64 {
             break;
         }
