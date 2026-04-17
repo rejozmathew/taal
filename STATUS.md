@@ -4,9 +4,9 @@
 - Name: Taal
 - Repository: taal (fresh repo; legacy prototype archived as taal-legacy)
 - PRD version: 1.9
-- Current phase: Phase 1 in progress (P1-00 through P1-06, P1-16, P1-08, P1-19, P1-18, P1-15, P1-07, P1-09, P1-10, P1-11, P1-12, P1-14, P1-21, P1-13, P1-22, and P1-20 complete)
-- Current task: P1-23 On-Screen Tap Pads ready to implement after CR-007 clarified touch-input scoring integration; implementation not started.
-- Overall status: Phase 0 completed with conditional go via CR-001, and P1-00 resolved the required Android Native-to-Rust jitter follow-up. Phase 1 remains in progress with P1-00 through P1-06, P1-16, P1-08, P1-19, P1-18, P1-15, P1-07, P1-09, P1-10, P1-11, P1-12, P1-14, P1-21, P1-13, P1-22, and P1-20 complete. CR-002 through CR-007 are applied. CR-007 clarifies that P1-23 includes the reusable tap-pad input surface plus the thin Practice Mode runtime-session adapter/bridge that routes both MIDI-derived and touch-generated hits into the Rust `Session` for same-semantics scoring. P1-23 is unblocked and ready to implement; no P1-23 code has started.
+- Current phase: Phase 1 in progress (P1-00 through P1-06, P1-16, P1-08, P1-19, P1-18, P1-15, P1-07, P1-09, P1-10, P1-11, P1-12, P1-14, P1-21, P1-13, P1-22, P1-20, and P1-23 complete)
+- Current task: P1-24 Practice Streaks and Daily Goal Tracking blocked before implementation by missing habit-tracking/settings contract; CR-008 proposed and awaiting approval.
+- Overall status: Phase 0 completed with conditional go via CR-001, and P1-00 resolved the required Android Native-to-Rust jitter follow-up. Phase 1 remains in progress with P1-00 through P1-06, P1-16, P1-08, P1-19, P1-18, P1-15, P1-07, P1-09, P1-10, P1-11, P1-12, P1-14, P1-21, P1-13, P1-22, P1-20, and P1-23 complete. CR-002 through CR-007 are applied, and CR-008 is proposed. P1-23 added the reusable on-screen tap-pad surface plus a thin Practice Mode runtime-session adapter/bridge that routes both MIDI-derived and touch-generated hits into the Rust `Session` for same-semantics scoring. P1-24 is blocked until the daily goal/streak contract is clarified.
 
 ## Release Boundary
 - **MVP (Phases 0-2):** Playable + creatable + course runtime. Not yet distributed.
@@ -14,7 +14,7 @@
 
 ## Phase Gates
 - [x] Phase 0: Foundation + Latency Spike (9 tasks; conditional go via CR-001)
-- [ ] Phase 1: Core Practice Loop (22/28 tasks complete)
+- [ ] Phase 1: Core Practice Loop (23/28 tasks complete)
 - [ ] Phase 2: Creator Studio + Content System + Course Runtime (18 tasks)
 - [ ] Phase 3: Analytics + Polish + Distribution (23 tasks)
 - [ ] Phase 4: AI Coach + Marketplace Prep + Multi-Platform
@@ -49,7 +49,7 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 |----------|---------|----------------|
 | AGENTS.md | v1 | When execution rules change |
 | CLAUDE.md | v1 | Thin shim — rarely changes |
-| ARCHITECTURE.md | v20 | When components/flows/boundaries change |
+| ARCHITECTURE.md | v21 | When components/flows/boundaries change |
 | README.md | v2 | When user-visible capabilities land |
 | docs/prd.md | v1.9 | When scope or product rules change |
 | docs/adr/001-platform-architecture.md | v1 | Immutable (status line only) |
@@ -96,6 +96,7 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 - P1-13 Play Mode Screen: `lib/features/player/play_mode/` now provides a reusable scored assessment screen and controller with count-in, locked lesson tempo, no pause/loop/tempo controls, switchable player views, post-run review handoff, and a post-session attempt-recording hook. Focused Flutter tests cover full-run state, persistence handoff, locked controls, review transition, and view switching.
 - P1-22 App Shell - Home Screen, Navigation, Profile Switcher: `lib/features/app_shell/` now provides the top-level app shell with adaptive bottom navigation/navigation rail, a profile-aware home surface, reachable Practice/Library/Studio/Insights/Settings sections, safe placeholders for incomplete destinations, and a working profile switcher on Home and Settings. Focused Flutter tests cover mobile navigation, desktop rail adaptation, profile switching, and Settings access to the switcher.
 - P1-20 Settings Screen: `rust/src/storage/profiles.rs` now persists CR-006 app/profile settings, `rust/src/storage/device_profiles.rs` exposes the narrow device-profile settings update helper, `rust/src/api/settings.rs` exposes settings bridge operations, and `lib/features/settings/` provides the app shell Settings screen for profile, MIDI, audio, display, and practice preferences. Focused Rust and Flutter tests cover defaults, persistence, ownership validation, bridge access, UI controls, and immediate metronome setting application.
+- P1-23 On-Screen Tap Pads: `lib/features/player/tap_pads/` now provides a reusable touch-responsive drum-pad input surface with tablet-sized targets and the no-kit guidance message. `rust/src/api/practice_runtime.rs` and `rust/src/runtime/practice_runtime.rs` expose a thin Practice Mode runtime bridge that starts compiled Rust `Session` instances, owns optional `MidiMapper` state, routes MIDI NoteOn/CC and touch lane hits into source-neutral `InputHit` values, drains the same Rust `EngineEvent` stream, and stops sessions for Rust-produced `AttemptSummary` JSON. `lib/features/player/practice_runtime/` adapts those events into the existing Practice Mode feedback markers without computing grades, scores, combos, summaries, or persistence decisions. Focused Rust/Flutter tests cover touch-only scoring, mixed touch/MIDI scoring, tap-pad UI behavior, Practice Mode embedding, Dart adapter event handling, and the generated bridge path.
 
 ## Maintenance
 - 2026-04-16: `.gitignore` coverage updated for Flutter, Dart, Rust, Android, Gradle, Windows, and native build outputs; app/tool lockfiles and Gradle wrapper files remain visible to Git while generated build artifacts stay ignored.
@@ -129,9 +130,11 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 - 2026-04-17: CR-006 applied. `docs/specs/engine-api.md` now defines the P1-20 app/profile settings model, defaults, and Rust storage/bridge API shape; `docs/specs/midi-mapping.md` clarifies device-profile-owned Settings fields/defaults; `docs/specs/analytics-model.md` names the Practice Mode attempt-recording preference. P1-20 is unblocked for implementation without changing the Rust-owned SQLite persistence boundary.
 - 2026-04-17: P1-20 implemented. Added Rust-owned app/profile settings persistence, a narrow device-profile settings helper for manual latency and velocity curve changes, generated settings bridge APIs, the Flutter Settings screen inside the app shell, focused Rust/Flutter tests, and `ARCHITECTURE.md` updates for the concrete settings flow.
 - 2026-04-17: CR-007 applied. P1-23 now includes the reusable tap-pad input surface plus the thin Practice Mode runtime-session adapter/bridge needed to route both MIDI-derived and touch-generated hits into the Rust `Session`; `InputHit` semantics are clarified as source-neutral after lane resolution without changing frozen field, lifecycle, or event shapes. P1-23 is unblocked for implementation.
+- 2026-04-17: P1-23 implemented. Added the touch tap-pad surface, Rust-owned Practice runtime session bridge, Dart Practice runtime adapter, generated bridge bindings, and focused Rust/Flutter validation. `ARCHITECTURE.md` now records the concrete tap-pad component and MIDI/touch-to-Rust-session flow.
+- 2026-04-17: P1-24 blocked before implementation. Dependencies P1-21 and P1-22 are satisfied, but the current specs do not define the configurable daily-goal field, habit/streak summary model, streak persistence semantics, or Rust storage/bridge API required by the phase plan. CR-008 proposes the narrow habit tracking contract needed to unblock P1-24.
 
 ## Blockers
-- None currently. P1-23 is ready to implement under CR-007; implementation has not started.
+- P1-24 blocked before implementation: `plans/phase-1.md` requires configurable daily practice goals and per-profile SQLite streak data, but `docs/specs/engine-api.md` §10 freezes a settings model without daily-goal fields and `docs/specs/analytics-model.md` defines only `PracticeAttempt` storage/query contracts, not habit/streak snapshot or persistence APIs. Smallest unblocker: approve/apply CR-008.
 
 ## Operational Caveats
 - P0-08 merge blocking: CI workflow is present and locally validated, but GitHub branch protection / required status checks could not be verified from this environment (`gh` CLI unavailable; connector does not expose branch-protection settings). If not already enabled, require the CI checks in GitHub repository settings.

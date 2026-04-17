@@ -4,6 +4,7 @@ import 'package:taal/features/player/drum_kit/drum_kit.dart';
 import 'package:taal/features/player/notation/notation_view.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/practice_mode/practice_mode_screen.dart';
+import 'package:taal/features/player/tap_pads/tap_pad_surface.dart';
 
 void main() {
   test('practice controller starts pauses and resumes transport', () {
@@ -105,6 +106,35 @@ void main() {
 
     expect(controller.transportState, PracticeTransportState.paused);
     expect(find.text('Play'), findsOneWidget);
+  });
+
+  testWidgets('practice screen can show tap pads as an input surface', (
+    tester,
+  ) async {
+    final controller = _controller();
+    final hits = <TapPadHit>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PracticeModeScreen(
+            controller: controller,
+            lanes: _lanes,
+            notes: _notes,
+            tapPadInput: PracticeTapPadInput(
+              enabledLaneIds: const {'kick', 'snare'},
+              onPadHit: hits.add,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const ValueKey('tap-pad-kick')));
+    await tester.pump();
+
+    expect(hits.single.laneId, 'kick');
+    expect(find.byKey(const ValueKey('tap-pad-ride')), findsNothing);
   });
 }
 

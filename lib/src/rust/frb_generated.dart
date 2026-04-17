@@ -5,6 +5,7 @@
 
 import 'api/device_profiles.dart';
 import 'api/practice_attempts.dart';
+import 'api/practice_runtime.dart';
 import 'api/profiles.dart';
 import 'api/settings.dart';
 import 'api/simple.dart';
@@ -70,7 +71,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => -535189083;
+  int get rustContentHash => 1665867403;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -153,6 +154,58 @@ abstract class RustLibApi extends BaseApi {
 
   PlatformInt64 crateApiSimplePhase0LatencyClockNs();
 
+  PlatformInt64 crateApiPracticeRuntimePracticeRuntimeClockNs();
+
+  PracticeRuntimeOperationResult crateApiPracticeRuntimePracticeRuntimeDispose({
+    required int sessionId,
+  });
+
+  PracticeRuntimeOperationResult
+  crateApiPracticeRuntimePracticeRuntimeDrainEvents({required int sessionId});
+
+  PracticeRuntimeOperationResult crateApiPracticeRuntimePracticeRuntimePause({
+    required int sessionId,
+  });
+
+  PracticeRuntimeOperationResult crateApiPracticeRuntimePracticeRuntimeResume({
+    required int sessionId,
+  });
+
+  PracticeRuntimeStopResult crateApiPracticeRuntimePracticeRuntimeStop({
+    required int sessionId,
+  });
+
+  PracticeRuntimeOperationResult
+  crateApiPracticeRuntimePracticeRuntimeSubmitMidiControlChange({
+    required int sessionId,
+    required int channel,
+    required int controller,
+    required int value,
+    required PlatformInt64 timestampNs,
+  });
+
+  PracticeRuntimeOperationResult
+  crateApiPracticeRuntimePracticeRuntimeSubmitMidiNoteOn({
+    required int sessionId,
+    required int channel,
+    required int note,
+    required int velocity,
+    required PlatformInt64 timestampNs,
+  });
+
+  PracticeRuntimeOperationResult
+  crateApiPracticeRuntimePracticeRuntimeSubmitTouchHit({
+    required int sessionId,
+    required String laneId,
+    required int velocity,
+    required PlatformInt64 timestampNs,
+  });
+
+  PracticeRuntimeOperationResult crateApiPracticeRuntimePracticeRuntimeTick({
+    required int sessionId,
+    required PlatformInt64 nowNs,
+  });
+
   PracticeAttemptOperationResult crateApiPracticeAttemptsRecordPracticeAttempt({
     required String databasePath,
     required String summaryJson,
@@ -168,6 +221,11 @@ abstract class RustLibApi extends BaseApi {
     required String databasePath,
     required String playerId,
     required String deviceProfileId,
+  });
+
+  PracticeRuntimeStartResult
+  crateApiPracticeRuntimeStartPracticeRuntimeSession({
+    required PracticeRuntimeStartRequest request,
   });
 
   SettingsOperationResult crateApiSettingsUpdateAppSettings({
@@ -642,6 +700,319 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "phase0_latency_clock_ns", argNames: []);
 
   @override
+  PlatformInt64 crateApiPracticeRuntimePracticeRuntimeClockNs() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_i_64,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeRuntimePracticeRuntimeClockNsConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPracticeRuntimePracticeRuntimeClockNsConstMeta =>
+      const TaskConstMeta(debugName: "practice_runtime_clock_ns", argNames: []);
+
+  @override
+  PracticeRuntimeOperationResult crateApiPracticeRuntimePracticeRuntimeDispose({
+    required int sessionId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(sessionId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeRuntimePracticeRuntimeDisposeConstMeta,
+        argValues: [sessionId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPracticeRuntimePracticeRuntimeDisposeConstMeta =>
+      const TaskConstMeta(
+        debugName: "practice_runtime_dispose",
+        argNames: ["sessionId"],
+      );
+
+  @override
+  PracticeRuntimeOperationResult
+  crateApiPracticeRuntimePracticeRuntimeDrainEvents({required int sessionId}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(sessionId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeRuntimePracticeRuntimeDrainEventsConstMeta,
+        argValues: [sessionId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiPracticeRuntimePracticeRuntimeDrainEventsConstMeta =>
+      const TaskConstMeta(
+        debugName: "practice_runtime_drain_events",
+        argNames: ["sessionId"],
+      );
+
+  @override
+  PracticeRuntimeOperationResult crateApiPracticeRuntimePracticeRuntimePause({
+    required int sessionId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(sessionId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 17)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeRuntimePracticeRuntimePauseConstMeta,
+        argValues: [sessionId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPracticeRuntimePracticeRuntimePauseConstMeta =>
+      const TaskConstMeta(
+        debugName: "practice_runtime_pause",
+        argNames: ["sessionId"],
+      );
+
+  @override
+  PracticeRuntimeOperationResult crateApiPracticeRuntimePracticeRuntimeResume({
+    required int sessionId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(sessionId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 18)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeRuntimePracticeRuntimeResumeConstMeta,
+        argValues: [sessionId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPracticeRuntimePracticeRuntimeResumeConstMeta =>
+      const TaskConstMeta(
+        debugName: "practice_runtime_resume",
+        argNames: ["sessionId"],
+      );
+
+  @override
+  PracticeRuntimeStopResult crateApiPracticeRuntimePracticeRuntimeStop({
+    required int sessionId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(sessionId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 19)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_stop_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeRuntimePracticeRuntimeStopConstMeta,
+        argValues: [sessionId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPracticeRuntimePracticeRuntimeStopConstMeta =>
+      const TaskConstMeta(
+        debugName: "practice_runtime_stop",
+        argNames: ["sessionId"],
+      );
+
+  @override
+  PracticeRuntimeOperationResult
+  crateApiPracticeRuntimePracticeRuntimeSubmitMidiControlChange({
+    required int sessionId,
+    required int channel,
+    required int controller,
+    required int value,
+    required PlatformInt64 timestampNs,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(sessionId, serializer);
+          sse_encode_u_8(channel, serializer);
+          sse_encode_u_8(controller, serializer);
+          sse_encode_u_8(value, serializer);
+          sse_encode_i_64(timestampNs, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 20)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateApiPracticeRuntimePracticeRuntimeSubmitMidiControlChangeConstMeta,
+        argValues: [sessionId, channel, controller, value, timestampNs],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiPracticeRuntimePracticeRuntimeSubmitMidiControlChangeConstMeta =>
+      const TaskConstMeta(
+        debugName: "practice_runtime_submit_midi_control_change",
+        argNames: [
+          "sessionId",
+          "channel",
+          "controller",
+          "value",
+          "timestampNs",
+        ],
+      );
+
+  @override
+  PracticeRuntimeOperationResult
+  crateApiPracticeRuntimePracticeRuntimeSubmitMidiNoteOn({
+    required int sessionId,
+    required int channel,
+    required int note,
+    required int velocity,
+    required PlatformInt64 timestampNs,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(sessionId, serializer);
+          sse_encode_u_8(channel, serializer);
+          sse_encode_u_8(note, serializer);
+          sse_encode_u_8(velocity, serializer);
+          sse_encode_i_64(timestampNs, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 21)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateApiPracticeRuntimePracticeRuntimeSubmitMidiNoteOnConstMeta,
+        argValues: [sessionId, channel, note, velocity, timestampNs],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiPracticeRuntimePracticeRuntimeSubmitMidiNoteOnConstMeta =>
+      const TaskConstMeta(
+        debugName: "practice_runtime_submit_midi_note_on",
+        argNames: ["sessionId", "channel", "note", "velocity", "timestampNs"],
+      );
+
+  @override
+  PracticeRuntimeOperationResult
+  crateApiPracticeRuntimePracticeRuntimeSubmitTouchHit({
+    required int sessionId,
+    required String laneId,
+    required int velocity,
+    required PlatformInt64 timestampNs,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(sessionId, serializer);
+          sse_encode_String(laneId, serializer);
+          sse_encode_u_8(velocity, serializer);
+          sse_encode_i_64(timestampNs, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateApiPracticeRuntimePracticeRuntimeSubmitTouchHitConstMeta,
+        argValues: [sessionId, laneId, velocity, timestampNs],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiPracticeRuntimePracticeRuntimeSubmitTouchHitConstMeta =>
+      const TaskConstMeta(
+        debugName: "practice_runtime_submit_touch_hit",
+        argNames: ["sessionId", "laneId", "velocity", "timestampNs"],
+      );
+
+  @override
+  PracticeRuntimeOperationResult crateApiPracticeRuntimePracticeRuntimeTick({
+    required int sessionId,
+    required PlatformInt64 nowNs,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(sessionId, serializer);
+          sse_encode_i_64(nowNs, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeRuntimePracticeRuntimeTickConstMeta,
+        argValues: [sessionId, nowNs],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPracticeRuntimePracticeRuntimeTickConstMeta =>
+      const TaskConstMeta(
+        debugName: "practice_runtime_tick",
+        argNames: ["sessionId", "nowNs"],
+      );
+
+  @override
   PracticeAttemptOperationResult crateApiPracticeAttemptsRecordPracticeAttempt({
     required String databasePath,
     required String summaryJson,
@@ -654,7 +1025,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(databasePath, serializer);
           sse_encode_String(summaryJson, serializer);
           sse_encode_String(contextJson, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 24)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_practice_attempt_operation_result,
@@ -684,7 +1055,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(databasePath, serializer);
           sse_encode_String(profileId, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 25)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_local_profile_operation_result,
@@ -716,7 +1087,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(databasePath, serializer);
           sse_encode_String(playerId, serializer);
           sse_encode_String(deviceProfileId, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 26)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_device_profile_operation_result,
@@ -736,6 +1107,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  PracticeRuntimeStartResult
+  crateApiPracticeRuntimeStartPracticeRuntimeSession({
+    required PracticeRuntimeStartRequest request,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_practice_runtime_start_request(
+            request,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 27)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_runtime_start_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeRuntimeStartPracticeRuntimeSessionConstMeta,
+        argValues: [request],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiPracticeRuntimeStartPracticeRuntimeSessionConstMeta =>
+      const TaskConstMeta(
+        debugName: "start_practice_runtime_session",
+        argNames: ["request"],
+      );
+
+  @override
   SettingsOperationResult crateApiSettingsUpdateAppSettings({
     required String databasePath,
     required String settingsJson,
@@ -746,7 +1150,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(databasePath, serializer);
           sse_encode_String(settingsJson, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 17)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 28)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_settings_operation_result,
@@ -783,7 +1187,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(deviceProfileId, serializer);
           sse_encode_f_32(inputOffsetMs, serializer);
           sse_encode_velocity_curve_dto(velocityCurve, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 18)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 29)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_device_profile_operation_result,
@@ -828,7 +1232,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(databasePath, serializer);
           sse_encode_String(profileId, serializer);
           sse_encode_profile_practice_view_dto(preferredView, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 19)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 30)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_local_profile_operation_result,
@@ -861,7 +1265,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(databasePath, serializer);
           sse_encode_String(playerId, serializer);
           sse_encode_String(profileJson, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 20)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 31)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_device_profile_operation_result,
@@ -894,7 +1298,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(databasePath, serializer);
           sse_encode_String(profileId, serializer);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 21)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 32)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_local_profile_operation_result,
@@ -926,7 +1330,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(databasePath, serializer);
           sse_encode_String(playerId, serializer);
           sse_encode_String(settingsUpdateJson, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 33)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_settings_operation_result,
@@ -957,6 +1361,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_local_profile_state_dto(raw);
+  }
+
+  @protected
+  PracticeRuntimeStartRequest
+  dco_decode_box_autoadd_practice_runtime_start_request(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_practice_runtime_start_request(raw);
+  }
+
+  @protected
+  int dco_decode_box_autoadd_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
   }
 
   @protected
@@ -1053,6 +1470,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int? dco_decode_opt_box_autoadd_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_u_32(raw);
+  }
+
+  @protected
   Phase0LatencyRustResult dco_decode_phase_0_latency_rust_result(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -1094,6 +1517,76 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return PracticeAttemptOperationResult(
       attemptJson: dco_decode_opt_String(arr[0]),
       attemptsJson: dco_decode_list_String(arr[1]),
+      error: dco_decode_opt_String(arr[2]),
+    );
+  }
+
+  @protected
+  PracticeRuntimeModeDto dco_decode_practice_runtime_mode_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return PracticeRuntimeModeDto.values[raw as int];
+  }
+
+  @protected
+  PracticeRuntimeOperationResult dco_decode_practice_runtime_operation_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return PracticeRuntimeOperationResult(
+      eventsJson: dco_decode_opt_String(arr[0]),
+      error: dco_decode_opt_String(arr[1]),
+    );
+  }
+
+  @protected
+  PracticeRuntimeStartRequest dco_decode_practice_runtime_start_request(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return PracticeRuntimeStartRequest(
+      lessonJson: dco_decode_String(arr[0]),
+      layoutJson: dco_decode_String(arr[1]),
+      scoringProfileJson: dco_decode_String(arr[2]),
+      deviceProfileJson: dco_decode_opt_String(arr[3]),
+      mode: dco_decode_practice_runtime_mode_dto(arr[4]),
+      bpm: dco_decode_f_32(arr[5]),
+      startTimeNs: dco_decode_i_64(arr[6]),
+      lookaheadMs: dco_decode_i_64(arr[7]),
+    );
+  }
+
+  @protected
+  PracticeRuntimeStartResult dco_decode_practice_runtime_start_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return PracticeRuntimeStartResult(
+      sessionId: dco_decode_opt_box_autoadd_u_32(arr[0]),
+      timelineJson: dco_decode_opt_String(arr[1]),
+      error: dco_decode_opt_String(arr[2]),
+    );
+  }
+
+  @protected
+  PracticeRuntimeStopResult dco_decode_practice_runtime_stop_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return PracticeRuntimeStopResult(
+      summaryJson: dco_decode_opt_String(arr[0]),
+      eventsJson: dco_decode_opt_String(arr[1]),
       error: dco_decode_opt_String(arr[2]),
     );
   }
@@ -1161,6 +1654,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_local_profile_state_dto(deserializer));
+  }
+
+  @protected
+  PracticeRuntimeStartRequest
+  sse_decode_box_autoadd_practice_runtime_start_request(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_practice_runtime_start_request(deserializer));
+  }
+
+  @protected
+  int sse_decode_box_autoadd_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_u_32(deserializer));
   }
 
   @protected
@@ -1279,6 +1787,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_u_32(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   Phase0LatencyRustResult sse_decode_phase_0_latency_rust_result(
     SseDeserializer deserializer,
   ) {
@@ -1329,6 +1848,83 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return PracticeAttemptOperationResult(
       attemptJson: var_attemptJson,
       attemptsJson: var_attemptsJson,
+      error: var_error,
+    );
+  }
+
+  @protected
+  PracticeRuntimeModeDto sse_decode_practice_runtime_mode_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return PracticeRuntimeModeDto.values[inner];
+  }
+
+  @protected
+  PracticeRuntimeOperationResult sse_decode_practice_runtime_operation_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_eventsJson = sse_decode_opt_String(deserializer);
+    var var_error = sse_decode_opt_String(deserializer);
+    return PracticeRuntimeOperationResult(
+      eventsJson: var_eventsJson,
+      error: var_error,
+    );
+  }
+
+  @protected
+  PracticeRuntimeStartRequest sse_decode_practice_runtime_start_request(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_lessonJson = sse_decode_String(deserializer);
+    var var_layoutJson = sse_decode_String(deserializer);
+    var var_scoringProfileJson = sse_decode_String(deserializer);
+    var var_deviceProfileJson = sse_decode_opt_String(deserializer);
+    var var_mode = sse_decode_practice_runtime_mode_dto(deserializer);
+    var var_bpm = sse_decode_f_32(deserializer);
+    var var_startTimeNs = sse_decode_i_64(deserializer);
+    var var_lookaheadMs = sse_decode_i_64(deserializer);
+    return PracticeRuntimeStartRequest(
+      lessonJson: var_lessonJson,
+      layoutJson: var_layoutJson,
+      scoringProfileJson: var_scoringProfileJson,
+      deviceProfileJson: var_deviceProfileJson,
+      mode: var_mode,
+      bpm: var_bpm,
+      startTimeNs: var_startTimeNs,
+      lookaheadMs: var_lookaheadMs,
+    );
+  }
+
+  @protected
+  PracticeRuntimeStartResult sse_decode_practice_runtime_start_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_sessionId = sse_decode_opt_box_autoadd_u_32(deserializer);
+    var var_timelineJson = sse_decode_opt_String(deserializer);
+    var var_error = sse_decode_opt_String(deserializer);
+    return PracticeRuntimeStartResult(
+      sessionId: var_sessionId,
+      timelineJson: var_timelineJson,
+      error: var_error,
+    );
+  }
+
+  @protected
+  PracticeRuntimeStopResult sse_decode_practice_runtime_stop_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_summaryJson = sse_decode_opt_String(deserializer);
+    var var_eventsJson = sse_decode_opt_String(deserializer);
+    var var_error = sse_decode_opt_String(deserializer);
+    return PracticeRuntimeStopResult(
+      summaryJson: var_summaryJson,
+      eventsJson: var_eventsJson,
       error: var_error,
     );
   }
@@ -1407,6 +2003,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_local_profile_state_dto(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_practice_runtime_start_request(
+    PracticeRuntimeStartRequest self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_practice_runtime_start_request(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self, serializer);
   }
 
   @protected
@@ -1513,6 +2124,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_u_32(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_phase_0_latency_rust_result(
     Phase0LatencyRustResult self,
     SseSerializer serializer,
@@ -1547,6 +2168,63 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_opt_String(self.attemptJson, serializer);
     sse_encode_list_String(self.attemptsJson, serializer);
+    sse_encode_opt_String(self.error, serializer);
+  }
+
+  @protected
+  void sse_encode_practice_runtime_mode_dto(
+    PracticeRuntimeModeDto self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_practice_runtime_operation_result(
+    PracticeRuntimeOperationResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_String(self.eventsJson, serializer);
+    sse_encode_opt_String(self.error, serializer);
+  }
+
+  @protected
+  void sse_encode_practice_runtime_start_request(
+    PracticeRuntimeStartRequest self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.lessonJson, serializer);
+    sse_encode_String(self.layoutJson, serializer);
+    sse_encode_String(self.scoringProfileJson, serializer);
+    sse_encode_opt_String(self.deviceProfileJson, serializer);
+    sse_encode_practice_runtime_mode_dto(self.mode, serializer);
+    sse_encode_f_32(self.bpm, serializer);
+    sse_encode_i_64(self.startTimeNs, serializer);
+    sse_encode_i_64(self.lookaheadMs, serializer);
+  }
+
+  @protected
+  void sse_encode_practice_runtime_start_result(
+    PracticeRuntimeStartResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_box_autoadd_u_32(self.sessionId, serializer);
+    sse_encode_opt_String(self.timelineJson, serializer);
+    sse_encode_opt_String(self.error, serializer);
+  }
+
+  @protected
+  void sse_encode_practice_runtime_stop_result(
+    PracticeRuntimeStopResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_String(self.summaryJson, serializer);
+    sse_encode_opt_String(self.eventsJson, serializer);
     sse_encode_opt_String(self.error, serializer);
   }
 

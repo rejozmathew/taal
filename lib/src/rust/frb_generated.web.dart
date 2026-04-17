@@ -8,6 +8,7 @@
 
 import 'api/device_profiles.dart';
 import 'api/practice_attempts.dart';
+import 'api/practice_runtime.dart';
 import 'api/profiles.dart';
 import 'api/settings.dart';
 import 'api/simple.dart';
@@ -31,6 +32,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   LocalProfileStateDto dco_decode_box_autoadd_local_profile_state_dto(
     dynamic raw,
   );
+
+  @protected
+  PracticeRuntimeStartRequest
+  dco_decode_box_autoadd_practice_runtime_start_request(dynamic raw);
+
+  @protected
+  int dco_decode_box_autoadd_u_32(dynamic raw);
 
   @protected
   DeviceProfileOperationResult dco_decode_device_profile_operation_result(
@@ -72,6 +80,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
+
+  @protected
   Phase0LatencyRustResult dco_decode_phase_0_latency_rust_result(dynamic raw);
 
   @protected
@@ -79,6 +90,29 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PracticeAttemptOperationResult dco_decode_practice_attempt_operation_result(
+    dynamic raw,
+  );
+
+  @protected
+  PracticeRuntimeModeDto dco_decode_practice_runtime_mode_dto(dynamic raw);
+
+  @protected
+  PracticeRuntimeOperationResult dco_decode_practice_runtime_operation_result(
+    dynamic raw,
+  );
+
+  @protected
+  PracticeRuntimeStartRequest dco_decode_practice_runtime_start_request(
+    dynamic raw,
+  );
+
+  @protected
+  PracticeRuntimeStartResult dco_decode_practice_runtime_start_result(
+    dynamic raw,
+  );
+
+  @protected
+  PracticeRuntimeStopResult dco_decode_practice_runtime_stop_result(
     dynamic raw,
   );
 
@@ -112,6 +146,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   LocalProfileStateDto sse_decode_box_autoadd_local_profile_state_dto(
     SseDeserializer deserializer,
   );
+
+  @protected
+  PracticeRuntimeStartRequest
+  sse_decode_box_autoadd_practice_runtime_start_request(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
 
   @protected
   DeviceProfileOperationResult sse_decode_device_profile_operation_result(
@@ -157,6 +200,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
   Phase0LatencyRustResult sse_decode_phase_0_latency_rust_result(
     SseDeserializer deserializer,
   );
@@ -166,6 +212,31 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PracticeAttemptOperationResult sse_decode_practice_attempt_operation_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PracticeRuntimeModeDto sse_decode_practice_runtime_mode_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PracticeRuntimeOperationResult sse_decode_practice_runtime_operation_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PracticeRuntimeStartRequest sse_decode_practice_runtime_start_request(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PracticeRuntimeStartResult sse_decode_practice_runtime_start_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PracticeRuntimeStopResult sse_decode_practice_runtime_stop_result(
     SseDeserializer deserializer,
   );
 
@@ -207,6 +278,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     LocalProfileStateDto self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_box_autoadd_practice_runtime_start_request(
+    PracticeRuntimeStartRequest self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_device_profile_operation_result(
@@ -260,6 +340,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);
+
+  @protected
   void sse_encode_phase_0_latency_rust_result(
     Phase0LatencyRustResult self,
     SseSerializer serializer,
@@ -274,6 +357,36 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_practice_attempt_operation_result(
     PracticeAttemptOperationResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_practice_runtime_mode_dto(
+    PracticeRuntimeModeDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_practice_runtime_operation_result(
+    PracticeRuntimeOperationResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_practice_runtime_start_request(
+    PracticeRuntimeStartRequest self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_practice_runtime_start_result(
+    PracticeRuntimeStartResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_practice_runtime_stop_result(
+    PracticeRuntimeStopResult self,
     SseSerializer serializer,
   );
 

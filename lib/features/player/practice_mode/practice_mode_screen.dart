@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:taal/features/player/drum_kit/drum_kit.dart';
 import 'package:taal/features/player/notation/notation_view.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
+import 'package:taal/features/player/tap_pads/tap_pad_surface.dart';
 
 class PracticeModeScreen extends StatefulWidget {
   const PracticeModeScreen({
@@ -13,6 +14,7 @@ class PracticeModeScreen extends StatefulWidget {
     required this.notes,
     this.feedback = const [],
     this.kitPads = standardFivePieceDrumKitPads,
+    this.tapPadInput,
   });
 
   final PracticeModeController controller;
@@ -20,6 +22,7 @@ class PracticeModeScreen extends StatefulWidget {
   final List<PracticeTimelineNote> notes;
   final List<PracticeFeedbackMarker> feedback;
   final List<VisualDrumKitPad> kitPads;
+  final PracticeTapPadInput? tapPadInput;
 
   @override
   State<PracticeModeScreen> createState() => _PracticeModeScreenState();
@@ -56,6 +59,7 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
+    final tapPadInput = widget.tapPadInput;
 
     return Column(
       children: [
@@ -72,6 +76,19 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
             ),
           ),
         ),
+        if (tapPadInput != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            child: SizedBox(
+              height: 240,
+              child: TapPadSurface(
+                pads: tapPadInput.pads,
+                enabledLaneIds: tapPadInput.enabledLaneIds,
+                velocity: tapPadInput.velocity,
+                onPadHit: tapPadInput.onPadHit,
+              ),
+            ),
+          ),
         _PracticeLoopControls(controller: controller),
       ],
     );
@@ -81,6 +98,20 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
 enum PracticeTransportState { stopped, running, paused }
 
 enum PracticeDisplayView { noteHighway, notation, drumKit }
+
+class PracticeTapPadInput {
+  const PracticeTapPadInput({
+    required this.onPadHit,
+    this.pads = standardFivePieceDrumKitPads,
+    this.enabledLaneIds,
+    this.velocity = 96,
+  });
+
+  final List<VisualDrumKitPad> pads;
+  final Set<String>? enabledLaneIds;
+  final int velocity;
+  final ValueChanged<TapPadHit> onPadHit;
+}
 
 class PracticeTimelineNote {
   const PracticeTimelineNote({

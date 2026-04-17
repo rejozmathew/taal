@@ -319,6 +319,13 @@ impl Session {
         self.events.drain(..count).collect()
     }
 
+    pub(crate) fn push_warning(&mut self, code: impl Into<String>, message: impl Into<String>) {
+        self.push_event(EngineEvent::Warning {
+            code: code.into(),
+            message: message.into(),
+        });
+    }
+
     pub fn stop(&mut self) -> Result<AttemptSummary, SessionError> {
         match self.state {
             SessionState::Running | SessionState::Paused => {

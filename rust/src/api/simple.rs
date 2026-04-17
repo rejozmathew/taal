@@ -50,7 +50,7 @@ pub fn init_app() {
 }
 
 #[cfg(windows)]
-fn monotonic_now_ns() -> i64 {
+pub(crate) fn monotonic_now_ns() -> i64 {
     use std::sync::OnceLock;
 
     #[link(name = "kernel32")]
@@ -77,7 +77,7 @@ fn monotonic_now_ns() -> i64 {
 }
 
 #[cfg(target_os = "android")]
-fn monotonic_now_ns() -> i64 {
+pub(crate) fn monotonic_now_ns() -> i64 {
     #[repr(C)]
     struct Timespec {
         tv_sec: i64,
@@ -101,7 +101,7 @@ fn monotonic_now_ns() -> i64 {
 }
 
 #[cfg(all(not(windows), not(target_os = "android")))]
-fn monotonic_now_ns() -> i64 {
+pub(crate) fn monotonic_now_ns() -> i64 {
     use std::sync::OnceLock;
     use std::time::Instant;
 
