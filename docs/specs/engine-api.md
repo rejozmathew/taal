@@ -62,9 +62,10 @@ Single enum, five states. `delta_ms` on `HitGraded` provides continuous offset f
 
 **Rules:**
 - `session_on_hit()` and `session_tick()`: only valid in Running state
-- `session_stop()`: valid from Running or Paused; returns AttemptSummary
+- `session_stop()`: valid from Running or Paused; returns `AttemptSummary`
 - `session_stop()` is idempotent on Stopped session
 - Stopped sessions cannot be restarted (create a new session)
+- Invalid state operations return `SessionError::InvalidState`.
 
 ---
 
@@ -82,12 +83,22 @@ fn compile_lesson(lesson: &Lesson, layout: &InstrumentLayout, scoring: &ScoringP
 
 // Session lifecycle
 fn session_start(compiled: &CompiledLesson, opts: SessionOpts) -> Session
-fn session_on_hit(session: &mut Session, hit: InputHit)
-fn session_tick(session: &mut Session, now_ns: i128)
+fn session_on_hit(session: &mut Session, hit: InputHit) -> Result<(), SessionError>
+fn session_tick(session: &mut Session, now_ns: i128) -> Result<(), SessionError>
 fn drain_events(session: &mut Session, max: usize) -> Vec<EngineEvent>
-fn session_pause(session: &mut Session)
-fn session_resume(session: &mut Session)
-fn session_stop(session: &mut Session) -> AttemptSummary
+fn session_pause(session: &mut Session) -> Result<(), SessionError>
+fn session_resume(session: &mut Session) -> Result<(), SessionError>
+fn session_stop(session: &mut Session) -> Result<AttemptSummary, SessionError>
+```
+
+### Input: SessionOpts
+```rust
+pub struct SessionOpts {
+    pub mode: PracticeMode,
+    pub bpm: f32,
+    pub start_time_ns: i128, // Monotonic session timeline origin
+    pub lookahead_ms: i64,   // ExpectedPulse look-ahead window; 0 allowed
+}
 ```
 
 ### Input: InputHit
@@ -167,11 +178,15 @@ Hot-path rules: no heap allocations, no locking, no I/O.
 pub enum ContentError { InvalidJson(String), SchemaViolation { field, message },
     InvariantViolation { rule, message }, UnsupportedSchemaVersion { found, supported } }
 pub enum CompileError { MissingLayout { layout_id }, MissingScoringProfile { profile_id },
-    EmptyLesson, InvalidTempoMap(String) }
-pub enum SessionError { InvalidState { current, attempted } }
+    EmptyLesson, InvalidTempoMap(String), InvariantViolation { rule, message } }
+pub enum SessionError { InvalidState { current: SessionState, attempted: String } }
 ```
 
 Errors returned as `Result`. Flutter bridge converts to Dart exceptions with human-readable messages.
+
+`CompileError::InvariantViolation` is used when compilation detects a strict compiled-runtime invariant violation
+that is not a content JSON parse error, such as duplicate expected events for the same `lane_id` at the same compiled
+millisecond timestamp.
 
 ---
 

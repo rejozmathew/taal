@@ -1,3 +1,4 @@
+pub mod compile;
 pub mod error;
 pub mod layout;
 pub mod lesson;
@@ -5,6 +6,7 @@ pub mod scoring;
 
 use serde::de::DeserializeOwned;
 
+pub use compile::{compile_lesson, CompileError, CompiledEvent, CompiledLesson, CompiledSection};
 pub use error::ContentError;
 pub use layout::{
     load_layout, ArticulationDef, InstrumentLayout, LaneDefinition, MidiHint, VisualConfig,

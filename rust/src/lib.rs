@@ -1,7 +1,9 @@
 pub mod api;
 pub mod content;
 mod frb_generated;
+pub mod midi;
 pub mod runtime;
+pub mod scoring;
 pub mod time;
 
 #[cfg(test)]

@@ -14,9 +14,13 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 |-----------|----------|--------|
 | PRD + specs + plans | `docs/`, `plans/` | Implemented |
 | Flutter app shell | `lib/`, `android/`, `windows/` | Implemented (empty Phase 0 app shell) |
-| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime skeleton; P1-01 content parsing/validation; P1-02 time indexing/conversion) |
+| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime session; P1-01 content parsing/validation; P1-02 time indexing/conversion; P1-03 lesson compilation; P1-04 session lifecycle; P1-05 scoring; P1-06 MIDI mapping) |
 | Rust content module | `rust/src/content/`, `rust/tests/content_validation.rs` | Implemented (P1-01 Lesson, InstrumentLayout, and ScoringProfile parsing/validation) |
+| Rust compile module | `rust/src/content/compile.rs`, `rust/tests/lesson_compile.rs` | Implemented (P1-03 Lesson + layout + scoring profile to immutable CompiledLesson timeline) |
 | Rust time module | `rust/src/time/`, `rust/tests/time_conversion.rs` | Implemented (P1-02 MusicalPos tick arithmetic and TimingIndex musical <-> millisecond conversion) |
+| Rust runtime session | `rust/src/runtime/session.rs`, `rust/tests/runtime_session.rs` | Implemented (P1-04 compiled-lesson session lifecycle, hit/miss event emission, summary metrics) |
+| Rust scoring module | `rust/src/scoring/`, `rust/tests/scoring_behavior.rs` | Implemented (P1-05 profile-driven grades, score normalization, combos, milestones, lane stats) |
+| Rust MIDI mapping engine | `rust/src/midi/`, `rust/tests/midi_mapping.rs` | Implemented (P1-06 raw MIDI NoteOn/CC to mapped hits, hi-hat CC4 articulation, calibration offset, dedupe, unmapped-note warnings) |
 | Flutter↔Rust bridge | `rust/`, `lib/src/rust/`, `rust_builder/` | Implemented (Phase 0 `greet` bridge) |
 | Windows MIDI adapter | `windows/runner/windows_midi_adapter.*`, `lib/platform/midi/windows_midi_adapter.dart`, `native/windows/` | Implemented (Phase 0 NoteOn capture and latency benchmark validated) |
 | Windows latency harness | `lib/platform/latency/`, `rust/src/api/simple.rs`, `artifacts/phase-0/` | Implemented (P0-05 release measurement captured) |
@@ -25,7 +29,6 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | CI pipeline | `.github/workflows/ci.yml` | Implemented (Rust + Flutter checks/builds, locally validated) |
 | Metronome audio output | `native/*/audio/` | Planned (Phase 1, P1-15) |
 | SQLite persistence | `rust/src/storage/` | Planned (Phase 1, P1-08, P1-21) |
-| MIDI mapping engine | `rust/src/midi/` | Planned (Phase 1, P1-06) |
 | Practice views | `lib/features/player/` | Planned (Phase 1, P1-09/10/11) |
 | Lesson Editor | `lib/features/studio/` | Planned (Phase 2) |
 | Course Designer | `lib/features/studio/` | Planned (Phase 2) |
@@ -242,7 +245,9 @@ All content (lessons, courses, packs) is defined by typed Rust structs and seria
 | Scoring Profile | Timing windows, grade weights, combo rules | [content-schemas.md](docs/specs/content-schemas.md) |
 | Device Profile | MIDI note→lane mapping, calibration, velocity curve | [midi-mapping.md](docs/specs/midi-mapping.md) |
 
-The implemented Rust content module currently loads and validates `Lesson`, `InstrumentLayout`, and `ScoringProfile` JSON. It materializes the documented Lesson defaults for `assets`, `references`, and `optional_lanes`, validates the P1-01-owned schema invariants, and leaves lesson compilation/runtime use to later Phase 1 tasks.
+The implemented Rust content module currently loads and validates `Lesson`, `InstrumentLayout`, and `ScoringProfile` JSON. It materializes the documented Lesson defaults for `assets`, `references`, and `optional_lanes`, and validates the P1-01-owned schema invariants.
+
+The implemented Rust MIDI mapping module defines the Phase 1 `DeviceProfile`, `RawMidiEvent`, `MappedHit`, and `MappingResult` contracts in code. `MidiMapper` consumes raw native MIDI events, applies channel filtering, note-to-lane mapping, hi-hat `hihat_model.source_cc` state, calibration offset, and duplicate NoteOn suppression before producing mapped hit or warning results. Generic `cc_map` remains unsupported per CR-004 and is rejected during Phase 1 profile loading.
 
 ### Content Representations
 
@@ -255,6 +260,8 @@ Content exists in three forms:
 | **Exported** | .taalpack file | Strict (schema-compliant) | Yes (by position) |
 
 The `compile_lesson()` function transforms authoring → compiled form. This is a one-way, deterministic transformation.
+
+The implemented Rust compile module resolves a validated lesson against an instrument layout and scoring profile, builds a `TimingIndex`, converts every expected event and section boundary into absolute milliseconds, sorts events by `t_ms`, rejects duplicate compiled lane/time pairs, and returns the immutable `CompiledLesson` runtime representation consumed by sessions.
 
 ### Time Model
 
@@ -284,11 +291,15 @@ Ready → Running → Paused → Running → Stopped
 ```
 compile_lesson(lesson, layout, scoring) → CompiledLesson
 session_start(compiled, opts) → Session
-session_on_hit(session, hit)           // Submit a MIDI hit
-session_tick(session, now_ns)          // Advance time, detect misses
+session_on_hit(session, hit) → Result // Submit a MIDI hit while Running
+session_tick(session, now_ns) → Result // Advance time and detect misses while Running
 drain_events(session, max) → Vec<EngineEvent>  // Pull events for UI
-session_stop(session) → AttemptSummary // End session, get results
+session_stop(session) → Result<AttemptSummary> // End session, get results
 ```
+
+The implemented runtime session owns a cloned immutable `CompiledLesson` for the attempt. `SessionOpts.start_time_ns` anchors native monotonic hit timestamps to the compiled millisecond timeline. `tick` emits expected pulses for events entering the configured look-ahead window and misses after the outer window expires. Hits are matched to the nearest pending expected event in the same lane within the scoring profile's outer window. Stop is idempotent once the session reaches `Stopped`.
+
+The implemented scoring module owns grade-window evaluation, score normalization to 0-100, combo and encouragement-tier tracking, combo milestone messages, aggregate timing statistics, and per-lane summary metrics. Runtime sessions call this module after every hit or miss and translate milestone updates into `ComboMilestone` and `Encouragement` engine events.
 
 ### Canonical Grade Model
 
@@ -334,8 +345,10 @@ taal/
 │   ├── Cargo.toml
 │   └── src/
 │       ├── api/            # Phase 0 bridge API surface
-│       ├── content/        # P1-01 content schemas and validation
-│       ├── runtime/        # Phase 0 session/grading skeleton
+│       ├── content/        # P1-01 content schemas/validation + P1-03 lesson compilation
+│       ├── midi/           # P1-06 MIDI note/CC mapping to semantic hits
+│       ├── runtime/        # P1-04 compiled-lesson session lifecycle
+│       ├── scoring/        # P1-05 grade, score, combo, and summary metrics
 │       ├── time/           # P1-02 musical time arithmetic and TimingIndex
 │       ├── frb_generated.rs
 │       └── lib.rs
@@ -365,7 +378,7 @@ All major decisions are documented as ADRs in [docs/adr/](docs/adr/).
 
 | Decision | Choice | ADR |
 |----------|--------|-----|
-| Platform architecture | Flutter + Rust (pending spike) | [001](adr/001-platform-architecture.md) |
+| Platform architecture | Flutter + Rust (accepted with conditional caveat) | [001](docs/adr/001-platform-architecture.md) |
 | Time representation | Musical time canonical, ms derived | 002 (planned) |
 | Content format | Proprietary JSON, MusicXML for import/export | 003 (planned) |
 | Storage | Local-first SQLite | 004 (planned) |

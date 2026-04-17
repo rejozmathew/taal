@@ -1,14 +1,24 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
+use std::error::Error;
+use std::fmt::{self, Display};
+
+use uuid::Uuid;
+
+use crate::content::{
+    ComboConfig, CompiledLesson, EventPayload, GradeWeights, MusicalPos, PracticeMode,
+    ScoringProfile, ScoringRules, TempoEntry, TimeSignature, TimingWindows,
+};
+use crate::scoring::{grade_delta_ms, ScoringEngine, ScoringUpdate};
+use crate::time::TimingIndex;
+
+pub use crate::scoring::{AttemptSummary, LaneStats};
 
 const EXPECTED_ID: &str = "p0-expected-1";
 const EXPECTED_LANE_ID: &str = "kick";
-const EXPECTED_TIMESTAMP_NS: i128 = 1_000_000_000;
-const PERFECT_WINDOW_NS: i128 = 20_000_000;
-const GOOD_WINDOW_NS: i128 = 45_000_000;
-const OUTER_WINDOW_NS: i128 = 120_000_000;
+const EVENT_BUFFER_MAX: usize = 256;
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Grade {
     Perfect = 0,
     Good = 1,
@@ -77,123 +87,436 @@ pub enum EngineEvent {
     },
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SessionState {
+    Ready,
+    Running,
+    Paused,
+    Stopped,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SessionOpts {
+    pub mode: PracticeMode,
+    pub bpm: f32,
+    pub start_time_ns: i128,
+    pub lookahead_ms: i64,
+}
+
+impl SessionOpts {
+    pub fn new(mode: PracticeMode, bpm: f32, start_time_ns: i128) -> Self {
+        Self {
+            mode,
+            bpm,
+            start_time_ns,
+            lookahead_ms: 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SessionError {
+    InvalidState {
+        current: SessionState,
+        attempted: String,
+    },
+}
+
+impl Display for SessionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidState { current, attempted } => {
+                write!(f, "cannot {attempted} while session is {current:?}")
+            }
+        }
+    }
+}
+
+impl Error for SessionError {}
+
 #[derive(Debug)]
 pub struct Session {
-    expected: ExpectedEvent,
+    compiled: CompiledLesson,
+    opts: SessionOpts,
+    state: SessionState,
     events: VecDeque<EngineEvent>,
-    hit_graded: bool,
-    miss_emitted: bool,
-    combo: u32,
-    streak: u32,
-    score_running: f32,
+    expected_status: Vec<ExpectedStatus>,
+    pulse_emitted: Vec<bool>,
+    scoring: ScoringEngine,
+    last_timeline_ms: i64,
+    summary: Option<AttemptSummary>,
 }
 
-#[derive(Debug)]
-struct ExpectedEvent {
-    expected_id: String,
-    lane_id: String,
-    timestamp_ns: i128,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ExpectedStatus {
+    Pending,
+    Hit,
+    Missed,
 }
 
-pub fn start_session() -> Session {
-    Session {
-        expected: ExpectedEvent {
-            expected_id: EXPECTED_ID.to_owned(),
-            lane_id: EXPECTED_LANE_ID.to_owned(),
-            timestamp_ns: EXPECTED_TIMESTAMP_NS,
-        },
-        events: VecDeque::new(),
-        hit_graded: false,
-        miss_emitted: false,
-        combo: 0,
-        streak: 0,
-        score_running: 0.0,
-    }
+pub fn session_start(compiled: &CompiledLesson, opts: SessionOpts) -> Session {
+    let mut session = Session::new(compiled, opts);
+    session
+        .start()
+        .expect("newly-created session must start from Ready");
+    session
 }
 
-pub fn submit_hit(session: &mut Session, hit: InputHit) {
-    if session.hit_graded || session.miss_emitted {
-        return;
-    }
-
-    if hit.lane_id != session.expected.lane_id {
-        session.events.push_back(EngineEvent::Warning {
-            code: "lane_mismatch".to_owned(),
-            message: format!(
-                "Ignoring hit for lane '{}' while expecting '{}'.",
-                hit.lane_id, session.expected.lane_id
-            ),
-        });
-        return;
-    }
-
-    let delta_ns = hit.timestamp_ns - session.expected.timestamp_ns;
-    let grade = grade_delta(delta_ns);
-    let delta_ms = delta_ns as f32 / 1_000_000.0;
-
-    session.hit_graded = true;
-    session.combo = match grade {
-        Grade::Miss => 0,
-        Grade::Perfect | Grade::Good | Grade::Early | Grade::Late => session.combo + 1,
-    };
-    if matches!(grade, Grade::Perfect | Grade::Good) {
-        session.streak += 1;
-    }
-    session.score_running = match grade {
-        Grade::Perfect => 100.0,
-        Grade::Good => 75.0,
-        Grade::Early | Grade::Late => 50.0,
-        Grade::Miss => 0.0,
-    };
-
-    session.events.push_back(EngineEvent::HitGraded {
-        expected_id: session.expected.expected_id.clone(),
-        lane_id: session.expected.lane_id.clone(),
-        grade,
-        delta_ms,
-        combo: session.combo,
-        streak: session.streak,
-        score_running: session.score_running,
-    });
+pub fn session_on_hit(session: &mut Session, hit: InputHit) -> Result<(), SessionError> {
+    session.on_hit(hit)
 }
 
-pub fn session_tick(session: &mut Session, now_ns: i128) {
-    if session.hit_graded || session.miss_emitted {
-        return;
-    }
-
-    if now_ns > session.expected.timestamp_ns + OUTER_WINDOW_NS {
-        session.combo = 0;
-        session.streak = 0;
-        session.miss_emitted = true;
-        session.events.push_back(EngineEvent::Missed {
-            expected_id: session.expected.expected_id.clone(),
-            lane_id: session.expected.lane_id.clone(),
-        });
-    }
+pub fn session_tick(session: &mut Session, now_ns: i128) -> Result<(), SessionError> {
+    session.tick(now_ns)
 }
 
 pub fn drain_events(session: &mut Session, max: usize) -> Vec<EngineEvent> {
-    let count = max.min(session.events.len());
-    session.events.drain(..count).collect()
+    session.drain_events(max)
 }
 
-fn grade_delta(delta_ns: i128) -> Grade {
-    let abs_delta = delta_ns.abs();
-    if abs_delta <= PERFECT_WINDOW_NS {
-        Grade::Perfect
-    } else if abs_delta <= GOOD_WINDOW_NS {
-        Grade::Good
-    } else if delta_ns < 0 {
-        Grade::Early
-    } else {
-        Grade::Late
+pub fn session_pause(session: &mut Session) -> Result<(), SessionError> {
+    session.pause()
+}
+
+pub fn session_resume(session: &mut Session) -> Result<(), SessionError> {
+    session.resume()
+}
+
+pub fn session_stop(session: &mut Session) -> Result<AttemptSummary, SessionError> {
+    session.stop()
+}
+
+impl Session {
+    pub fn new(compiled: &CompiledLesson, opts: SessionOpts) -> Self {
+        let mut lane_counts = HashMap::<String, u32>::new();
+        for lane_id in &compiled.lane_ids {
+            lane_counts.entry(lane_id.clone()).or_insert(0);
+        }
+        for event in &compiled.events {
+            *lane_counts.entry(event.lane_id.clone()).or_insert(0) += 1;
+        }
+
+        Self {
+            compiled: compiled.clone(),
+            opts,
+            state: SessionState::Ready,
+            events: VecDeque::new(),
+            expected_status: vec![ExpectedStatus::Pending; compiled.events.len()],
+            pulse_emitted: vec![false; compiled.events.len()],
+            scoring: ScoringEngine::new(&compiled.scoring_profile, lane_counts),
+            last_timeline_ms: 0,
+            summary: None,
+        }
+    }
+
+    pub fn state(&self) -> SessionState {
+        self.state
+    }
+
+    pub fn start(&mut self) -> Result<(), SessionError> {
+        match self.state {
+            SessionState::Ready => {
+                self.state = SessionState::Running;
+                Ok(())
+            }
+            _ => Err(self.invalid_state("start")),
+        }
+    }
+
+    pub fn pause(&mut self) -> Result<(), SessionError> {
+        match self.state {
+            SessionState::Running => {
+                self.state = SessionState::Paused;
+                Ok(())
+            }
+            _ => Err(self.invalid_state("pause")),
+        }
+    }
+
+    pub fn resume(&mut self) -> Result<(), SessionError> {
+        match self.state {
+            SessionState::Paused => {
+                self.state = SessionState::Running;
+                Ok(())
+            }
+            _ => Err(self.invalid_state("resume")),
+        }
+    }
+
+    pub fn on_hit(&mut self, hit: InputHit) -> Result<(), SessionError> {
+        self.require_running("submit hit")?;
+
+        let hit_timeline_ms = self.timestamp_to_timeline_ms(hit.timestamp_ns);
+        self.last_timeline_ms = self.last_timeline_ms.max(hit_timeline_ms.round() as i64);
+        let Some(index) = self.nearest_match_index(&hit.lane_id, hit_timeline_ms) else {
+            self.push_event(EngineEvent::Warning {
+                code: "unmatched_hit".to_owned(),
+                message: format!(
+                    "No pending expected event matched lane '{}' at {:.3}ms.",
+                    hit.lane_id, hit_timeline_ms
+                ),
+            });
+            return Ok(());
+        };
+
+        let expected_t_ms = self.compiled.events[index].t_ms as f64;
+        let delta_ms = (hit_timeline_ms - expected_t_ms) as f32;
+        let grade = grade_delta_ms(delta_ms, &self.compiled.scoring_profile.timing_windows_ms);
+        let expected_id = self.compiled.events[index].expected_id.clone();
+        let lane_id = self.compiled.events[index].lane_id.clone();
+
+        self.expected_status[index] = ExpectedStatus::Hit;
+        let scoring_update = self.scoring.record_hit(&lane_id, grade, delta_ms);
+
+        self.push_event(EngineEvent::HitGraded {
+            expected_id,
+            lane_id,
+            grade,
+            delta_ms,
+            combo: scoring_update.combo,
+            streak: scoring_update.streak,
+            score_running: scoring_update.score_running,
+        });
+        self.push_scoring_events(scoring_update);
+
+        Ok(())
+    }
+
+    pub fn tick(&mut self, now_ns: i128) -> Result<(), SessionError> {
+        self.require_running("tick")?;
+
+        let now_ms = self.timestamp_to_timeline_ms(now_ns);
+        self.last_timeline_ms = self.last_timeline_ms.max(now_ms.round() as i64);
+        self.emit_expected_pulses(now_ms);
+        let miss_cutoff_ms =
+            now_ms - f64::from(self.compiled.scoring_profile.timing_windows_ms.outer_ms);
+
+        for index in 0..self.compiled.events.len() {
+            if self.expected_status[index] == ExpectedStatus::Pending
+                && (self.compiled.events[index].t_ms as f64) < miss_cutoff_ms
+            {
+                self.record_miss(index, true);
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn drain_events(&mut self, max: usize) -> Vec<EngineEvent> {
+        let count = max.min(self.events.len());
+        self.events.drain(..count).collect()
+    }
+
+    pub fn stop(&mut self) -> Result<AttemptSummary, SessionError> {
+        match self.state {
+            SessionState::Running | SessionState::Paused => {
+                for index in 0..self.expected_status.len() {
+                    self.record_miss(index, false);
+                }
+                self.state = SessionState::Stopped;
+                let summary = self.build_summary();
+                self.summary = Some(summary.clone());
+                Ok(summary)
+            }
+            SessionState::Stopped => {
+                Ok(self.summary.clone().unwrap_or_else(|| self.build_summary()))
+            }
+            SessionState::Ready => Err(self.invalid_state("stop")),
+        }
+    }
+
+    fn nearest_match_index(&self, lane_id: &str, hit_timeline_ms: f64) -> Option<usize> {
+        let outer_ms = f64::from(self.compiled.scoring_profile.timing_windows_ms.outer_ms);
+        self.compiled
+            .events
+            .iter()
+            .enumerate()
+            .filter(|(index, event)| {
+                self.expected_status[*index] == ExpectedStatus::Pending
+                    && event.lane_id == lane_id
+                    && (hit_timeline_ms - event.t_ms as f64).abs() <= outer_ms
+            })
+            .min_by(|(_, left), (_, right)| {
+                let left_delta = (hit_timeline_ms - left.t_ms as f64).abs();
+                let right_delta = (hit_timeline_ms - right.t_ms as f64).abs();
+                left_delta.total_cmp(&right_delta)
+            })
+            .map(|(index, _)| index)
+    }
+
+    fn record_miss(&mut self, index: usize, emit_event: bool) {
+        if self.expected_status[index] != ExpectedStatus::Pending {
+            return;
+        }
+
+        let expected_id = self.compiled.events[index].expected_id.clone();
+        let lane_id = self.compiled.events[index].lane_id.clone();
+
+        self.expected_status[index] = ExpectedStatus::Missed;
+        self.scoring.record_miss(&lane_id);
+
+        if emit_event {
+            self.push_event(EngineEvent::Missed {
+                expected_id,
+                lane_id,
+            });
+        }
+    }
+
+    fn emit_expected_pulses(&mut self, now_ms: f64) {
+        let lookahead_end_ms = now_ms + self.opts.lookahead_ms.max(0) as f64;
+        let pulses = self
+            .compiled
+            .events
+            .iter()
+            .enumerate()
+            .filter(|(index, event)| {
+                self.expected_status[*index] == ExpectedStatus::Pending
+                    && !self.pulse_emitted[*index]
+                    && (event.t_ms as f64) >= now_ms
+                    && (event.t_ms as f64) <= lookahead_end_ms
+            })
+            .map(|(index, event)| {
+                (
+                    index,
+                    EngineEvent::ExpectedPulse {
+                        expected_id: event.expected_id.clone(),
+                        lane_id: event.lane_id.clone(),
+                        t_expected_ms: event.t_ms,
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+
+        for (index, event) in pulses {
+            self.pulse_emitted[index] = true;
+            self.push_event(event);
+        }
+    }
+
+    fn build_summary(&self) -> AttemptSummary {
+        self.scoring.summary(
+            self.compiled.lesson_id,
+            self.opts.mode,
+            self.opts.bpm,
+            self.last_timeline_ms.max(0) as u64,
+        )
+    }
+
+    fn timestamp_to_timeline_ms(&self, timestamp_ns: i128) -> f64 {
+        (timestamp_ns - self.opts.start_time_ns) as f64 / 1_000_000.0
+    }
+
+    fn require_running(&self, attempted: &str) -> Result<(), SessionError> {
+        if self.state == SessionState::Running {
+            Ok(())
+        } else {
+            Err(self.invalid_state(attempted))
+        }
+    }
+
+    fn invalid_state(&self, attempted: &str) -> SessionError {
+        SessionError::InvalidState {
+            current: self.state,
+            attempted: attempted.to_owned(),
+        }
+    }
+
+    fn push_event(&mut self, event: EngineEvent) {
+        if self.events.len() >= EVENT_BUFFER_MAX {
+            if let Some(position) = self
+                .events
+                .iter()
+                .position(|event| matches!(event, EngineEvent::ExpectedPulse { .. }))
+            {
+                self.events.remove(position);
+            } else if matches!(event, EngineEvent::ExpectedPulse { .. }) {
+                return;
+            }
+        }
+
+        self.events.push_back(event);
+    }
+
+    fn push_scoring_events(&mut self, scoring_update: ScoringUpdate) {
+        if let Some(milestone) = scoring_update.milestone {
+            self.push_event(EngineEvent::ComboMilestone {
+                combo: milestone.combo,
+            });
+            self.push_event(EngineEvent::Encouragement {
+                message_id: milestone.message_id,
+                text: milestone.text,
+            });
+        }
+    }
+}
+
+// Phase 0 compatibility helpers used by the latency bridge.
+pub fn start_session() -> Session {
+    let compiled = phase0_compiled_lesson();
+    session_start(
+        &compiled,
+        SessionOpts::new(PracticeMode::Practice, 120.0, 0),
+    )
+}
+
+pub fn submit_hit(session: &mut Session, hit: InputHit) {
+    let _ = session_on_hit(session, hit);
+}
+
+fn phase0_compiled_lesson() -> CompiledLesson {
+    let time_signature = TimeSignature { num: 4, den: 4 };
+    let ticks_per_beat = 480;
+    let tempo_map = [TempoEntry {
+        pos: MusicalPos::new(1, 1, 0),
+        bpm: 120.0,
+    }];
+
+    CompiledLesson {
+        lesson_id: Uuid::nil(),
+        timing_index: TimingIndex::from_tempo_map(time_signature, ticks_per_beat, &tempo_map)
+            .expect("phase 0 timing fixture must be valid"),
+        events: vec![crate::content::CompiledEvent {
+            expected_id: EXPECTED_ID.to_owned(),
+            lane_id: EXPECTED_LANE_ID.to_owned(),
+            t_ms: 1000,
+            pos: MusicalPos::new(1, 3, 0),
+            payload: EventPayload::Hit {
+                velocity: 96,
+                articulation: "normal".to_owned(),
+            },
+        }],
+        sections: Vec::new(),
+        lane_ids: vec![EXPECTED_LANE_ID.to_owned()],
+        scoring_profile: ScoringProfile {
+            id: "phase0-standard".to_owned(),
+            schema_version: "1.0".to_owned(),
+            timing_windows_ms: TimingWindows {
+                perfect_ms: 20.0,
+                good_ms: 45.0,
+                outer_ms: 120.0,
+            },
+            grading: GradeWeights {
+                perfect: 1.0,
+                good: 0.75,
+                early: 0.5,
+                late: 0.5,
+                miss: 0.0,
+            },
+            combo: ComboConfig {
+                encouragement_milestones: vec![8, 16, 32],
+            },
+            rules: ScoringRules {},
+        },
+        total_duration_ms: 1000,
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const EXPECTED_TIMESTAMP_NS: i128 = 1_000_000_000;
 
     #[test]
     fn submit_near_hit_gets_perfect_grade() {
@@ -235,7 +558,7 @@ mod tests {
     fn tick_after_outer_window_emits_miss() {
         let mut session = start_session();
 
-        session_tick(&mut session, EXPECTED_TIMESTAMP_NS + OUTER_WINDOW_NS + 1);
+        session_tick(&mut session, EXPECTED_TIMESTAMP_NS + 120_000_001).unwrap();
 
         assert_eq!(
             drain_events(&mut session, 8),
@@ -250,7 +573,7 @@ mod tests {
     fn tick_before_outer_window_does_not_emit_miss() {
         let mut session = start_session();
 
-        session_tick(&mut session, EXPECTED_TIMESTAMP_NS + OUTER_WINDOW_NS);
+        session_tick(&mut session, EXPECTED_TIMESTAMP_NS + 120_000_000).unwrap();
 
         assert!(drain_events(&mut session, 8).is_empty());
     }

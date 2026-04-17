@@ -25,7 +25,6 @@ pub struct DeviceProfile {
 
     // Mapping
     pub note_map: Vec<NoteMapping>,
-    pub cc_map: Vec<CcMapping>,
 
     // Hi-hat model
     pub hihat_model: Option<HiHatModel>,
@@ -51,7 +50,20 @@ pub struct DeviceFingerprint {
 
 pub enum MidiTransport { Usb, Bluetooth, Virtual }
 pub enum VelocityCurve { Linear, Soft, Hard, Custom(Vec<(u8, u8)>) }
+pub type DateTime = String;             // RFC 3339 UTC timestamp, e.g. "2026-04-16T12:34:56Z"
 ```
+
+### Reserved Generic CC Mapping
+
+`cc_map` is reserved for a future generic controller-mapping contract. P1-06 does not define or use a generic `CcMapping` type.
+
+Phase 1 `DeviceProfile` records must omit `cc_map`. Any present `cc_map` field is unsupported for Phase 1 local loading until a future spec revision defines `CcMapping`. Hi-hat openness is not modeled through `cc_map`; it is modeled only by `hihat_model.source_cc`.
+
+### Metadata Timestamp Representation
+
+`DateTime` in this spec is a JSON string containing an RFC 3339 UTC timestamp, e.g. `2026-04-16T12:34:56Z`. It represents wall-clock metadata only and must not be used for MIDI event timing, calibration offsets, grading, or scoring.
+
+For Phase 1 local loading, `created_at` and `updated_at` are required on preset and persisted `DeviceProfile` records. P1-06 mapping behavior must ignore these fields after profile validation. Newly created in-memory profiles must populate both fields before they are persisted.
 
 ### Device Identity and Reconnection
 
