@@ -3,6 +3,10 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/device_profiles.dart';
+import 'api/practice_attempts.dart';
+import 'api/profiles.dart';
+import 'api/settings.dart';
 import 'api/simple.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -66,7 +70,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 1116881858;
+  int get rustContentHash => -535189083;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -78,9 +82,68 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  LocalProfileOperationResult crateApiProfilesCreateLocalProfile({
+    required String databasePath,
+    required String name,
+    String? avatar,
+    required ProfileExperienceLevelDto experienceLevel,
+  });
+
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesCreatePersistedDeviceProfile({
+    required String databasePath,
+    required String playerId,
+    required String profileJson,
+  });
+
+  LocalProfileOperationResult crateApiProfilesDeleteLocalProfile({
+    required String databasePath,
+    required String profileId,
+  });
+
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesDeletePersistedDeviceProfile({
+    required String databasePath,
+    required String playerId,
+    required String deviceProfileId,
+  });
+
   String crateApiSimpleGreet({required String name});
 
   Future<void> crateApiSimpleInitApp();
+
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesLastUsedDeviceProfileForDevice({
+    required String databasePath,
+    required String playerId,
+    String? vendorName,
+    String? modelName,
+    String? platformId,
+  });
+
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesListPersistedDeviceProfiles({
+    required String databasePath,
+    required String playerId,
+  });
+
+  PracticeAttemptOperationResult crateApiPracticeAttemptsListPracticeAttempts({
+    required String databasePath,
+    required String playerId,
+    String? lessonId,
+    String? courseId,
+    String? startedAtUtcFrom,
+    String? startedAtUtcTo,
+  });
+
+  SettingsOperationResult crateApiSettingsLoadSettingsSnapshot({
+    required String databasePath,
+    required String playerId,
+  });
+
+  LocalProfileOperationResult crateApiProfilesLocalProfileState({
+    required String databasePath,
+  });
 
   Phase0LatencyRustResult crateApiSimpleMeasurePhase0LatencyHit({
     required String laneId,
@@ -89,6 +152,62 @@ abstract class RustLibApi extends BaseApi {
   });
 
   PlatformInt64 crateApiSimplePhase0LatencyClockNs();
+
+  PracticeAttemptOperationResult crateApiPracticeAttemptsRecordPracticeAttempt({
+    required String databasePath,
+    required String summaryJson,
+    required String contextJson,
+  });
+
+  LocalProfileOperationResult crateApiProfilesSetActiveLocalProfile({
+    required String databasePath,
+    required String profileId,
+  });
+
+  DeviceProfileOperationResult crateApiDeviceProfilesSetLastUsedDeviceProfile({
+    required String databasePath,
+    required String playerId,
+    required String deviceProfileId,
+  });
+
+  SettingsOperationResult crateApiSettingsUpdateAppSettings({
+    required String databasePath,
+    required String settingsJson,
+  });
+
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesUpdateDeviceProfileSettings({
+    required String databasePath,
+    required String playerId,
+    required String deviceProfileId,
+    required double inputOffsetMs,
+    required VelocityCurveDto velocityCurve,
+  });
+
+  LocalProfileOperationResult crateApiProfilesUpdateLocalProfilePreferredView({
+    required String databasePath,
+    required String profileId,
+    required ProfilePracticeViewDto preferredView,
+  });
+
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesUpdatePersistedDeviceProfile({
+    required String databasePath,
+    required String playerId,
+    required String profileJson,
+  });
+
+  LocalProfileOperationResult crateApiProfilesUpdatePlayerProfileName({
+    required String databasePath,
+    required String profileId,
+    required String name,
+  });
+
+  SettingsOperationResult crateApiSettingsUpdateProfileSettings({
+    required String databasePath,
+    required String playerId,
+    required String settingsUpdateJson,
+  });
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -100,13 +219,145 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
+  LocalProfileOperationResult crateApiProfilesCreateLocalProfile({
+    required String databasePath,
+    required String name,
+    String? avatar,
+    required ProfileExperienceLevelDto experienceLevel,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(name, serializer);
+          sse_encode_opt_String(avatar, serializer);
+          sse_encode_profile_experience_level_dto(experienceLevel, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_local_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiProfilesCreateLocalProfileConstMeta,
+        argValues: [databasePath, name, avatar, experienceLevel],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiProfilesCreateLocalProfileConstMeta =>
+      const TaskConstMeta(
+        debugName: "create_local_profile",
+        argNames: ["databasePath", "name", "avatar", "experienceLevel"],
+      );
+
+  @override
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesCreatePersistedDeviceProfile({
+    required String databasePath,
+    required String playerId,
+    required String profileJson,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          sse_encode_String(profileJson, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_device_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeviceProfilesCreatePersistedDeviceProfileConstMeta,
+        argValues: [databasePath, playerId, profileJson],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiDeviceProfilesCreatePersistedDeviceProfileConstMeta =>
+      const TaskConstMeta(
+        debugName: "create_persisted_device_profile",
+        argNames: ["databasePath", "playerId", "profileJson"],
+      );
+
+  @override
+  LocalProfileOperationResult crateApiProfilesDeleteLocalProfile({
+    required String databasePath,
+    required String profileId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(profileId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_local_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiProfilesDeleteLocalProfileConstMeta,
+        argValues: [databasePath, profileId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiProfilesDeleteLocalProfileConstMeta =>
+      const TaskConstMeta(
+        debugName: "delete_local_profile",
+        argNames: ["databasePath", "profileId"],
+      );
+
+  @override
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesDeletePersistedDeviceProfile({
+    required String databasePath,
+    required String playerId,
+    required String deviceProfileId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          sse_encode_String(deviceProfileId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_device_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeviceProfilesDeletePersistedDeviceProfileConstMeta,
+        argValues: [databasePath, playerId, deviceProfileId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiDeviceProfilesDeletePersistedDeviceProfileConstMeta =>
+      const TaskConstMeta(
+        debugName: "delete_persisted_device_profile",
+        argNames: ["databasePath", "playerId", "deviceProfileId"],
+      );
+
+  @override
   String crateApiSimpleGreet({required String name}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -131,7 +382,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 6,
             port: port_,
           );
         },
@@ -150,6 +401,193 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
   @override
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesLastUsedDeviceProfileForDevice({
+    required String databasePath,
+    required String playerId,
+    String? vendorName,
+    String? modelName,
+    String? platformId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          sse_encode_opt_String(vendorName, serializer);
+          sse_encode_opt_String(modelName, serializer);
+          sse_encode_opt_String(platformId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_device_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateApiDeviceProfilesLastUsedDeviceProfileForDeviceConstMeta,
+        argValues: [databasePath, playerId, vendorName, modelName, platformId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiDeviceProfilesLastUsedDeviceProfileForDeviceConstMeta =>
+      const TaskConstMeta(
+        debugName: "last_used_device_profile_for_device",
+        argNames: [
+          "databasePath",
+          "playerId",
+          "vendorName",
+          "modelName",
+          "platformId",
+        ],
+      );
+
+  @override
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesListPersistedDeviceProfiles({
+    required String databasePath,
+    required String playerId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_device_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeviceProfilesListPersistedDeviceProfilesConstMeta,
+        argValues: [databasePath, playerId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiDeviceProfilesListPersistedDeviceProfilesConstMeta =>
+      const TaskConstMeta(
+        debugName: "list_persisted_device_profiles",
+        argNames: ["databasePath", "playerId"],
+      );
+
+  @override
+  PracticeAttemptOperationResult crateApiPracticeAttemptsListPracticeAttempts({
+    required String databasePath,
+    required String playerId,
+    String? lessonId,
+    String? courseId,
+    String? startedAtUtcFrom,
+    String? startedAtUtcTo,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          sse_encode_opt_String(lessonId, serializer);
+          sse_encode_opt_String(courseId, serializer);
+          sse_encode_opt_String(startedAtUtcFrom, serializer);
+          sse_encode_opt_String(startedAtUtcTo, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_attempt_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeAttemptsListPracticeAttemptsConstMeta,
+        argValues: [
+          databasePath,
+          playerId,
+          lessonId,
+          courseId,
+          startedAtUtcFrom,
+          startedAtUtcTo,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPracticeAttemptsListPracticeAttemptsConstMeta =>
+      const TaskConstMeta(
+        debugName: "list_practice_attempts",
+        argNames: [
+          "databasePath",
+          "playerId",
+          "lessonId",
+          "courseId",
+          "startedAtUtcFrom",
+          "startedAtUtcTo",
+        ],
+      );
+
+  @override
+  SettingsOperationResult crateApiSettingsLoadSettingsSnapshot({
+    required String databasePath,
+    required String playerId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_settings_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSettingsLoadSettingsSnapshotConstMeta,
+        argValues: [databasePath, playerId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSettingsLoadSettingsSnapshotConstMeta =>
+      const TaskConstMeta(
+        debugName: "load_settings_snapshot",
+        argNames: ["databasePath", "playerId"],
+      );
+
+  @override
+  LocalProfileOperationResult crateApiProfilesLocalProfileState({
+    required String databasePath,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 11)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_local_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiProfilesLocalProfileStateConstMeta,
+        argValues: [databasePath],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiProfilesLocalProfileStateConstMeta =>
+      const TaskConstMeta(
+        debugName: "local_profile_state",
+        argNames: ["databasePath"],
+      );
+
+  @override
   Phase0LatencyRustResult crateApiSimpleMeasurePhase0LatencyHit({
     required String laneId,
     required int velocity,
@@ -162,7 +600,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_String(laneId, serializer);
           sse_encode_u_8(velocity, serializer);
           sse_encode_i_64(nativeTimestampNs, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_phase_0_latency_rust_result,
@@ -187,7 +625,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 13)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_i_64,
@@ -203,10 +641,349 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiSimplePhase0LatencyClockNsConstMeta =>
       const TaskConstMeta(debugName: "phase0_latency_clock_ns", argNames: []);
 
+  @override
+  PracticeAttemptOperationResult crateApiPracticeAttemptsRecordPracticeAttempt({
+    required String databasePath,
+    required String summaryJson,
+    required String contextJson,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(summaryJson, serializer);
+          sse_encode_String(contextJson, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_practice_attempt_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPracticeAttemptsRecordPracticeAttemptConstMeta,
+        argValues: [databasePath, summaryJson, contextJson],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPracticeAttemptsRecordPracticeAttemptConstMeta =>
+      const TaskConstMeta(
+        debugName: "record_practice_attempt",
+        argNames: ["databasePath", "summaryJson", "contextJson"],
+      );
+
+  @override
+  LocalProfileOperationResult crateApiProfilesSetActiveLocalProfile({
+    required String databasePath,
+    required String profileId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(profileId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_local_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiProfilesSetActiveLocalProfileConstMeta,
+        argValues: [databasePath, profileId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiProfilesSetActiveLocalProfileConstMeta =>
+      const TaskConstMeta(
+        debugName: "set_active_local_profile",
+        argNames: ["databasePath", "profileId"],
+      );
+
+  @override
+  DeviceProfileOperationResult crateApiDeviceProfilesSetLastUsedDeviceProfile({
+    required String databasePath,
+    required String playerId,
+    required String deviceProfileId,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          sse_encode_String(deviceProfileId, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_device_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeviceProfilesSetLastUsedDeviceProfileConstMeta,
+        argValues: [databasePath, playerId, deviceProfileId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDeviceProfilesSetLastUsedDeviceProfileConstMeta =>
+      const TaskConstMeta(
+        debugName: "set_last_used_device_profile",
+        argNames: ["databasePath", "playerId", "deviceProfileId"],
+      );
+
+  @override
+  SettingsOperationResult crateApiSettingsUpdateAppSettings({
+    required String databasePath,
+    required String settingsJson,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(settingsJson, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 17)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_settings_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSettingsUpdateAppSettingsConstMeta,
+        argValues: [databasePath, settingsJson],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSettingsUpdateAppSettingsConstMeta =>
+      const TaskConstMeta(
+        debugName: "update_app_settings",
+        argNames: ["databasePath", "settingsJson"],
+      );
+
+  @override
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesUpdateDeviceProfileSettings({
+    required String databasePath,
+    required String playerId,
+    required String deviceProfileId,
+    required double inputOffsetMs,
+    required VelocityCurveDto velocityCurve,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          sse_encode_String(deviceProfileId, serializer);
+          sse_encode_f_32(inputOffsetMs, serializer);
+          sse_encode_velocity_curve_dto(velocityCurve, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 18)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_device_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeviceProfilesUpdateDeviceProfileSettingsConstMeta,
+        argValues: [
+          databasePath,
+          playerId,
+          deviceProfileId,
+          inputOffsetMs,
+          velocityCurve,
+        ],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiDeviceProfilesUpdateDeviceProfileSettingsConstMeta =>
+      const TaskConstMeta(
+        debugName: "update_device_profile_settings",
+        argNames: [
+          "databasePath",
+          "playerId",
+          "deviceProfileId",
+          "inputOffsetMs",
+          "velocityCurve",
+        ],
+      );
+
+  @override
+  LocalProfileOperationResult crateApiProfilesUpdateLocalProfilePreferredView({
+    required String databasePath,
+    required String profileId,
+    required ProfilePracticeViewDto preferredView,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(profileId, serializer);
+          sse_encode_profile_practice_view_dto(preferredView, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 19)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_local_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiProfilesUpdateLocalProfilePreferredViewConstMeta,
+        argValues: [databasePath, profileId, preferredView],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiProfilesUpdateLocalProfilePreferredViewConstMeta =>
+      const TaskConstMeta(
+        debugName: "update_local_profile_preferred_view",
+        argNames: ["databasePath", "profileId", "preferredView"],
+      );
+
+  @override
+  DeviceProfileOperationResult
+  crateApiDeviceProfilesUpdatePersistedDeviceProfile({
+    required String databasePath,
+    required String playerId,
+    required String profileJson,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          sse_encode_String(profileJson, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 20)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_device_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeviceProfilesUpdatePersistedDeviceProfileConstMeta,
+        argValues: [databasePath, playerId, profileJson],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiDeviceProfilesUpdatePersistedDeviceProfileConstMeta =>
+      const TaskConstMeta(
+        debugName: "update_persisted_device_profile",
+        argNames: ["databasePath", "playerId", "profileJson"],
+      );
+
+  @override
+  LocalProfileOperationResult crateApiProfilesUpdatePlayerProfileName({
+    required String databasePath,
+    required String profileId,
+    required String name,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(profileId, serializer);
+          sse_encode_String(name, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 21)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_local_profile_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiProfilesUpdatePlayerProfileNameConstMeta,
+        argValues: [databasePath, profileId, name],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiProfilesUpdatePlayerProfileNameConstMeta =>
+      const TaskConstMeta(
+        debugName: "update_player_profile_name",
+        argNames: ["databasePath", "profileId", "name"],
+      );
+
+  @override
+  SettingsOperationResult crateApiSettingsUpdateProfileSettings({
+    required String databasePath,
+    required String playerId,
+    required String settingsUpdateJson,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(databasePath, serializer);
+          sse_encode_String(playerId, serializer);
+          sse_encode_String(settingsUpdateJson, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_settings_operation_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSettingsUpdateProfileSettingsConstMeta,
+        argValues: [databasePath, playerId, settingsUpdateJson],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSettingsUpdateProfileSettingsConstMeta =>
+      const TaskConstMeta(
+        debugName: "update_profile_settings",
+        argNames: ["databasePath", "playerId", "settingsUpdateJson"],
+      );
+
   @protected
   String dco_decode_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as String;
+  }
+
+  @protected
+  LocalProfileStateDto dco_decode_box_autoadd_local_profile_state_dto(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_local_profile_state_dto(raw);
+  }
+
+  @protected
+  DeviceProfileOperationResult dco_decode_device_profile_operation_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return DeviceProfileOperationResult(
+      profileJson: dco_decode_opt_String(arr[0]),
+      profilesJson: dco_decode_list_String(arr[1]),
+      error: dco_decode_opt_String(arr[2]),
+    );
+  }
+
+  @protected
+  double dco_decode_f_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
+  int dco_decode_i_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
   }
 
   @protected
@@ -216,9 +993,63 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<String> dco_decode_list_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_String).toList();
+  }
+
+  @protected
+  List<PlayerProfileDto> dco_decode_list_player_profile_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_player_profile_dto).toList();
+  }
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
+  }
+
+  @protected
+  LocalProfileOperationResult dco_decode_local_profile_operation_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return LocalProfileOperationResult(
+      state: dco_decode_opt_box_autoadd_local_profile_state_dto(arr[0]),
+      error: dco_decode_opt_String(arr[1]),
+    );
+  }
+
+  @protected
+  LocalProfileStateDto dco_decode_local_profile_state_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return LocalProfileStateDto(
+      profiles: dco_decode_list_player_profile_dto(arr[0]),
+      activeProfileId: dco_decode_opt_String(arr[1]),
+    );
+  }
+
+  @protected
+  String? dco_decode_opt_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_String(raw);
+  }
+
+  @protected
+  LocalProfileStateDto? dco_decode_opt_box_autoadd_local_profile_state_dto(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null
+        ? null
+        : dco_decode_box_autoadd_local_profile_state_dto(raw);
   }
 
   @protected
@@ -232,6 +1063,64 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       rustEntryNs: dco_decode_i_64(arr[1]),
       rustExitNs: dco_decode_i_64(arr[2]),
       engineEventCount: dco_decode_u_32(arr[3]),
+    );
+  }
+
+  @protected
+  PlayerProfileDto dco_decode_player_profile_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return PlayerProfileDto(
+      id: dco_decode_String(arr[0]),
+      name: dco_decode_String(arr[1]),
+      avatar: dco_decode_opt_String(arr[2]),
+      experienceLevel: dco_decode_profile_experience_level_dto(arr[3]),
+      preferredView: dco_decode_profile_practice_view_dto(arr[4]),
+      createdAt: dco_decode_String(arr[5]),
+      updatedAt: dco_decode_String(arr[6]),
+    );
+  }
+
+  @protected
+  PracticeAttemptOperationResult dco_decode_practice_attempt_operation_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return PracticeAttemptOperationResult(
+      attemptJson: dco_decode_opt_String(arr[0]),
+      attemptsJson: dco_decode_list_String(arr[1]),
+      error: dco_decode_opt_String(arr[2]),
+    );
+  }
+
+  @protected
+  ProfileExperienceLevelDto dco_decode_profile_experience_level_dto(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ProfileExperienceLevelDto.values[raw as int];
+  }
+
+  @protected
+  ProfilePracticeViewDto dco_decode_profile_practice_view_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ProfilePracticeViewDto.values[raw as int];
+  }
+
+  @protected
+  SettingsOperationResult dco_decode_settings_operation_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return SettingsOperationResult(
+      settingsJson: dco_decode_opt_String(arr[0]),
+      error: dco_decode_opt_String(arr[1]),
     );
   }
 
@@ -254,10 +1143,51 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  VelocityCurveDto dco_decode_velocity_curve_dto(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return VelocityCurveDto.values[raw as int];
+  }
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_list_prim_u_8_strict(deserializer);
     return utf8.decoder.convert(inner);
+  }
+
+  @protected
+  LocalProfileStateDto sse_decode_box_autoadd_local_profile_state_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_local_profile_state_dto(deserializer));
+  }
+
+  @protected
+  DeviceProfileOperationResult sse_decode_device_profile_operation_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_profileJson = sse_decode_opt_String(deserializer);
+    var var_profilesJson = sse_decode_list_String(deserializer);
+    var var_error = sse_decode_opt_String(deserializer);
+    return DeviceProfileOperationResult(
+      profileJson: var_profileJson,
+      profilesJson: var_profilesJson,
+      error: var_error,
+    );
+  }
+
+  @protected
+  double sse_decode_f_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getFloat32();
+  }
+
+  @protected
+  int sse_decode_i_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getInt32();
   }
 
   @protected
@@ -267,10 +1197,85 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <String>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_String(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<PlayerProfileDto> sse_decode_list_player_profile_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <PlayerProfileDto>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_player_profile_dto(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  LocalProfileOperationResult sse_decode_local_profile_operation_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_state = sse_decode_opt_box_autoadd_local_profile_state_dto(
+      deserializer,
+    );
+    var var_error = sse_decode_opt_String(deserializer);
+    return LocalProfileOperationResult(state: var_state, error: var_error);
+  }
+
+  @protected
+  LocalProfileStateDto sse_decode_local_profile_state_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_profiles = sse_decode_list_player_profile_dto(deserializer);
+    var var_activeProfileId = sse_decode_opt_String(deserializer);
+    return LocalProfileStateDto(
+      profiles: var_profiles,
+      activeProfileId: var_activeProfileId,
+    );
+  }
+
+  @protected
+  String? sse_decode_opt_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_String(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  LocalProfileStateDto? sse_decode_opt_box_autoadd_local_profile_state_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_local_profile_state_dto(deserializer));
+    } else {
+      return null;
+    }
   }
 
   @protected
@@ -287,6 +1292,75 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       rustEntryNs: var_rustEntryNs,
       rustExitNs: var_rustExitNs,
       engineEventCount: var_engineEventCount,
+    );
+  }
+
+  @protected
+  PlayerProfileDto sse_decode_player_profile_dto(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_name = sse_decode_String(deserializer);
+    var var_avatar = sse_decode_opt_String(deserializer);
+    var var_experienceLevel = sse_decode_profile_experience_level_dto(
+      deserializer,
+    );
+    var var_preferredView = sse_decode_profile_practice_view_dto(deserializer);
+    var var_createdAt = sse_decode_String(deserializer);
+    var var_updatedAt = sse_decode_String(deserializer);
+    return PlayerProfileDto(
+      id: var_id,
+      name: var_name,
+      avatar: var_avatar,
+      experienceLevel: var_experienceLevel,
+      preferredView: var_preferredView,
+      createdAt: var_createdAt,
+      updatedAt: var_updatedAt,
+    );
+  }
+
+  @protected
+  PracticeAttemptOperationResult sse_decode_practice_attempt_operation_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_attemptJson = sse_decode_opt_String(deserializer);
+    var var_attemptsJson = sse_decode_list_String(deserializer);
+    var var_error = sse_decode_opt_String(deserializer);
+    return PracticeAttemptOperationResult(
+      attemptJson: var_attemptJson,
+      attemptsJson: var_attemptsJson,
+      error: var_error,
+    );
+  }
+
+  @protected
+  ProfileExperienceLevelDto sse_decode_profile_experience_level_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return ProfileExperienceLevelDto.values[inner];
+  }
+
+  @protected
+  ProfilePracticeViewDto sse_decode_profile_practice_view_dto(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return ProfilePracticeViewDto.values[inner];
+  }
+
+  @protected
+  SettingsOperationResult sse_decode_settings_operation_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_settingsJson = sse_decode_opt_String(deserializer);
+    var var_error = sse_decode_opt_String(deserializer);
+    return SettingsOperationResult(
+      settingsJson: var_settingsJson,
+      error: var_error,
     );
   }
 
@@ -308,9 +1382,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  int sse_decode_i_32(SseDeserializer deserializer) {
+  VelocityCurveDto sse_decode_velocity_curve_dto(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getInt32();
+    var inner = sse_decode_i_32(deserializer);
+    return VelocityCurveDto.values[inner];
   }
 
   @protected
@@ -326,9 +1401,62 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_local_profile_state_dto(
+    LocalProfileStateDto self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_local_profile_state_dto(self, serializer);
+  }
+
+  @protected
+  void sse_encode_device_profile_operation_result(
+    DeviceProfileOperationResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_String(self.profileJson, serializer);
+    sse_encode_list_String(self.profilesJson, serializer);
+    sse_encode_opt_String(self.error, serializer);
+  }
+
+  @protected
+  void sse_encode_f_32(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putFloat32(self);
+  }
+
+  @protected
+  void sse_encode_i_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putInt32(self);
+  }
+
+  @protected
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putPlatformInt64(self);
+  }
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_String(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_player_profile_dto(
+    List<PlayerProfileDto> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_player_profile_dto(item, serializer);
+    }
   }
 
   @protected
@@ -342,6 +1470,49 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_local_profile_operation_result(
+    LocalProfileOperationResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_box_autoadd_local_profile_state_dto(self.state, serializer);
+    sse_encode_opt_String(self.error, serializer);
+  }
+
+  @protected
+  void sse_encode_local_profile_state_dto(
+    LocalProfileStateDto self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_player_profile_dto(self.profiles, serializer);
+    sse_encode_opt_String(self.activeProfileId, serializer);
+  }
+
+  @protected
+  void sse_encode_opt_String(String? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_String(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_local_profile_state_dto(
+    LocalProfileStateDto? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_local_profile_state_dto(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_phase_0_latency_rust_result(
     Phase0LatencyRustResult self,
     SseSerializer serializer,
@@ -351,6 +1522,60 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_64(self.rustEntryNs, serializer);
     sse_encode_i_64(self.rustExitNs, serializer);
     sse_encode_u_32(self.engineEventCount, serializer);
+  }
+
+  @protected
+  void sse_encode_player_profile_dto(
+    PlayerProfileDto self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.name, serializer);
+    sse_encode_opt_String(self.avatar, serializer);
+    sse_encode_profile_experience_level_dto(self.experienceLevel, serializer);
+    sse_encode_profile_practice_view_dto(self.preferredView, serializer);
+    sse_encode_String(self.createdAt, serializer);
+    sse_encode_String(self.updatedAt, serializer);
+  }
+
+  @protected
+  void sse_encode_practice_attempt_operation_result(
+    PracticeAttemptOperationResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_String(self.attemptJson, serializer);
+    sse_encode_list_String(self.attemptsJson, serializer);
+    sse_encode_opt_String(self.error, serializer);
+  }
+
+  @protected
+  void sse_encode_profile_experience_level_dto(
+    ProfileExperienceLevelDto self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_profile_practice_view_dto(
+    ProfilePracticeViewDto self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_settings_operation_result(
+    SettingsOperationResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_String(self.settingsJson, serializer);
+    sse_encode_opt_String(self.error, serializer);
   }
 
   @protected
@@ -371,9 +1596,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  void sse_encode_i_32(int self, SseSerializer serializer) {
+  void sse_encode_velocity_curve_dto(
+    VelocityCurveDto self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putInt32(self);
+    sse_encode_i_32(self.index, serializer);
   }
 
   @protected

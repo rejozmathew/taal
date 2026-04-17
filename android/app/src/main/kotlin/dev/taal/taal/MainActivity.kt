@@ -23,10 +23,14 @@ class MainActivity : FlutterActivity() {
     private var openedDevice: MidiDevice? = null
     private var openedOutputPort: MidiOutputPort? = null
     private var openedDeviceId: Int = -1
+    private var metronomeAudioController: MetronomeAudioController? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         midiManager = getSystemService(MidiManager::class.java)
+        metronomeAudioController = MetronomeAudioController(
+            flutterEngine.dartExecutor.binaryMessenger,
+        )
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -81,6 +85,8 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        metronomeAudioController?.dispose()
+        metronomeAudioController = null
         closeDevice()
         super.onDestroy()
     }

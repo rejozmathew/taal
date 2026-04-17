@@ -4,6 +4,7 @@ mod frb_generated;
 pub mod midi;
 pub mod runtime;
 pub mod scoring;
+pub mod storage;
 pub mod time;
 
 #[cfg(test)]

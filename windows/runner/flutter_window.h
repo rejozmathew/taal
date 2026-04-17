@@ -8,6 +8,7 @@
 
 #include "win32_window.h"
 #include "windows_midi_adapter.h"
+#include "windows_metronome_audio.h"
 
 // A window that does nothing but host a Flutter view.
 class FlutterWindow : public Win32Window {
@@ -31,6 +32,7 @@ class FlutterWindow : public Win32Window {
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
 
   std::unique_ptr<WindowsMidiAdapter> windows_midi_adapter_;
+  std::unique_ptr<WindowsMetronomeAudio> windows_metronome_audio_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

@@ -73,6 +73,20 @@ Reconnection matching uses: `(vendor_name, model_name)` as primary key. If two i
 
 Device profiles are **per-player-profile**. Each local player profile owns its own set of device mappings. This allows different users on the same machine to have different calibration offsets and velocity curves for the same physical kit.
 
+### P1-20 Device-Profile Settings
+
+The Settings screen may display the active device profile's mapping state, but the P1-20-owned editable device-profile settings are limited to:
+
+| Field | Owner | Default | P1-20 behavior |
+|-------|-------|---------|----------------|
+| `input_offset_ms` | Device profile | `0.0` | Manual latency slider writes the effective offset in the range `-50.0..=50.0` ms |
+| `dedupe_window_ms` | Device profile | `8.0` | Persisted with the profile; not required as a P1-20 control |
+| `velocity_curve` | Device profile | `VelocityCurve::Linear` | Velocity curve selector writes the selected curve |
+
+`input_offset_ms` is the single effective Phase 1 input offset used by the mapper. Auto-calibration and manual fine-tuning both update this same field; Phase 1 does not add a second stored manual-offset field.
+
+The selected active device profile is not stored inside `DeviceProfile`. It is profile-level settings state defined in `engine-api.md`, while reconnect lookup remains the per-player last-used device-profile mapping from P1-08.
+
 ---
 
 ## 2. Raw MIDI Event (Native → Rust)

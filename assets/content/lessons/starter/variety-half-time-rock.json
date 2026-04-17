@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441013",
+  "revision": "1.0.0",
+  "title": "Half-Time Rock",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 80.0 }] },
+  "lanes": [
+    { "lane_id": "kick", "events": [
+      { "event_id": "ht-k1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "ht-k2", "pos": { "bar": 1, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 88, "articulation": "normal" } },
+      { "event_id": "ht-k3", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } },
+      { "event_id": "ht-k4", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "ht-k5", "pos": { "bar": 2, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 88, "articulation": "normal" } },
+      { "event_id": "ht-k6", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } }
+    ] },
+    { "lane_id": "snare", "events": [
+      { "event_id": "ht-s1", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 100, "articulation": "normal" } },
+      { "event_id": "ht-s2", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 100, "articulation": "normal" } }
+    ] },
+    { "lane_id": "ride", "events": [
+      { "event_id": "ht-r1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 76, "articulation": "bow" } },
+      { "event_id": "ht-r2", "pos": { "bar": 1, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 68, "articulation": "bow" } },
+      { "event_id": "ht-r3", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 76, "articulation": "bow" } },
+      { "event_id": "ht-r4", "pos": { "bar": 1, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 68, "articulation": "bow" } },
+      { "event_id": "ht-r5", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 76, "articulation": "bow" } },
+      { "event_id": "ht-r6", "pos": { "bar": 1, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 68, "articulation": "bow" } },
+      { "event_id": "ht-r7", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 76, "articulation": "bow" } },
+      { "event_id": "ht-r8", "pos": { "bar": 1, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 68, "articulation": "bow" } },
+      { "event_id": "ht-r9", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 76, "articulation": "bow" } },
+      { "event_id": "ht-r10", "pos": { "bar": 2, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 68, "articulation": "bow" } },
+      { "event_id": "ht-r11", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 76, "articulation": "bow" } },
+      { "event_id": "ht-r12", "pos": { "bar": 2, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 68, "articulation": "bow" } },
+      { "event_id": "ht-r13", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 76, "articulation": "bow" } },
+      { "event_id": "ht-r14", "pos": { "bar": 2, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 68, "articulation": "bow" } },
+      { "event_id": "ht-r15", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 76, "articulation": "bow" } },
+      { "event_id": "ht-r16", "pos": { "bar": 2, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 68, "articulation": "bow" } }
+    ] }
+  ],
+  "sections": [{ "section_id": "main", "label": "Half-Time Groove", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 3, "beat": 1, "tick": 0 } }, "loopable": true }],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 80.0, "tempo_floor_bpm": 54.0 },
+  "metadata": { "difficulty": "intermediate", "tags": ["rock", "half-time"], "skills": ["groove.rock_basic", "timing.consistency"], "objectives": ["Feel the wide half-time snare while the ride keeps motion."], "prerequisites": ["Basic Rock Beat"], "estimated_minutes": 6 },
+  "scoring_profile_id": "score-standard-v1"
+}

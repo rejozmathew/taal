@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "id": "std-5pc-v1",
+  "family": "drums",
+  "variant": "kit",
+  "visual": {
+    "lane_slots": [
+      { "lane_id": "kick", "slot_id": "kick" },
+      { "lane_id": "snare", "slot_id": "snare" },
+      { "lane_id": "hihat", "slot_id": "hihat" },
+      { "lane_id": "ride", "slot_id": "ride" },
+      { "lane_id": "crash", "slot_id": "crash" },
+      { "lane_id": "tom_high", "slot_id": "tom_high" },
+      { "lane_id": "tom_low", "slot_id": "tom_low" },
+      { "lane_id": "tom_floor", "slot_id": "tom_floor" }
+    ]
+  },
+  "lanes": [
+    {
+      "lane_id": "kick",
+      "label": "Kick",
+      "midi_hints": [
+        { "hint_type": "note", "values": [35, 36] }
+      ],
+      "articulations": [
+        { "id": "normal", "label": "Normal", "midi_note": 36 }
+      ]
+    },
+    {
+      "lane_id": "snare",
+      "label": "Snare",
+      "midi_hints": [
+        { "hint_type": "note", "values": [37, 38, 40] }
+      ],
+      "articulations": [
+        { "id": "normal", "label": "Head", "midi_note": 38 },
+        { "id": "rim", "label": "Rim", "midi_note": 40 }
+      ]
+    },
+    {
+      "lane_id": "hihat",
+      "label": "Hi-Hat",
+      "midi_hints": [
+        { "hint_type": "note", "values": [42, 44, 46] },
+        { "hint_type": "cc", "values": [4] }
+      ],
+      "articulations": [
+        { "id": "closed", "label": "Closed", "midi_note": 42 },
+        { "id": "open", "label": "Open", "midi_note": 46 },
+        { "id": "pedal", "label": "Pedal", "midi_note": 44 }
+      ]
+    },
+    {
+      "lane_id": "ride",
+      "label": "Ride",
+      "midi_hints": [
+        { "hint_type": "note", "values": [51, 53, 59] }
+      ],
+      "articulations": [
+        { "id": "bow", "label": "Bow", "midi_note": 51 },
+        { "id": "bell", "label": "Bell", "midi_note": 53 }
+      ]
+    },
+    {
+      "lane_id": "crash",
+      "label": "Crash",
+      "midi_hints": [
+        { "hint_type": "note", "values": [49, 55, 57] }
+      ],
+      "articulations": [
+        { "id": "normal", "label": "Normal", "midi_note": 49 }
+      ]
+    },
+    {
+      "lane_id": "tom_high",
+      "label": "High Tom",
+      "midi_hints": [
+        { "hint_type": "note", "values": [48, 50] }
+      ],
+      "articulations": [
+        { "id": "normal", "label": "Normal", "midi_note": 50 }
+      ]
+    },
+    {
+      "lane_id": "tom_low",
+      "label": "Low Tom",
+      "midi_hints": [
+        { "hint_type": "note", "values": [45, 47] }
+      ],
+      "articulations": [
+        { "id": "normal", "label": "Normal", "midi_note": 47 }
+      ]
+    },
+    {
+      "lane_id": "tom_floor",
+      "label": "Floor Tom",
+      "midi_hints": [
+        { "hint_type": "note", "values": [41, 43] }
+      ],
+      "articulations": [
+        { "id": "normal", "label": "Normal", "midi_note": 43 }
+      ]
+    }
+  ]
+}

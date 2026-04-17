@@ -479,6 +479,11 @@ Task IDs remain stable references. Execute Phase 1 in the order below unless a b
 - MIDI recalibration accessible without leaving settings
 - Manual latency slider adjusts offset and stores in device profile
 
+**Contract note (CR-006):**
+- P1-20 settings persistence follows `docs/specs/engine-api.md` §10.
+- Device-profile-owned settings follow `docs/specs/midi-mapping.md` §1 "P1-20 Device-Profile Settings."
+- Auto-pause behavior is still implemented in P1-26; P1-20 only persists the toggle/default settings that P1-26 reads.
+
 ---
 
 ### P1-21: Practice Attempt Persistence
@@ -489,7 +494,7 @@ Task IDs remain stable references. Execute Phase 1 in the order below unless a b
 
 **Outputs:**
 - SQLite table matching PracticeAttempt struct
-- Write on session_stop
+- Write immediately after successful `session_stop`, using the returned `AttemptSummary` plus caller-supplied `PracticeAttemptContext`
 - Query: by player, by lesson, by date range, by course
 - Indexed for dashboard queries (player + time, player + lesson)
 
@@ -498,6 +503,7 @@ Task IDs remain stable references. Execute Phase 1 in the order below unless a b
 - Practice Mode attempts optionally stored (user setting)
 - Query returns correct results for date/lesson/player filters
 - Storage size reasonable (~1KB per attempt)
+- `session_stop(session) -> Result<AttemptSummary, SessionError>` remains unchanged; P1-21 uses the separate Rust storage API from `analytics-model.md`
 
 ---
 

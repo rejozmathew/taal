@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441008",
+  "revision": "1.0.0",
+  "title": "Ghost Note Backbeat",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 86.0 }] },
+  "lanes": [
+    { "lane_id": "kick", "events": [
+      { "event_id": "gn-k1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "gn-k2", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } },
+      { "event_id": "gn-k3", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "gn-k4", "pos": { "bar": 2, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 88, "articulation": "normal" } }
+    ] },
+    { "lane_id": "snare", "events": [
+      { "event_id": "gn-s1", "pos": { "bar": 1, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 38, "articulation": "normal" } },
+      { "event_id": "gn-s2", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "gn-s3", "pos": { "bar": 1, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 38, "articulation": "normal" } },
+      { "event_id": "gn-s4", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "gn-s5", "pos": { "bar": 2, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 38, "articulation": "normal" } },
+      { "event_id": "gn-s6", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "gn-s7", "pos": { "bar": 2, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 38, "articulation": "normal" } },
+      { "event_id": "gn-s8", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } }
+    ] },
+    { "lane_id": "hihat", "events": [
+      { "event_id": "gn-h1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "gn-h2", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "gn-h3", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "gn-h4", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "gn-h5", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "gn-h6", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "gn-h7", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "gn-h8", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } }
+    ] }
+  ],
+  "sections": [{ "section_id": "main", "label": "Main Groove", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 3, "beat": 1, "tick": 0 } }, "loopable": true }],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 86.0, "tempo_floor_bpm": 58.0 },
+  "metadata": { "difficulty": "intermediate", "tags": ["ghost-notes", "backbeat"], "skills": ["dynamics.ghost_notes", "timing.backbeat"], "objectives": ["Keep ghost notes light while the backbeat stays strong."], "prerequisites": ["Basic Rock Beat"], "estimated_minutes": 8 },
+  "scoring_profile_id": "score-standard-v1"
+}

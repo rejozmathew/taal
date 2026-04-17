@@ -91,6 +91,8 @@ fn session_resume(session: &mut Session) -> Result<(), SessionError>
 fn session_stop(session: &mut Session) -> Result<AttemptSummary, SessionError>
 ```
 
+Practice attempt persistence is intentionally outside the session lifecycle API. `session_stop(session)` remains a summary-only operation and must not accept player/content/device persistence context or perform SQLite I/O. P1-21 writes `PracticeAttempt` records through the separate Rust storage API defined in `analytics-model.md`, using the returned `AttemptSummary` plus `PracticeAttemptContext`.
+
 ### Input: SessionOpts
 ```rust
 pub struct SessionOpts {
@@ -278,3 +280,122 @@ Flow:
 3. Native audio layer schedules the click sample at the specified time using the platform's low-latency audio API (WASAPI/AAudio)
 
 The engine is the timing authority. The native audio layer is the sound output. The engine never produces audio directly.
+
+---
+
+## 10. Settings and Preferences Persistence (P1-20)
+
+P1-20 settings persistence is Rust-owned SQLite storage exposed to Flutter through `flutter_rust_bridge`. Flutter owns rendering, interaction, and applying returned values to UI/native adapters. Settings reads and writes are not part of the timing-sensitive session hot path.
+
+### Ownership Split
+
+| Level | Owns | Default |
+|-------|------|---------|
+| App-level | `last_active_profile_id` | `None` until a profile is created |
+| App-level | `audio_output_device_id` | `None` = platform default output device |
+| Profile-level | `preferred_view` | `PracticeView::NoteHighway` |
+| Profile-level | `theme` | `ThemePreference::System` |
+| Profile-level | `reduce_motion` | `false` |
+| Profile-level | `high_contrast` | `false` |
+| Profile-level | `metronome_volume` | `0.8` |
+| Profile-level | `metronome_click_sound` | `ClickSoundPreset::Classic` |
+| Profile-level | `auto_pause_enabled` | `false` |
+| Profile-level | `auto_pause_timeout_ms` | `3000` |
+| Profile-level | `record_practice_mode_attempts` | `true` |
+| Profile-level | `active_device_profile_id` | `None` until the player chooses or reconnects a device profile |
+| Device-profile-level | `input_offset_ms` | See `midi-mapping.md` |
+| Device-profile-level | `dedupe_window_ms` | See `midi-mapping.md` |
+| Device-profile-level | `velocity_curve` | See `midi-mapping.md` |
+
+Raw platform MIDI port handles are not authoritative persisted settings in Phase 1 because platform IDs can be unstable. The persisted MIDI selection is the player profile's `active_device_profile_id` plus the existing per-player last-used device-profile reconnect mapping.
+
+Profile identity remains in `PlayerProfile`. P1-20 profile-name editing updates `PlayerProfile.name`; switching/managing profiles uses the existing local-profile APIs.
+
+### Settings Types
+
+```rust
+pub struct AppSettings {
+    pub last_active_profile_id: Option<Uuid>,
+    pub audio_output_device_id: Option<String>,
+}
+
+pub struct ProfileSettings {
+    pub player_id: Uuid,
+    pub preferred_view: PracticeView,
+    pub theme: ThemePreference,
+    pub reduce_motion: bool,
+    pub high_contrast: bool,
+    pub metronome_volume: f32,               // 0.0..=1.0
+    pub metronome_click_sound: ClickSoundPreset,
+    pub auto_pause_enabled: bool,
+    pub auto_pause_timeout_ms: u32,          // milliseconds
+    pub record_practice_mode_attempts: bool,
+    pub active_device_profile_id: Option<Uuid>,
+    pub updated_at: DateTime,
+}
+
+pub struct ProfileSettingsUpdate {
+    pub preferred_view: PracticeView,
+    pub theme: ThemePreference,
+    pub reduce_motion: bool,
+    pub high_contrast: bool,
+    pub metronome_volume: f32,
+    pub metronome_click_sound: ClickSoundPreset,
+    pub auto_pause_enabled: bool,
+    pub auto_pause_timeout_ms: u32,
+    pub record_practice_mode_attempts: bool,
+    pub active_device_profile_id: Option<Uuid>,
+}
+
+pub enum ThemePreference { System, Light, Dark }
+pub enum ClickSoundPreset { Classic, Woodblock, HiHat }
+
+pub struct SettingsSnapshot {
+    pub app: AppSettings,
+    pub profile: ProfileSettings,
+}
+```
+
+`active_device_profile_id`, when present, must reference a `DeviceProfile` owned by the same player profile. If the referenced device profile is deleted, Rust storage must clear the profile setting or return `None` on the next settings read.
+
+### Rust Storage API Shape
+
+The storage layer must support:
+
+```rust
+fn load_settings_snapshot(player_id: Uuid) -> Result<SettingsSnapshot, StorageError>
+fn update_app_settings(settings: AppSettings) -> Result<AppSettings, StorageError>
+fn update_profile_settings(player_id: Uuid, update: ProfileSettingsUpdate) -> Result<ProfileSettings, StorageError>
+fn update_player_profile_name(player_id: Uuid, name: String) -> Result<PlayerProfile, StorageError>
+```
+
+Device-profile-owned settings are updated through the existing device-profile persistence boundary. P1-20 may expose a narrower helper, but it must preserve the `DeviceProfile` contract from `midi-mapping.md`:
+
+```rust
+fn update_device_profile_settings(
+    player_id: Uuid,
+    device_profile_id: Uuid,
+    input_offset_ms: f32,
+    velocity_curve: VelocityCurve,
+) -> Result<DeviceProfile, StorageError>
+```
+
+### Flutter Bridge Shape
+
+The `flutter_rust_bridge` layer may use DTOs or JSON, matching the existing profile and device-profile APIs. It must expose equivalent operations that accept the database path used by the existing Rust-owned SQLite stores:
+
+```rust
+fn load_settings_snapshot(database_path: String, player_id: String) -> SettingsOperationResult
+fn update_app_settings(database_path: String, settings_json: String) -> SettingsOperationResult
+fn update_profile_settings(database_path: String, player_id: String, settings_update_json: String) -> SettingsOperationResult
+fn update_player_profile_name(database_path: String, player_id: String, name: String) -> LocalProfileOperationResult
+fn update_device_profile_settings(
+    database_path: String,
+    player_id: String,
+    device_profile_id: String,
+    input_offset_ms: f32,
+    velocity_curve: VelocityCurveDto,
+) -> DeviceProfileOperationResult
+```
+
+Successful updates return the updated settings or profile/device-profile snapshot so Flutter can apply changes immediately without an app restart. Validation errors must be returned through the same result/error pattern as the existing profile and device-profile bridge APIs.

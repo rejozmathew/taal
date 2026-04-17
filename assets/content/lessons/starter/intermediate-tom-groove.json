@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441009",
+  "revision": "1.0.0",
+  "title": "Tom Groove Conversation",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 92.0 }] },
+  "lanes": [
+    { "lane_id": "kick", "events": [
+      { "event_id": "tg-k1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } },
+      { "event_id": "tg-k2", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } },
+      { "event_id": "tg-k3", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } },
+      { "event_id": "tg-k4", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } }
+    ] },
+    { "lane_id": "snare", "events": [
+      { "event_id": "tg-s1", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "tg-s2", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "tg-s3", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "tg-s4", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } }
+    ] },
+    { "lane_id": "tom_high", "events": [
+      { "event_id": "tg-th1", "pos": { "bar": 1, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 78, "articulation": "normal" } },
+      { "event_id": "tg-th2", "pos": { "bar": 2, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 78, "articulation": "normal" } }
+    ] },
+    { "lane_id": "tom_low", "events": [
+      { "event_id": "tg-tl1", "pos": { "bar": 1, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 80, "articulation": "normal" } },
+      { "event_id": "tg-tl2", "pos": { "bar": 2, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 80, "articulation": "normal" } }
+    ] },
+    { "lane_id": "hihat", "events": [
+      { "event_id": "tg-h1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "tg-h2", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "tg-h3", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "tg-h4", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "tg-h5", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "tg-h6", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "tg-h7", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "tg-h8", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } }
+    ] }
+  ],
+  "sections": [{ "section_id": "main", "label": "Main Groove", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 3, "beat": 1, "tick": 0 } }, "loopable": true }],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 92.0, "tempo_floor_bpm": 60.0 },
+  "metadata": { "difficulty": "intermediate", "tags": ["toms", "groove"], "skills": ["independence.4limb_basic", "fills.basic"], "objectives": ["Add tom answers without breaking the backbeat."], "prerequisites": ["Kick and Snare Space"], "estimated_minutes": 7 },
+  "scoring_profile_id": "score-standard-v1"
+}
+

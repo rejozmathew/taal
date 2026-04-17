@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441011",
+  "revision": "1.0.0",
+  "title": "Blues Shuffle Pocket",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 74.0 }] },
+  "lanes": [
+    { "lane_id": "kick", "events": [
+      { "event_id": "bs-k1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "bs-k2", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "bs-k3", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "bs-k4", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } }
+    ] },
+    { "lane_id": "snare", "events": [
+      { "event_id": "bs-s1", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } },
+      { "event_id": "bs-s2", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } },
+      { "event_id": "bs-s3", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } },
+      { "event_id": "bs-s4", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } }
+    ] },
+    { "lane_id": "ride", "events": [
+      { "event_id": "bs-r1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 74, "articulation": "bow" } },
+      { "event_id": "bs-r2", "pos": { "bar": 1, "beat": 1, "tick": 320 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "bow" } },
+      { "event_id": "bs-r3", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 74, "articulation": "bow" } },
+      { "event_id": "bs-r4", "pos": { "bar": 1, "beat": 2, "tick": 320 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "bow" } },
+      { "event_id": "bs-r5", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 74, "articulation": "bow" } },
+      { "event_id": "bs-r6", "pos": { "bar": 1, "beat": 3, "tick": 320 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "bow" } },
+      { "event_id": "bs-r7", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 74, "articulation": "bow" } },
+      { "event_id": "bs-r8", "pos": { "bar": 1, "beat": 4, "tick": 320 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "bow" } },
+      { "event_id": "bs-r9", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 74, "articulation": "bow" } },
+      { "event_id": "bs-r10", "pos": { "bar": 2, "beat": 1, "tick": 320 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "bow" } },
+      { "event_id": "bs-r11", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 74, "articulation": "bow" } },
+      { "event_id": "bs-r12", "pos": { "bar": 2, "beat": 2, "tick": 320 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "bow" } },
+      { "event_id": "bs-r13", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 74, "articulation": "bow" } },
+      { "event_id": "bs-r14", "pos": { "bar": 2, "beat": 3, "tick": 320 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "bow" } },
+      { "event_id": "bs-r15", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 74, "articulation": "bow" } },
+      { "event_id": "bs-r16", "pos": { "bar": 2, "beat": 4, "tick": 320 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "bow" } }
+    ] }
+  ],
+  "sections": [{ "section_id": "main", "label": "Shuffle Groove", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 3, "beat": 1, "tick": 0 } }, "loopable": true }],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 74.0, "tempo_floor_bpm": 52.0 },
+  "metadata": { "difficulty": "intermediate", "tags": ["blues", "shuffle"], "skills": ["feel.shuffle", "timing.consistency"], "objectives": ["Settle into a long-short shuffle pulse on the ride."], "prerequisites": [], "estimated_minutes": 7 },
+  "scoring_profile_id": "score-standard-v1"
+}
+

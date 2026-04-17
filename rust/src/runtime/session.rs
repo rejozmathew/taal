@@ -142,9 +142,17 @@ pub struct Session {
     events: VecDeque<EngineEvent>,
     expected_status: Vec<ExpectedStatus>,
     pulse_emitted: Vec<bool>,
+    metronome_clicks: Vec<MetronomeScheduleEntry>,
+    next_metronome_index: usize,
     scoring: ScoringEngine,
     last_timeline_ms: i64,
     summary: Option<AttemptSummary>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct MetronomeScheduleEntry {
+    t_ms: i64,
+    accent: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -195,6 +203,7 @@ impl Session {
         for event in &compiled.events {
             *lane_counts.entry(event.lane_id.clone()).or_insert(0) += 1;
         }
+        let metronome_clicks = build_metronome_schedule(compiled);
 
         Self {
             compiled: compiled.clone(),
@@ -203,6 +212,8 @@ impl Session {
             events: VecDeque::new(),
             expected_status: vec![ExpectedStatus::Pending; compiled.events.len()],
             pulse_emitted: vec![false; compiled.events.len()],
+            metronome_clicks,
+            next_metronome_index: 0,
             scoring: ScoringEngine::new(&compiled.scoring_profile, lane_counts),
             last_timeline_ms: 0,
             summary: None,
@@ -288,6 +299,7 @@ impl Session {
         let now_ms = self.timestamp_to_timeline_ms(now_ns);
         self.last_timeline_ms = self.last_timeline_ms.max(now_ms.round() as i64);
         self.emit_expected_pulses(now_ms);
+        self.emit_metronome_clicks(now_ms);
         let miss_cutoff_ms =
             now_ms - f64::from(self.compiled.scoring_profile.timing_windows_ms.outer_ms);
 
@@ -394,6 +406,30 @@ impl Session {
         }
     }
 
+    fn emit_metronome_clicks(&mut self, now_ms: f64) {
+        let lookahead_end_ms = now_ms + self.opts.lookahead_ms.max(0) as f64;
+        while let Some(click) = self
+            .metronome_clicks
+            .get(self.next_metronome_index)
+            .copied()
+        {
+            if (click.t_ms as f64) < now_ms {
+                self.next_metronome_index += 1;
+                continue;
+            }
+
+            if (click.t_ms as f64) > lookahead_end_ms {
+                break;
+            }
+
+            self.next_metronome_index += 1;
+            self.push_event(EngineEvent::MetronomeClick {
+                t_ms: click.t_ms,
+                accent: click.accent,
+            });
+        }
+    }
+
     fn build_summary(&self) -> AttemptSummary {
         self.scoring.summary(
             self.compiled.lesson_id,
@@ -449,6 +485,40 @@ impl Session {
             });
         }
     }
+}
+
+fn build_metronome_schedule(compiled: &CompiledLesson) -> Vec<MetronomeScheduleEntry> {
+    if compiled.total_duration_ms <= 0 {
+        return Vec::new();
+    }
+
+    let time_signature = compiled.timing_index.time_signature();
+    let ticks_per_beat = compiled.timing_index.ticks_per_beat();
+    let mut pos = MusicalPos::new(1, 1, 0);
+    let mut clicks = Vec::new();
+
+    loop {
+        let Ok(t_ms) = compiled.timing_index.pos_to_ms(pos) else {
+            break;
+        };
+        if !t_ms.is_finite() || t_ms >= compiled.total_duration_ms as f64 {
+            break;
+        }
+
+        clicks.push(MetronomeScheduleEntry {
+            t_ms: t_ms.round() as i64,
+            accent: pos.beat == 1,
+        });
+
+        let Ok(next_pos) =
+            pos.checked_add_ticks(i64::from(ticks_per_beat), time_signature, ticks_per_beat)
+        else {
+            break;
+        };
+        pos = next_pos;
+    }
+
+    clicks
 }
 
 // Phase 0 compatibility helpers used by the latency bridge.

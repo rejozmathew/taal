@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::{self, Display};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 pub type DateTime = String;
@@ -11,7 +11,7 @@ const DEFAULT_DEDUPE_WINDOW_MS: f32 = 8.0;
 const DEFAULT_MIN_VELOCITY: u8 = 1;
 const DEFAULT_MAX_VELOCITY: u8 = 127;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RawMidiEventType {
     NoteOn,
@@ -19,7 +19,7 @@ pub enum RawMidiEventType {
     ControlChange,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct RawMidiEvent {
     pub event_type: RawMidiEventType,
@@ -29,7 +29,7 @@ pub struct RawMidiEvent {
     pub timestamp_ns: i128,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct DeviceProfile {
     pub id: Uuid,
@@ -85,7 +85,7 @@ impl DeviceProfile {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct DeviceFingerprint {
     pub vendor_name: Option<String>,
@@ -93,7 +93,7 @@ pub struct DeviceFingerprint {
     pub platform_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MidiTransport {
     Usb,
@@ -101,7 +101,7 @@ pub enum MidiTransport {
     Virtual,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum VelocityCurve {
     Linear,
@@ -110,7 +110,7 @@ pub enum VelocityCurve {
     Custom(Vec<(u8, u8)>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NoteMapping {
     pub midi_note: u8,
@@ -138,7 +138,7 @@ impl NoteMapping {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct HiHatModel {
     pub source_cc: u8,
@@ -189,7 +189,7 @@ impl HiHatModel {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct HiHatThreshold {
     pub max_cc_value: u8,

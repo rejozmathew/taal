@@ -3,6 +3,10 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/device_profiles.dart';
+import 'api/practice_attempts.dart';
+import 'api/profiles.dart';
+import 'api/settings.dart';
 import 'api/simple.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -22,13 +26,70 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  LocalProfileStateDto dco_decode_box_autoadd_local_profile_state_dto(
+    dynamic raw,
+  );
+
+  @protected
+  DeviceProfileOperationResult dco_decode_device_profile_operation_result(
+    dynamic raw,
+  );
+
+  @protected
+  double dco_decode_f_32(dynamic raw);
+
+  @protected
+  int dco_decode_i_32(dynamic raw);
+
+  @protected
   PlatformInt64 dco_decode_i_64(dynamic raw);
+
+  @protected
+  List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
+  List<PlayerProfileDto> dco_decode_list_player_profile_dto(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  LocalProfileOperationResult dco_decode_local_profile_operation_result(
+    dynamic raw,
+  );
+
+  @protected
+  LocalProfileStateDto dco_decode_local_profile_state_dto(dynamic raw);
+
+  @protected
+  String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  LocalProfileStateDto? dco_decode_opt_box_autoadd_local_profile_state_dto(
+    dynamic raw,
+  );
+
+  @protected
   Phase0LatencyRustResult dco_decode_phase_0_latency_rust_result(dynamic raw);
+
+  @protected
+  PlayerProfileDto dco_decode_player_profile_dto(dynamic raw);
+
+  @protected
+  PracticeAttemptOperationResult dco_decode_practice_attempt_operation_result(
+    dynamic raw,
+  );
+
+  @protected
+  ProfileExperienceLevelDto dco_decode_profile_experience_level_dto(
+    dynamic raw,
+  );
+
+  @protected
+  ProfilePracticeViewDto dco_decode_profile_practice_view_dto(dynamic raw);
+
+  @protected
+  SettingsOperationResult dco_decode_settings_operation_result(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -40,16 +101,84 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void dco_decode_unit(dynamic raw);
 
   @protected
+  VelocityCurveDto dco_decode_velocity_curve_dto(dynamic raw);
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer);
+
+  @protected
+  LocalProfileStateDto sse_decode_box_autoadd_local_profile_state_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DeviceProfileOperationResult sse_decode_device_profile_operation_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  double sse_decode_f_32(SseDeserializer deserializer);
+
+  @protected
+  int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
   @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<PlayerProfileDto> sse_decode_list_player_profile_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  LocalProfileOperationResult sse_decode_local_profile_operation_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalProfileStateDto sse_decode_local_profile_state_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  LocalProfileStateDto? sse_decode_opt_box_autoadd_local_profile_state_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   Phase0LatencyRustResult sse_decode_phase_0_latency_rust_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PlayerProfileDto sse_decode_player_profile_dto(SseDeserializer deserializer);
+
+  @protected
+  PracticeAttemptOperationResult sse_decode_practice_attempt_operation_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ProfileExperienceLevelDto sse_decode_profile_experience_level_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ProfilePracticeViewDto sse_decode_profile_practice_view_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SettingsOperationResult sse_decode_settings_operation_result(
     SseDeserializer deserializer,
   );
 
@@ -63,7 +192,7 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_decode_unit(SseDeserializer deserializer);
 
   @protected
-  int sse_decode_i_32(SseDeserializer deserializer);
+  VelocityCurveDto sse_decode_velocity_curve_dto(SseDeserializer deserializer);
 
   @protected
   bool sse_decode_bool(SseDeserializer deserializer);
@@ -72,7 +201,34 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_local_profile_state_dto(
+    LocalProfileStateDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_device_profile_operation_result(
+    DeviceProfileOperationResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_f_32(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_player_profile_dto(
+    List<PlayerProfileDto> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_prim_u_8_strict(
@@ -81,8 +237,59 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_local_profile_operation_result(
+    LocalProfileOperationResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_local_profile_state_dto(
+    LocalProfileStateDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_local_profile_state_dto(
+    LocalProfileStateDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_phase_0_latency_rust_result(
     Phase0LatencyRustResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_player_profile_dto(
+    PlayerProfileDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_practice_attempt_operation_result(
+    PracticeAttemptOperationResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_profile_experience_level_dto(
+    ProfileExperienceLevelDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_profile_practice_view_dto(
+    ProfilePracticeViewDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_settings_operation_result(
+    SettingsOperationResult self,
     SseSerializer serializer,
   );
 
@@ -96,7 +303,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_unit(void self, SseSerializer serializer);
 
   @protected
-  void sse_encode_i_32(int self, SseSerializer serializer);
+  void sse_encode_velocity_curve_dto(
+    VelocityCurveDto self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_bool(bool self, SseSerializer serializer);

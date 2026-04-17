@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::content::{GradeWeights, PracticeMode, ScoringProfile, TimingWindows};
 use crate::runtime::session::Grade;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AttemptSummary {
     pub lesson_id: Uuid,
     pub mode: PracticeMode,
@@ -26,7 +27,7 @@ pub struct AttemptSummary {
     pub lane_stats: HashMap<String, LaneStats>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct LaneStats {
     pub hit_rate_pct: f32,
     pub miss_pct: f32,

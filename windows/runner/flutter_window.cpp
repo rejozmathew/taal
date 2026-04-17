@@ -27,6 +27,8 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   windows_midi_adapter_ = std::make_unique<WindowsMidiAdapter>(
       flutter_controller_->engine()->messenger(), GetHandle());
+  windows_metronome_audio_ = std::make_unique<WindowsMetronomeAudio>(
+      flutter_controller_->engine()->messenger());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -42,6 +44,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  windows_metronome_audio_ = nullptr;
   windows_midi_adapter_ = nullptr;
 
   if (flutter_controller_) {

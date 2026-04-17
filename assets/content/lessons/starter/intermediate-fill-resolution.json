@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441010",
+  "revision": "1.0.0",
+  "title": "Four-Beat Fill Resolution",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 82.0 }] },
+  "lanes": [
+    { "lane_id": "snare", "events": [
+      { "event_id": "fr-s1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 86, "articulation": "normal" } },
+      { "event_id": "fr-s2", "pos": { "bar": 1, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 78, "articulation": "normal" } },
+      { "event_id": "fr-s3", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 86, "articulation": "normal" } }
+    ] },
+    { "lane_id": "tom_high", "events": [
+      { "event_id": "fr-th1", "pos": { "bar": 1, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 82, "articulation": "normal" } },
+      { "event_id": "fr-th2", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 82, "articulation": "normal" } }
+    ] },
+    { "lane_id": "tom_low", "events": [
+      { "event_id": "fr-tl1", "pos": { "bar": 1, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 84, "articulation": "normal" } },
+      { "event_id": "fr-tl2", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 84, "articulation": "normal" } }
+    ] },
+    { "lane_id": "tom_floor", "events": [
+      { "event_id": "fr-tf1", "pos": { "bar": 1, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 88, "articulation": "normal" } }
+    ] },
+    { "lane_id": "kick", "events": [
+      { "event_id": "fr-k1", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } }
+    ] },
+    { "lane_id": "crash", "events": [
+      { "event_id": "fr-c1", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 100, "articulation": "normal" } }
+    ] }
+  ],
+  "sections": [{ "section_id": "fill", "label": "Fill and Resolve", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 3, "beat": 1, "tick": 0 } }, "loopable": true }],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 82.0, "tempo_floor_bpm": 54.0 },
+  "metadata": { "difficulty": "intermediate", "tags": ["fill", "transition"], "skills": ["fills.16ths_basic", "transitions.crash_on_1"], "objectives": ["Play a full-bar fill and resolve cleanly on beat 1."], "prerequisites": ["First Two-Tom Fill"], "estimated_minutes": 8 },
+  "scoring_profile_id": "score-standard-v1"
+}

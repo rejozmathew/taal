@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441012",
+  "revision": "1.0.0",
+  "title": "Pocket Funk Groove",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 88.0 }] },
+  "lanes": [
+    { "lane_id": "kick", "events": [
+      { "event_id": "fg-k1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "fg-k2", "pos": { "bar": 1, "beat": 1, "tick": 360 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 86, "articulation": "normal" } },
+      { "event_id": "fg-k3", "pos": { "bar": 1, "beat": 3, "tick": 120 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } },
+      { "event_id": "fg-k4", "pos": { "bar": 1, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 88, "articulation": "normal" } }
+    ] },
+    { "lane_id": "snare", "events": [
+      { "event_id": "fg-s1", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "fg-s2", "pos": { "bar": 1, "beat": 3, "tick": 360 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 40, "articulation": "normal" } },
+      { "event_id": "fg-s3", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } }
+    ] },
+    { "lane_id": "hihat", "events": [
+      { "event_id": "fg-h1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "fg-h2", "pos": { "bar": 1, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "fg-h3", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "fg-h4", "pos": { "bar": 1, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "fg-h5", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "fg-h6", "pos": { "bar": 1, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "fg-h7", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "fg-h8", "pos": { "bar": 1, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } }
+    ] }
+  ],
+  "sections": [{ "section_id": "main", "label": "Funk Groove", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 2, "beat": 1, "tick": 0 } }, "loopable": true }],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 88.0, "tempo_floor_bpm": 58.0 },
+  "metadata": { "difficulty": "intermediate", "tags": ["funk", "syncopation"], "skills": ["groove.funk_basic", "dynamics.ghost_notes"], "objectives": ["Keep the pocket steady while ghosting into the backbeat."], "prerequisites": ["Ghost Note Backbeat"], "estimated_minutes": 8 },
+  "scoring_profile_id": "score-standard-v1"
+}
+

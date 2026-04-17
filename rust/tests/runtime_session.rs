@@ -267,10 +267,79 @@ fn tick_emits_expected_pulse_for_lookahead_window() {
 
     assert_eq!(
         drain_events(&mut session, 8),
-        vec![EngineEvent::ExpectedPulse {
-            expected_id: "kick-1".to_owned(),
-            lane_id: "kick".to_owned(),
-            t_expected_ms: 0,
+        vec![
+            EngineEvent::ExpectedPulse {
+                expected_id: "kick-1".to_owned(),
+                lane_id: "kick".to_owned(),
+                t_expected_ms: 0,
+            },
+            EngineEvent::MetronomeClick {
+                t_ms: 0,
+                accent: true,
+            },
+        ]
+    );
+}
+
+#[test]
+fn tick_emits_metronome_clicks_for_lookahead_window() {
+    let compiled = compiled_fixture();
+    let mut opts = SessionOpts::new(PracticeMode::Practice, 120.0, START_NS);
+    opts.lookahead_ms = 1100;
+    let mut session = session_start(&compiled, opts);
+
+    session_tick(&mut session, START_NS).unwrap();
+
+    let events = drain_events(&mut session, 16);
+    let clicks = events
+        .into_iter()
+        .filter(|event| matches!(event, EngineEvent::MetronomeClick { .. }))
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        clicks,
+        vec![
+            EngineEvent::MetronomeClick {
+                t_ms: 0,
+                accent: true,
+            },
+            EngineEvent::MetronomeClick {
+                t_ms: 500,
+                accent: false,
+            },
+            EngineEvent::MetronomeClick {
+                t_ms: 1000,
+                accent: false,
+            },
+        ]
+    );
+}
+
+#[test]
+fn metronome_clicks_are_emitted_once() {
+    let compiled = compiled_fixture();
+    let mut opts = SessionOpts::new(PracticeMode::Practice, 120.0, START_NS);
+    opts.lookahead_ms = 600;
+    let mut session = session_start(&compiled, opts);
+
+    session_tick(&mut session, START_NS).unwrap();
+    let first_batch = drain_events(&mut session, 16)
+        .into_iter()
+        .filter(|event| matches!(event, EngineEvent::MetronomeClick { .. }))
+        .collect::<Vec<_>>();
+
+    session_tick(&mut session, START_NS + 500_000_000).unwrap();
+    let second_batch = drain_events(&mut session, 16)
+        .into_iter()
+        .filter(|event| matches!(event, EngineEvent::MetronomeClick { .. }))
+        .collect::<Vec<_>>();
+
+    assert_eq!(first_batch.len(), 2);
+    assert_eq!(
+        second_batch,
+        vec![EngineEvent::MetronomeClick {
+            t_ms: 1000,
+            accent: false,
         }]
     );
 }

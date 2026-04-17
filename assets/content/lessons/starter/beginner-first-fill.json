@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441004",
+  "revision": "1.0.0",
+  "title": "First Two-Tom Fill",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 88.0 }] },
+  "lanes": [
+    { "lane_id": "kick", "events": [
+      { "event_id": "ff-k1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } },
+      { "event_id": "ff-k2", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } },
+      { "event_id": "ff-k3", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } }
+    ] },
+    { "lane_id": "snare", "events": [
+      { "event_id": "ff-s1", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } },
+      { "event_id": "ff-s2", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } },
+      { "event_id": "ff-s3", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 84, "articulation": "normal" } }
+    ] },
+    { "lane_id": "hihat", "events": [
+      { "event_id": "ff-h1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "ff-h2", "pos": { "bar": 1, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 66, "articulation": "closed" } },
+      { "event_id": "ff-h3", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "ff-h4", "pos": { "bar": 1, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 66, "articulation": "closed" } },
+      { "event_id": "ff-h5", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "ff-h6", "pos": { "bar": 1, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 66, "articulation": "closed" } },
+      { "event_id": "ff-h7", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "ff-h8", "pos": { "bar": 1, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 66, "articulation": "closed" } }
+    ] },
+    { "lane_id": "tom_high", "events": [
+      { "event_id": "ff-th1", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 82, "articulation": "normal" } }
+    ] },
+    { "lane_id": "tom_low", "events": [
+      { "event_id": "ff-tl1", "pos": { "bar": 2, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 82, "articulation": "normal" } }
+    ] },
+    { "lane_id": "tom_floor", "events": [
+      { "event_id": "ff-tf1", "pos": { "bar": 2, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 86, "articulation": "normal" } }
+    ] },
+    { "lane_id": "crash", "events": [
+      { "event_id": "ff-c1", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 98, "articulation": "normal" } }
+    ] }
+  ],
+  "sections": [
+    { "section_id": "groove", "label": "Groove", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 2, "beat": 1, "tick": 0 } }, "loopable": true },
+    { "section_id": "fill", "label": "Fill", "range": { "start": { "bar": 2, "beat": 1, "tick": 0 }, "end": { "bar": 3, "beat": 1, "tick": 0 } }, "loopable": true }
+  ],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 88.0, "tempo_floor_bpm": 56.0 },
+  "metadata": { "difficulty": "beginner", "tags": ["fill", "rock"], "skills": ["fills.basic", "transitions.crash_on_1"], "objectives": ["Move from groove to a simple tom fill and land on the crash."], "prerequisites": [], "estimated_minutes": 6 },
+  "scoring_profile_id": "score-standard-v1"
+}

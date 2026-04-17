@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441006",
+  "revision": "1.0.0",
+  "title": "Sixteenth Hat Grid",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 78.0 }] },
+  "lanes": [
+    { "lane_id": "kick", "events": [
+      { "event_id": "sh-k1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "sh-k2", "pos": { "bar": 1, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 88, "articulation": "normal" } },
+      { "event_id": "sh-k3", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "sh-k4", "pos": { "bar": 1, "beat": 4, "tick": 120 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 86, "articulation": "normal" } }
+    ] },
+    { "lane_id": "snare", "events": [
+      { "event_id": "sh-s1", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "sh-s2", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } }
+    ] },
+    { "lane_id": "hihat", "events": [
+      { "event_id": "sh-h1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "sh-h2", "pos": { "bar": 1, "beat": 1, "tick": 120 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 58, "articulation": "closed" } },
+      { "event_id": "sh-h3", "pos": { "bar": 1, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sh-h4", "pos": { "bar": 1, "beat": 1, "tick": 360 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 58, "articulation": "closed" } },
+      { "event_id": "sh-h5", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "sh-h6", "pos": { "bar": 1, "beat": 2, "tick": 120 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 58, "articulation": "closed" } },
+      { "event_id": "sh-h7", "pos": { "bar": 1, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sh-h8", "pos": { "bar": 1, "beat": 2, "tick": 360 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 58, "articulation": "closed" } },
+      { "event_id": "sh-h9", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "sh-h10", "pos": { "bar": 1, "beat": 3, "tick": 120 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 58, "articulation": "closed" } },
+      { "event_id": "sh-h11", "pos": { "bar": 1, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sh-h12", "pos": { "bar": 1, "beat": 3, "tick": 360 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 58, "articulation": "closed" } },
+      { "event_id": "sh-h13", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 70, "articulation": "closed" } },
+      { "event_id": "sh-h14", "pos": { "bar": 1, "beat": 4, "tick": 120 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 58, "articulation": "closed" } },
+      { "event_id": "sh-h15", "pos": { "bar": 1, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sh-h16", "pos": { "bar": 1, "beat": 4, "tick": 360 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 58, "articulation": "closed" } }
+    ] }
+  ],
+  "sections": [{ "section_id": "main", "label": "One-Bar Grid", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 2, "beat": 1, "tick": 0 } }, "loopable": true }],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 78.0, "tempo_floor_bpm": 54.0 },
+  "metadata": { "difficulty": "intermediate", "tags": ["sixteenths", "hihat"], "skills": ["subdivision.16ths", "timing.consistency"], "objectives": ["Keep sixteenth-note hi-hats even while placing syncopated kicks."], "prerequisites": ["Basic Rock Beat"], "estimated_minutes": 7 },
+  "scoring_profile_id": "score-standard-v1"
+}

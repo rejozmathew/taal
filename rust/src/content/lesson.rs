@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use serde::{de, Deserialize, Deserializer};
+use serde::{de, Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use uuid::Uuid;
 
@@ -364,7 +364,7 @@ impl PracticeDefaults {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PracticeMode {
     Practice,

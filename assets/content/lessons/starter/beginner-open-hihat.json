@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441005",
+  "revision": "1.0.0",
+  "title": "Open Hi-Hat Lift",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 90.0 }] },
+  "lanes": [
+    { "lane_id": "kick", "events": [
+      { "event_id": "oh-k1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "oh-k2", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "oh-k3", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } },
+      { "event_id": "oh-k4", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 92, "articulation": "normal" } }
+    ] },
+    { "lane_id": "snare", "events": [
+      { "event_id": "oh-s1", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "oh-s2", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "oh-s3", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "oh-s4", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } }
+    ] },
+    { "lane_id": "hihat", "events": [
+      { "event_id": "oh-h1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "oh-h2", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "oh-h3", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "oh-h4", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 78, "articulation": "open" } },
+      { "event_id": "oh-h5", "pos": { "bar": 1, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 62, "articulation": "closed" } },
+      { "event_id": "oh-h6", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "oh-h7", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "oh-h8", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "oh-h9", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 78, "articulation": "open" } },
+      { "event_id": "oh-h10", "pos": { "bar": 2, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 62, "articulation": "closed" } }
+    ] }
+  ],
+  "sections": [{ "section_id": "main", "label": "Main Groove", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 3, "beat": 1, "tick": 0 } }, "loopable": true }],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 90.0, "tempo_floor_bpm": 58.0 },
+  "metadata": { "difficulty": "beginner", "tags": ["hihat", "rock"], "skills": ["hihat.open_close_control", "timing.backbeat"], "objectives": ["Open the hi-hat on beat 4 and close it cleanly on the and."], "prerequisites": [], "estimated_minutes": 5 },
+  "scoring_profile_id": "score-standard-v1"
+}
+

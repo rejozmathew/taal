@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655441007",
+  "revision": "1.0.0",
+  "title": "Syncopated Kick Push",
+  "instrument": { "family": "drums", "variant": "kit", "layout_id": "std-5pc-v1" },
+  "timing": { "time_signature": { "num": 4, "den": 4 }, "ticks_per_beat": 480, "tempo_map": [{ "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 98.0 }] },
+  "lanes": [
+    { "lane_id": "kick", "events": [
+      { "event_id": "sk-k1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } },
+      { "event_id": "sk-k2", "pos": { "bar": 1, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 88, "articulation": "normal" } },
+      { "event_id": "sk-k3", "pos": { "bar": 1, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } },
+      { "event_id": "sk-k4", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 94, "articulation": "normal" } },
+      { "event_id": "sk-k5", "pos": { "bar": 2, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 88, "articulation": "normal" } },
+      { "event_id": "sk-k6", "pos": { "bar": 2, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } }
+    ] },
+    { "lane_id": "snare", "events": [
+      { "event_id": "sk-s1", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "sk-s2", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "sk-s3", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } },
+      { "event_id": "sk-s4", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 96, "articulation": "normal" } }
+    ] },
+    { "lane_id": "hihat", "events": [
+      { "event_id": "sk-h1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "sk-h2", "pos": { "bar": 1, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sk-h3", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "sk-h4", "pos": { "bar": 1, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sk-h5", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "sk-h6", "pos": { "bar": 1, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sk-h7", "pos": { "bar": 1, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "sk-h8", "pos": { "bar": 1, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sk-h9", "pos": { "bar": 2, "beat": 1, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "sk-h10", "pos": { "bar": 2, "beat": 1, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sk-h11", "pos": { "bar": 2, "beat": 2, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "sk-h12", "pos": { "bar": 2, "beat": 2, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sk-h13", "pos": { "bar": 2, "beat": 3, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "sk-h14", "pos": { "bar": 2, "beat": 3, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } },
+      { "event_id": "sk-h15", "pos": { "bar": 2, "beat": 4, "tick": 0 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 72, "articulation": "closed" } },
+      { "event_id": "sk-h16", "pos": { "bar": 2, "beat": 4, "tick": 240 }, "duration_ticks": 0, "payload": { "type": "hit", "velocity": 64, "articulation": "closed" } }
+    ] }
+  ],
+  "sections": [{ "section_id": "main", "label": "Main Groove", "range": { "start": { "bar": 1, "beat": 1, "tick": 0 }, "end": { "bar": 3, "beat": 1, "tick": 0 } }, "loopable": true }],
+  "practice": { "modes_supported": ["practice", "play"], "count_in_bars": 1, "metronome_enabled": true, "start_tempo_bpm": 98.0, "tempo_floor_bpm": 64.0 },
+  "metadata": { "difficulty": "intermediate", "tags": ["syncopation", "rock"], "skills": ["independence.kick_hihat", "subdivision.8ths"], "objectives": ["Place pushed kick notes between steady hi-hats."], "prerequisites": ["Basic Rock Beat"], "estimated_minutes": 7 },
+  "scoring_profile_id": "score-standard-v1"
+}
+

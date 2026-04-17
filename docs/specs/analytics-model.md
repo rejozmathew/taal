@@ -66,11 +66,50 @@ pub struct LaneStats {
     pub mean_delta_ms: f32,
     pub std_delta_ms: f32,
 }
+
+pub struct PracticeAttemptContext {
+    pub player_id: Uuid,
+
+    // Content context not produced by AttemptSummary
+    pub course_id: Option<Uuid>,
+    pub course_node_id: Option<String>,
+    pub section_id: Option<String>,
+
+    // Session context not produced by AttemptSummary
+    pub time_sig_num: u8,
+    pub time_sig_den: u8,
+    pub device_profile_id: Option<Uuid>,
+    pub instrument_family: String,
+
+    // Snapshot fields copied at time of attempt
+    pub lesson_title: String,
+    pub lesson_difficulty: Option<String>,
+    pub lesson_tags: Vec<String>,
+    pub lesson_skills: Vec<String>,
+
+    // Wall-clock context for history and analytics
+    pub started_at_utc: DateTime,
+    pub local_hour: u8,
+    pub local_dow: u8,
+}
 ```
 
 **Storage:** SQLite table. `lane_stats` stored as JSON column.
 
-**Write timing:** Written by Rust engine on `session_stop()`. The `AttemptSummary` from engine-api.md is the source; this struct adds context fields (lesson metadata snapshots, time context) that the UI layer provides at write time.
+**Write timing:** Written by a Rust storage API immediately after a successful `session_stop()`, not inside the session lifecycle call. `session_stop()` remains the source of `AttemptSummary`; `PracticeAttemptContext` supplies the player, course/section, device, lesson snapshot, and wall-clock context needed to complete the `PracticeAttempt` row.
+
+```rust
+fn record_practice_attempt(
+    summary: AttemptSummary,
+    context: PracticeAttemptContext,
+) -> Result<PracticeAttempt, StorageError>
+```
+
+The storage API generates `PracticeAttempt.id` for new local attempts, copies outcome metrics from `AttemptSummary`, copies context fields from `PracticeAttemptContext`, and writes the SQLite row. It may be exposed to Flutter through `flutter_rust_bridge` like the existing profile and device-profile storage APIs. Play Mode must call it after a successful stop; Practice Mode calls it only when the user's setting allows storing practice attempts.
+
+The Practice Mode storage setting is `ProfileSettings.record_practice_mode_attempts` from `engine-api.md` P1-20 settings persistence. Its default is `true`. Play Mode, CourseGate, and future gated assessment modes always record completed attempts regardless of this preference; the preference only controls optional Practice Mode attempt rows.
+
+`session_stop()` must not perform SQLite I/O and must not accept persistence context. This keeps timing/session lifecycle behavior separate from post-session storage.
 
 **Indexes:** `(player_id, started_at_utc)`, `(player_id, lesson_id)`, `(player_id, local_hour)`.
 
