@@ -54,6 +54,7 @@ void main() {
         'auto_pause_timeout_ms': 3000,
         'record_practice_mode_attempts': true,
         'daily_goal_minutes': 15,
+        'play_kit_hit_sounds': false,
         'active_device_profile_id': null,
       }),
     );

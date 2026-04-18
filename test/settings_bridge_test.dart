@@ -49,6 +49,7 @@ void main() {
     expect(defaultsJson['profile']['metronome_volume'], 0.8);
     expect(defaultsJson['profile']['auto_pause_enabled'], isFalse);
     expect(defaultsJson['profile']['daily_goal_minutes'], 10);
+    expect(defaultsJson['profile']['play_kit_hit_sounds'], isFalse);
 
     final profileUpdate = updateProfileSettings(
       databasePath: databasePath,
@@ -64,6 +65,7 @@ void main() {
         'auto_pause_timeout_ms': 4500,
         'record_practice_mode_attempts': false,
         'daily_goal_minutes': 25,
+        'play_kit_hit_sounds': true,
         'active_device_profile_id': _deviceProfileId,
       }),
     );
@@ -71,6 +73,7 @@ void main() {
     final profileJson = jsonDecode(profileUpdate.settingsJson!);
     expect(profileJson['preferred_view'], 'notation');
     expect(profileJson['daily_goal_minutes'], 25);
+    expect(profileJson['play_kit_hit_sounds'], isTrue);
     expect(profileJson['active_device_profile_id'], _deviceProfileId);
 
     final appUpdate = updateAppSettings(

@@ -6,7 +6,7 @@
 - PRD version: 1.9
 - Current phase: Phase 1.5 — Tranche A in progress
 - Current task: P1.5-05 MIDI Device Lifecycle — Complete
-- Overall status: Phase 1 functionally complete. Phase 1.5 Tranche A in progress. P1.5-03 audio wiring landed. P1.5-01 design system foundation landed. P1.5-02 theme switching fix landed. P1.5-05 MIDI device lifecycle landed.
+- Overall status: Phase 1 functionally complete. Phase 1.5 Tranche A in progress. P1.5-03 audio wiring landed. P1.5-01 design system foundation landed. P1.5-02 theme switching fix landed. P1.5-05 MIDI device lifecycle landed. CI bridge fixture sync completed for the P1.5-03 kit-hit sound setting.
 
 ## Release Boundary
 - **MVP (Phases 0-2):** Playable + creatable + course runtime. Not yet distributed.

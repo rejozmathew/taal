@@ -305,6 +305,7 @@ P1-20 settings persistence is Rust-owned SQLite storage exposed to Flutter throu
 | Profile-level | `auto_pause_timeout_ms` | `3000` |
 | Profile-level | `record_practice_mode_attempts` | `true` |
 | Profile-level | `daily_goal_minutes` | `10` |
+| Profile-level | `play_kit_hit_sounds` | `false` |
 | Profile-level | `active_device_profile_id` | `None` until the player chooses or reconnects a device profile |
 | Device-profile-level | `input_offset_ms` | See `midi-mapping.md` |
 | Device-profile-level | `dedupe_window_ms` | See `midi-mapping.md` |
@@ -334,6 +335,7 @@ pub struct ProfileSettings {
     pub auto_pause_timeout_ms: u32,          // milliseconds
     pub record_practice_mode_attempts: bool,
     pub daily_goal_minutes: u32,             // positive whole minutes; default 10
+    pub play_kit_hit_sounds: bool,           // app drum sounds on MIDI kit hits; default false
     pub active_device_profile_id: Option<Uuid>,
     pub updated_at: DateTime,
 }
@@ -349,6 +351,7 @@ pub struct ProfileSettingsUpdate {
     pub auto_pause_timeout_ms: u32,
     pub record_practice_mode_attempts: bool,
     pub daily_goal_minutes: u32,
+    pub play_kit_hit_sounds: bool,
     pub active_device_profile_id: Option<Uuid>,
 }
 
