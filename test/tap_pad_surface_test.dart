@@ -56,8 +56,9 @@ void main() {
     expect(find.byKey(const ValueKey('tap-pad-ride')), findsNothing);
   });
 
-  testWidgets('guidance banner is dismissible when callback provided',
-      (tester) async {
+  testWidgets('guidance banner is dismissible when callback provided', (
+    tester,
+  ) async {
     var dismissed = false;
 
     await tester.pumpWidget(
@@ -82,11 +83,15 @@ void main() {
     await tester.pump();
 
     expect(dismissed, isTrue);
-    expect(find.text('Connect your kit for the best experience.'), findsNothing);
+    expect(
+      find.text('Connect your kit for the best experience.'),
+      findsNothing,
+    );
   });
 
-  testWidgets('guidance banner has no dismiss button without callback',
-      (tester) async {
+  testWidgets('guidance banner has no dismiss button without callback', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -205,8 +210,9 @@ void main() {
     expect(find.byKey(const ValueKey('tap-pad-snare')), findsOneWidget);
   });
 
-  testWidgets('all standard pads are accessible with semantic labels',
-      (tester) async {
+  testWidgets('all standard pads are accessible with semantic labels', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(

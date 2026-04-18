@@ -150,71 +150,71 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
       child: Focus(
         autofocus: true,
         child: Column(
-      children: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 120),
-          child: SingleChildScrollView(
-            child: _PracticeTransportBar(
-              controller: controller,
-              dailyGoalProgress: widget.dailyGoalProgress,
-              listenPlayback:
-                  widget.listenPlayback ?? const PracticeListenPlayback(),
-              notes: widget.notes,
-              layoutCompatibility: compatibility,
-              midiConnectionState: widget.midiConnectionState,
-              onRescanMidi: widget.onRescanMidi,
-            ),
-          ),
-        ),
-        if (compatibility != null && compatibility.hasExcludedLanes)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: LayoutCompatibilityBanner(
-              compatibility: compatibility,
-              mode: LayoutCompatibilityBannerMode.practice,
-            ),
-          ),
-        Expanded(
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                child: _PracticeViewSurface(
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 120),
+              child: SingleChildScrollView(
+                child: _PracticeTransportBar(
                   controller: controller,
-                  lanes: widget.lanes,
+                  dailyGoalProgress: widget.dailyGoalProgress,
+                  listenPlayback:
+                      widget.listenPlayback ?? const PracticeListenPlayback(),
                   notes: widget.notes,
-                  feedback: widget.feedback,
-                  kitPads: widget.kitPads,
+                  layoutCompatibility: compatibility,
+                  midiConnectionState: widget.midiConnectionState,
+                  onRescanMidi: widget.onRescanMidi,
                 ),
               ),
-              _GradeFlashOverlay(
-                key: const ValueKey('practice-grade-flash'),
-                grade: controller.lastGrade,
+            ),
+            if (compatibility != null && compatibility.hasExcludedLanes)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                child: LayoutCompatibilityBanner(
+                  compatibility: compatibility,
+                  mode: LayoutCompatibilityBannerMode.practice,
+                ),
               ),
-            ],
-          ),
-        ),
-        if (tapPadInput != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: SizedBox(
-              height: 240,
-              child: TapPadSurface(
-                pads: tapPadInput.pads,
-                enabledLaneIds: tapPadInput.enabledLaneIds,
-                velocity: tapPadInput.velocity,
-                onPadHit: tapPadInput.onPadHit,
-                recentHits: tapPadInput.recentHits,
-                onDismissGuidance: tapPadInput.onDismissGuidance,
+            Expanded(
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    child: _PracticeViewSurface(
+                      controller: controller,
+                      lanes: widget.lanes,
+                      notes: widget.notes,
+                      feedback: widget.feedback,
+                      kitPads: widget.kitPads,
+                    ),
+                  ),
+                  _GradeFlashOverlay(
+                    key: const ValueKey('practice-grade-flash'),
+                    grade: controller.lastGrade,
+                  ),
+                ],
               ),
             ),
-          ),
-        _PracticeLoopControls(controller: controller),
-      ],
-    ),
+            if (tapPadInput != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: SizedBox(
+                  height: 240,
+                  child: TapPadSurface(
+                    pads: tapPadInput.pads,
+                    enabledLaneIds: tapPadInput.enabledLaneIds,
+                    velocity: tapPadInput.velocity,
+                    onPadHit: tapPadInput.onPadHit,
+                    recentHits: tapPadInput.recentHits,
+                    onDismissGuidance: tapPadInput.onDismissGuidance,
+                  ),
+                ),
+              ),
+            _PracticeLoopControls(controller: controller),
+          ],
+        ),
       ),
     );
   }
@@ -1105,7 +1105,9 @@ class _ToolsGroup extends StatelessWidget {
           child: FilterChip(
             label: const Text('Loop'),
             selected: controller.loopEnabled,
-            onSelected: controller.isListening ? null : controller.setLoopEnabled,
+            onSelected: controller.isListening
+                ? null
+                : controller.setLoopEnabled,
           ),
         ),
       ],

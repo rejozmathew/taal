@@ -352,9 +352,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('shell renders without overflow at 1366px width', (
-    tester,
-  ) async {
+  testWidgets('shell renders without overflow at 1366px width', (tester) async {
     tester.view.physicalSize = const Size(1366, 768);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {
@@ -369,9 +367,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('shell renders without overflow at 1920px width', (
-    tester,
-  ) async {
+  testWidgets('shell renders without overflow at 1920px width', (tester) async {
     tester.view.physicalSize = const Size(1920, 1080);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {

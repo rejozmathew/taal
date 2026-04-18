@@ -195,9 +195,9 @@ class _GuidanceBanner extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ),
           if (dismissible)
@@ -272,7 +272,11 @@ class _AnimatedTapPadState extends State<_AnimatedTapPad>
     super.dispose();
   }
 
-  ShapeBorder _shapeForPad(VisualDrumKitPad pad, bool active, ColorScheme scheme) {
+  ShapeBorder _shapeForPad(
+    VisualDrumKitPad pad,
+    bool active,
+    ColorScheme scheme,
+  ) {
     final borderColor = active ? TaalColors.primary : scheme.outlineVariant;
     final borderWidth = active ? 2.5 : 1.2;
     final side = BorderSide(color: borderColor, width: borderWidth);
