@@ -2,159 +2,58 @@
 
 ## Project
 - Name: Taal
-- Repository: taal (fresh repo; legacy prototype archived as taal-legacy)
+- Repository: taal
 - PRD version: 1.9
-- Current phase: Phase 1 complete (28/28 tasks complete); Phase 2 not started
-- Current task: No remaining Phase 1 task. Next work requires a Phase 2 execution contract.
-- Overall status: Phase 0 completed with conditional go via CR-001, and P1-00 resolved the required Android Native-to-Rust jitter follow-up. Phase 1 is complete with P1-00 through P1-27 complete. CR-002 through CR-008 are applied. P1-27 added runtime layout compatibility checks that keep missing-lane notes visible, exclude unavailable lanes from scoring, surface Practice/Play warnings, and flag required-lane Play results as partial compatibility.
+- Current phase: Phase 1 complete. Phase 1.5 proposed (pending CR-009 approval).
+- Current task: None (awaiting CR-009 approval)
+- Overall status: Phase 1 functionally complete. User testing revealed UX quality far below PRD intent. CR-009 proposes Phase 1.5 remediation before Phase 2.
 
 ## Release Boundary
 - **MVP (Phases 0-2):** Playable + creatable + course runtime. Not yet distributed.
 - **v1.0 (Phases 0-3):** Analytics, polish, backing tracks, packaged builds. First public release.
 
 ## Phase Gates
-- [x] Phase 0: Foundation + Latency Spike (9 tasks; conditional go via CR-001)
-- [x] Phase 1: Core Practice Loop (28/28 tasks complete)
+- [x] Phase 0: Foundation + Latency Spike (9 tasks) — conditional go per CR-001
+- [x] Phase 1: Core Practice Loop (27 tasks) — functionally complete, UX gaps identified
+- [ ] Phase 1.5: UX Remediation (18 tasks, 2 tranches) — proposed via CR-009, pending approval
 - [ ] Phase 2: Creator Studio + Content System + Course Runtime (18 tasks)
 - [ ] Phase 3: Analytics + Polish + Distribution (23 tasks)
-- [ ] Phase 4: AI Coach + Marketplace Prep + Multi-Platform
-- [ ] Phase 5+: Marketplace + Keyboard + ML + Teacher/Classroom + Community
 
-## Architecture Decision
-- ADR-001 (Flutter + Rust): Accepted with conditional caveat via CR-001
-- Conditional go criterion: Windows clean pass; Android p99 accepted as marginal with caveat after P1-00 confirmed the tail is pre-Rust delivery, not Rust processing
-- No-go criterion: > 40ms or consistent frame drops
-
-## Task Ordering
-Task IDs are identifiers, not execution order. Dependencies define sequencing. See AGENTS.md.
+## Active Change Requests
+- CR-001: Phase 0 conditional go (accepted)
+- CR-002 through CR-008: Phase 1 implementation clarifications (applied)
+- CR-009: Phase 1 UX Remediation — proposes Phase 1.5 (proposed, pending approval)
 
 ## Frozen Interfaces
-- [x] Canonical Grade enum (engine-api.md §1)
-- [x] Session state machine (engine-api.md §3)
-- [x] EngineEvent types (engine-api.md §4)
-- [x] PracticeMode enum (engine-api.md §8)
-- [x] CompiledLesson contract (engine-api.md §8)
-- [x] Content schema invariants (content-schemas.md §7)
-- [x] Layout compatibility rules (content-schemas.md §7)
-- [x] RawMidiEvent contract (midi-mapping.md §2)
-- [x] MappedHit contract (midi-mapping.md §3)
-- [x] PracticeAttempt schema (analytics-model.md §1)
-- [x] PracticeAttempt write context/API (analytics-model.md §1)
-- [x] Practice habit snapshot read model (analytics-model.md §2)
-- [x] Combo behavior (analytics-model.md §10)
-- [x] Rust engine API surface (engine-api.md §4) — confirmed for the current Phase 1 runtime/scoring surface after P1-04/P1-05
-- [x] Settings persistence model and bridge API (engine-api.md §10; midi-mapping.md §1)
+*(unchanged from Phase 1 completion)*
 
-## Document Versions
-| Document | Version | Update Trigger |
-|----------|---------|----------------|
-| AGENTS.md | v1 | When execution rules change |
-| CLAUDE.md | v1 | Thin shim — rarely changes |
-| ARCHITECTURE.md | v26 | When components/flows/boundaries change |
-| README.md | v7 | When user-visible capabilities land |
-| docs/prd.md | v1.9 | When scope or product rules change |
-| docs/adr/001-platform-architecture.md | v1 | Immutable (status line only) |
-| docs/specs/content-schemas.md | v1.4 | When content contracts change |
-| docs/specs/engine-api.md | v1.4 | When engine contracts change |
-| docs/specs/midi-mapping.md | v1.3 | When MIDI contracts change |
-| docs/specs/analytics-model.md | v1.3 | When analytics contracts change |
-| docs/specs/visual-language.md | v1 | When visual contracts change |
-| docs/coding-model.md | v1 | When task execution rules change |
-| plans/phase-0.md | v1.1 | Via CR when tasks need revision |
-| plans/phase-1.md | v1.13 | Via CR when tasks need revision |
-| plans/phase-2.md | v1.5 | Via CR when tasks need revision |
-| plans/phase-3.md | v1.3 | Via CR when tasks need revision |
+## Phase 1.5 Task Summary (if CR-009 approved)
 
-## Completed Work
-- P0-01 Monorepo scaffold: Flutter Windows/Android app scaffold, Rust library workspace, native adapter directories, assets placeholder, and baseline CI workflow created.
-- P0-02 flutter_rust_bridge Integration: Rust `greet(name: String) -> String` is callable from Dart through generated bridge code; focused Flutter test passes after building the Rust release library; Windows and Android builds compile with the bridge.
-- P0-03 Windows MIDI Adapter: WinMM enumerates Roland TD-27 as input device `0`; Flutter Windows app opens the device and receives NoteOn events with channel, note, velocity, and monotonic `QueryPerformanceCounter` nanosecond timestamps.
-- P0-04 Rust Engine Skeleton: Phase 0 runtime session accepts pre-resolved hits, emits `HitGraded` events, drains events, and emits `Missed` on tick after the miss window. Focused Rust unit tests cover Perfect, Early, Late, Miss, and drain behavior.
-- P0-05 Windows latency measurement: Release build captured 10 warm-up hits plus 100 measured hits with Roland TD-27. Total MIDI callback to Flutter return latency measured p50 0.154 ms, p95 1.006 ms, p99 2.064 ms. Raw CSV and summary report are under `artifacts/phase-0/`, and ADR-001 records the Windows evidence.
-- P0-06 Android MIDI Adapter: Samsung Fold 4 (`SM-F936U1`, Android 16/API 36) running the release APK enumerated `Roland TD-27` as Android MIDI device `2`; the app received NoteOn events with channel, note, velocity, and `System.nanoTime()` nanosecond timestamps.
-- P0-07 Android latency measurement: Release build captured 10 warm-up hits plus 100 measured hits with Samsung Fold 4 and Roland TD-27 after aligning Rust Android timing to `CLOCK_MONOTONIC`. Total MIDI callback to Flutter return latency measured p50 2.218 ms, p95 14.180 ms, p99 25.161 ms. Raw CSV and summary report are under `artifacts/phase-0/`, and ADR-001 records the Android evidence.
-- P0-08 CI Pipeline: GitHub Actions workflow runs on push to `main` and pull requests with Rust `cargo check`, `cargo test`, `cargo clippy`, Flutter `analyze`, Flutter `test`, Windows build, and Android APK build. Local equivalents passed.
-- P0-09 ADR-001 finalization: CR-001 records Phase 0 conditional go. ADR-001 status changed to accepted with conditional caveat. Phase 1 now starts with P1-00 Android Native-to-Rust jitter investigation.
-- P1-00 Android Native-to-Rust Jitter Investigation: Analysis of two Android release-mode latency runs confirmed the p99 tail is dominated by `Native T0 -> Rust T1` delivery. Original run: total p99 25.161 ms, max 30.982 ms. Repeat run: total p99 28.873 ms, max 31.348 ms. Combined 200-hit view: total p99 28.873 ms, max 31.348 ms, 7/200 hits exceeded 25 ms, 0/200 exceeded 40 ms. Rust processing remained <= 0.088 ms and Rust-to-Flutter return <= 0.107 ms. The current Android path is acceptable for Phase 1 with a stronger caveat; no ADR-001 update or architecture change required. Analysis artifact: `artifacts/phase-1/p1-00-android-native-to-rust-jitter-20260416-analysis.md`.
-- P1-01 Rust Content Module - Parse Lesson, Layout, Scoring Profile: `rust/src/content/` now defines typed Rust structs and strict JSON load/validation entry points for `Lesson`, `InstrumentLayout`, and `ScoringProfile`. Validation covers required serde shapes, schema version `1.0`, Lesson lane/event/section/timing invariants, CR-003 defaults for `assets`/`references`/`optional_lanes`, required `InstrumentLayout.visual`, layout slot/articulation invariants, and scoring window/combo invariants. Focused Rust tests validate the present canonical lesson/layout examples and P1-01 scoring fixture plus invalid content cases.
-- P1-02 Rust Time Module - Musical <-> Millisecond Conversion: `rust/src/time/` now reuses the canonical content timing structs and provides `MusicalPos` tick arithmetic plus `TimingIndex` conversion between musical positions and absolute milliseconds. Focused Rust tests cover constant 120 BPM conversion, 480-tick subdivision precision, beat/bar-boundary arithmetic, grid-aligned round trips, multi-tempo conversion at and between tempo changes, and invalid tempo-map origin handling.
-- P1-03 Rust Compile Module - Lesson to Execution Timeline: `rust/src/content/compile.rs` now implements `compile_lesson()` from validated `Lesson`, `InstrumentLayout`, and `ScoringProfile` inputs into the frozen `CompiledLesson` representation. Compilation validates layout/scoring references, builds a `TimingIndex`, emits events sorted by absolute `t_ms`, converts section boundaries to millisecond ranges, preserves musical positions and payloads, materializes lane IDs and resolved scoring profile, computes total duration, and rejects duplicate lane/time compiled events. Focused Rust tests cover event sorting, section ms conversion, determinism, and mismatched scoring profile handling.
-- P1-04 Rust Runtime - Session Lifecycle: `rust/src/runtime/session.rs` now runs sessions against `CompiledLesson` timelines with `SessionOpts`, Ready/Running/Paused/Stopped state enforcement, expected-pulse lookahead on tick, nearest pending event matching by lane within the scoring window, miss detection on tick, event draining, idempotent stop, and `AttemptSummary` metrics including score, accuracy, timing bias, and per-lane stats. The Phase 0 latency helper remains available through compatibility wrappers. Focused Rust tests cover hit grading, expected pulse emission, miss emission, combo reset after miss, summary metrics, and invalid state transitions.
-- P1-05 Rust Scoring - Timing Windows, Grades, Combos: `rust/src/scoring/` now owns profile-driven grade computation, score accumulation normalized to 0-100, combo and encouragement-tier tracking, configured milestone message generation, timing aggregate statistics, and per-lane stats. Runtime sessions now delegate scoring updates to this module and emit `ComboMilestone` plus `Encouragement` events when configured thresholds are reached. Focused Rust tests cover grade boundaries, score normalization/clamping, configured milestones, profile-dependent grading, and runtime milestone event emission.
-- P1-06 MIDI Mapping Engine - Note to Lane, Hi-Hat CC4: `rust/src/midi/` now defines the Phase 1 `DeviceProfile`, `RawMidiEvent`, `MappedHit`, and `MappingResult` contracts in Rust and provides `MidiMapper` for raw NoteOn/CC input. The mapper resolves note-to-lane mappings in ordered profile order, tracks hi-hat `hihat_model.source_cc` state for auto articulation, applies `input_offset_ms`, suppresses duplicate NoteOn bursts inside `dedupe_window_ms`, returns unmapped-note warning results, and rejects reserved `cc_map` fields during Phase 1 profile loading. Focused Rust tests cover note-to-lane mapping, unmapped notes, CC4 hi-hat articulation, dedupe, calibration offset application, and CR-004 `cc_map` rejection.
-- P1-16 Local Profiles: `rust/src/storage/profiles.rs` now owns SQLite-backed local player profiles with `PlayerProfile` fields aligned to `engine-api.md`, profile preference rows, foreign-key cascade deletion, and last-active profile memory. `rust/src/api/profiles.rs` exposes create/switch/update preferred view/delete/state operations through flutter_rust_bridge. `lib/features/profiles/` now provides the first-run/home profile surface for creating local players, switching active profile, choosing experience level/avatar, setting preferred practice view, and deleting a profile. Focused Rust tests cover create/switch persistence, per-profile preference separation, cascade deletion, active-profile fallback, and validation. A Flutter bridge test covers the generated profile API against a temporary SQLite database.
-- P1-08 Device Profile Persistence: `rust/src/storage/device_profiles.rs` now persists Phase 1 `DeviceProfile` records per player profile in SQLite, storing the exact validated JSON contract plus indexed reconnect metadata. CRUD operations create, read, update, delete, list, and remember last-used device profiles by `(vendor_name, model_name, platform_id)` with vendor/model fallback for unstable platform IDs. `rust/src/api/device_profiles.rs` exposes JSON-based persistence operations through flutter_rust_bridge. Focused Rust tests cover save/reopen, per-player ownership, update/delete, multiple profiles for the same device, and reconnect matching. A Flutter bridge test covers device-profile CRUD and last-used lookup against a temporary SQLite database.
-- P1-19 Standard 5-Piece Layout Definition: `assets/content/layouts/std-5pc-v1.json` now defines the default drum kit layout with kick, snare, hi-hat closed/open/pedal, ride, crash, high tom, low tom, and floor tom lanes; stable visual slots for the visual drum kit; and MIDI note/CC hints covering General MIDI-style assignments plus common e-kit variants. `rust/tests/bundled_layouts.rs` validates the bundled layout against the content schema and asserts required lanes, articulations, visual slots, and MIDI hints.
-- P1-18 Starter Lesson Content: `assets/content/lessons/starter/` now contains 13 bundled starter lessons: 5 beginner lessons, 5 intermediate lessons, and 3 variety lessons. `assets/content/scoring/score-standard-v1.json` provides the standard scoring profile asset referenced by those lessons. `rust/tests/starter_lessons.rs` loads every lesson, validates metadata/progression coverage, and compiles each lesson against `std-5pc-v1` and `score-standard-v1`.
-- P1-15 Metronome Audio Output: `rust/src/runtime/session.rs` now emits `EngineEvent::MetronomeClick` schedule events within the session lookahead window. `lib/platform/audio/metronome_audio.dart` exposes a thin Flutter method-channel adapter for configuring volume/preset and forwarding scheduled clicks. Windows implements scheduled pre-rendered click playback through `windows/runner/windows_metronome_audio.*` using a WASAPI exclusive event-driven render stream. Android implements scheduled pre-rendered click playback through `MetronomeAudioController.kt` and `android/app/src/main/cpp/` using AAudio low-latency output. Focused Rust tests cover click scheduling and one-shot emission, Dart tests cover channel serialization, and Windows/Android debug builds compile.
-- P1-07 Calibration Wizard UI + Logic: `lib/features/calibration/` now provides a calibration wizard screen, deterministic calibration session math, and a device-profile persistence wrapper. The wizard schedules 8 clicks at 100 BPM through the P1-15 audio path, captures snare NoteOn timestamps from the MIDI adapter, computes median `input_offset_ms` plus jitter quality, persists the offset through the Rust device-profile bridge, supports recalibration overwrite, and supports skip-to-zero. Focused Flutter tests cover scheduling, median offset calculation, snare filtering, duplicate beat suppression, profile offset overwrite, skip behavior, and a widget-level calibration run with synthetic MIDI hits.
-- P1-09 Note-Highway Widget: `lib/features/player/note_highway/` now provides a reusable Flutter `CustomPainter` note-highway surface with vertical drum lanes, notes that move top-to-bottom toward a fixed hit line from `currentTimeMs`, lane-colored expected notes, and grade-colored hit feedback markers. Early and late markers offset left/right from lane center per `deltaMs`, while Perfect centers on the beat line. Focused Flutter tests cover note movement geometry, early/late marker offsets, grade-color distinction, and stable custom-paint rendering.
-- P1-10 Notation View Widget: `lib/features/player/notation/` now provides a reusable Flutter `CustomPainter` notation surface with a standard drum staff, standard 5-piece lane placements, timeline-driven note positions, scrolling and page display modes, current-position highlighting, and grade-colored feedback markers. Early and late markers offset left/right from the notation beat position using the same grade semantics as note-highway. Focused Flutter tests cover staff placement, standard layout lane coverage, scroll/page geometry, feedback marker direction, and stable custom-paint rendering.
-- P1-11 Visual Drum Kit Widget: `lib/features/player/drum_kit/` now provides a reusable Flutter `CustomPainter` visual kit surface with standard 5-piece pad geometry, custom pad-list support for extended layouts, and grade-colored active-hit overlays. Hits for unmapped lanes are ignored by the painter, while mapped hits light the matching pad on the next paint. Focused Flutter tests cover standard slot coverage, pad bounds, mapped/unmapped hit behavior, custom-layout adaptation, and stable custom-paint rendering.
-- P1-12 Practice Mode Screen: `lib/features/player/practice_mode/` now provides a reusable Practice Mode screen and controller that combine play/pause/resume transport, live tempo state with next-beat effective timing, metronome and loop toggles, section/manual A-B loop ranges, combo and encouragement display, and mid-session switching across note-highway, notation, and visual kit views. The screen consumes prepared timeline notes and engine feedback markers as render inputs rather than redefining scoring. Focused Flutter tests cover transport transitions, tempo timing, loop wrapping, view switching without reset, and transport control wiring.
-- P1-14 Post-Lesson Review Screen: `lib/features/player/review/` now provides a reusable post-lesson review screen that renders AttemptSummary-shaped score, accuracy, hit-rate, timing distribution, timing bias/spread, max streak, and per-lane stats. It highlights the best stat before suggestions, derives 1-2 deterministic improvement prompts from summary metrics, supports optional course progress text, and exposes Retry/Next Lesson/Back to Library actions. Focused Flutter tests cover metric display, helper suggestions, best-stat ordering, histogram labels, and action callbacks.
-- P1-21 Practice Attempt Persistence: `rust/src/storage/practice_attempts.rs` now stores player-owned `PracticeAttempt` rows in SQLite from `AttemptSummary + PracticeAttemptContext`, with indexed player/time, player/lesson, player/hour, and player/course lookups. `rust/src/api/practice_attempts.rs` exposes record/query bridge APIs, `lib/src/rust/api/practice_attempts.dart` is generated for Flutter callers, and focused Rust/Flutter tests cover persistence, filters, ownership cascade, validation, and bridge access. The frozen `session_stop(session) -> Result<AttemptSummary, SessionError>` API remains unchanged.
-- P1-13 Play Mode Screen: `lib/features/player/play_mode/` now provides a reusable scored assessment screen and controller with count-in, locked lesson tempo, no pause/loop/tempo controls, switchable player views, post-run review handoff, and a post-session attempt-recording hook. Focused Flutter tests cover full-run state, persistence handoff, locked controls, review transition, and view switching.
-- P1-22 App Shell - Home Screen, Navigation, Profile Switcher: `lib/features/app_shell/` now provides the top-level app shell with adaptive bottom navigation/navigation rail, a profile-aware home surface, reachable Practice/Library/Studio/Insights/Settings sections, safe placeholders for incomplete destinations, and a working profile switcher on Home and Settings. Focused Flutter tests cover mobile navigation, desktop rail adaptation, profile switching, and Settings access to the switcher.
-- P1-20 Settings Screen: `rust/src/storage/profiles.rs` now persists CR-006 app/profile settings, `rust/src/storage/device_profiles.rs` exposes the narrow device-profile settings update helper, `rust/src/api/settings.rs` exposes settings bridge operations, and `lib/features/settings/` provides the app shell Settings screen for profile, MIDI, audio, display, and practice preferences. Focused Rust and Flutter tests cover defaults, persistence, ownership validation, bridge access, UI controls, and immediate metronome setting application.
-- P1-23 On-Screen Tap Pads: `lib/features/player/tap_pads/` now provides a reusable touch-responsive drum-pad input surface with tablet-sized targets and the no-kit guidance message. `rust/src/api/practice_runtime.rs` and `rust/src/runtime/practice_runtime.rs` expose a thin Practice Mode runtime bridge that starts compiled Rust `Session` instances, owns optional `MidiMapper` state, routes MIDI NoteOn/CC and touch lane hits into source-neutral `InputHit` values, drains the same Rust `EngineEvent` stream, and stops sessions for Rust-produced `AttemptSummary` JSON. `lib/features/player/practice_runtime/` adapts those events into the existing Practice Mode feedback markers without computing grades, scores, combos, summaries, or persistence decisions. Focused Rust/Flutter tests cover touch-only scoring, mixed touch/MIDI scoring, tap-pad UI behavior, Practice Mode embedding, Dart adapter event handling, and the generated bridge path.
-- P1-24 Practice Streaks and Daily Goal Tracking: CR-008 is applied. `PracticeAttempt` rows now include `local_day_key`, profile settings include `daily_goal_minutes`, and Rust derives `PracticeHabitSnapshot` from player-owned attempts without a streak table or mutable streak counter. The app shell home surface renders streak, daily-goal progress, and rolling weekly summary, Settings edits the daily goal through the existing profile settings boundary, and Practice Mode composes live daily-goal progress from persisted minutes plus in-memory session elapsed time. Focused Rust/Flutter tests cover streak derivation, at-risk/reset behavior, weekly aggregation, per-profile ownership, settings persistence, bridge loading, home rendering, and display-only session progress.
-- P1-25 Listen-First Playback: Practice Mode now has listen-first playback controls for the whole lesson or selected A-B/section range. Flutter schedules synthesized GM-style drum hits through the existing native metronome audio path, scales playback timing to the current tempo, advances the visual timeline while listening, and keeps scoring/session feedback inactive. Windows and Android native audio renderers now mix scheduled drum voices alongside metronome clicks. Focused Flutter tests cover listen scheduling, transport state, no-scoring session-time behavior, and channel serialization; Windows and Android debug builds compile.
-- P1-26 Auto-Pause on Player Inactivity: Practice Mode now supports configurable auto-pause using the existing `ProfileSettings.auto_pause_enabled` and `auto_pause_timeout_ms` settings. The Flutter runtime adapter watches Rust `Missed` and `HitGraded` events, pauses the Rust session and UI only during dense missed expected-note passages, ignores intentional rests by resetting across long miss gaps, shows a resume prompt, and resumes the Rust session before forwarding the next touch or MIDI hit. Focused Flutter tests cover default-off behavior, dense-pattern pause, rest handling, Practice Mode scoping, and resume-on-hit.
-- P1-17 Onboarding Flow: `lib/features/onboarding/` now provides the first-run Welcome -> Profile -> Experience -> Connect Kit -> Calibrate -> First Lesson flow. The app shell opens onboarding when no local profiles exist, experience level selects the first starter asset, Flutter bundles the starter lessons/layout/scoring assets for onboarding, no-kit users reach demo mode with tap pads, and detected MIDI devices can feed an ephemeral GM-style onboarding map into the existing Rust Practice runtime adapter for first-lesson feedback. Focused Flutter tests cover starter selection, no-MIDI tap-pad demo flow, MIDI device handoff, and app-shell first-run routing.
-- P1-27 Layout Compatibility Check + Missing-Lane Handling: `rust/src/content/compatibility.rs` now derives lesson, required, optional, mapped, missing, and excluded lanes from the compiled lesson plus active `DeviceProfile` mappings. The Practice runtime bridge returns the compatibility snapshot in timeline JSON, keeps all notes visible for rendering, and starts scoring sessions with missing-lane events filtered out of the denominator. Practice Mode and Play Mode render green/yellow/red compatibility indicators and warnings, and Review names excluded lanes while marking required-lane Play results as ineligible for personal bests. Focused Rust/Flutter tests cover optional missing lanes, required missing lanes, all-lanes-present behavior, bridge timeline JSON, score denominator adjustment, and Review messaging.
+### Tranche A: Fix Broken
+| ID | Title | Deps | Status |
+|----|-------|------|--------|
+| P1.5-01 | Design system foundation | — | Proposed |
+| P1.5-02 | Theme switching fix | P1.5-01 | Proposed |
+| P1.5-03 | Audio wiring | — | Proposed |
+| P1.5-04 | Onboarding re-entry + profile management | — | Proposed |
+| P1.5-05 | MIDI device lifecycle | — | Proposed |
+| P1.5-06 | Error states + empty states | P1.5-01 | Proposed |
+| P1.5-07 | Settings screen restructure | P1.5-01, P1.5-02, P1.5-03, P1.5-04, P1.5-05 | Proposed |
+| P1.5-08 | Library UX overhaul | P1.5-01 | Proposed |
+| P1.5-09 | Onboarding flow redesign | P1.5-01, P1.5-03, P1.5-05 | Proposed |
 
-## Maintenance
-- 2026-04-17: Fixed Rust CI Clippy compatibility for newer toolchains by rewriting the metronome schedule construction loop without changing scheduling semantics.
-- 2026-04-16: `.gitignore` coverage updated for Flutter, Dart, Rust, Android, Gradle, Windows, and native build outputs; app/tool lockfiles and Gradle wrapper files remain visible to Git while generated build artifacts stay ignored.
-- 2026-04-16: Root `flutter analyze` excludes `rust_builder/cargokit/build_tool/**` because that vendored Cargokit package has its own pubspec/dependencies and is not resolved by app-level `flutter pub get` in CI.
-- 2026-04-16: CR-002 applied. `docs/specs/content-schemas.md` now defines the missing nested layout/scoring types needed for typed Rust deserialization, keeps `InstrumentLayout.visual` required with a synchronized example, and `plans/phase-1.md` narrows P1-01 acceptance to P1-01-owned validation fixtures. P1-01 is unblocked.
-- 2026-04-16: P1-01 implementation paused before code changes. CR-003 records the remaining Lesson content-contract gap for ancillary nested type definitions and required-field/default behavior.
-- 2026-04-16: CR-003 applied. `docs/specs/content-schemas.md` now defines the missing Lesson ancillary types (`TimeSignature`, `TempoEntry`, `MusicalPos`, `TimeRange`, `AssetRefs`, `ContentRefs`, `PublisherRef`), documents JSON absence defaults for `assets`, `references`, and `optional_lanes`, and keeps P1-01 scoped to later strict Rust parsing without starting implementation.
-- 2026-04-16: P1-01 implemented. Added Rust serde/JSON/UUID dependencies, the Rust content module, and focused content validation tests. `ARCHITECTURE.md` now records the concrete Rust content component.
-- 2026-04-16: P1-02 implemented. Added Rust time indexing/conversion, focused time conversion tests, and `ARCHITECTURE.md` now records the concrete Rust time component.
-- 2026-04-16: P1-03 implemented. Added Rust lesson compilation and focused compile tests. `docs/specs/engine-api.md` now clarifies `CompileError::InvariantViolation` for strict compiled-runtime invariant failures.
-- 2026-04-16: P1-04 implemented. Replaced the Phase 0 runtime internals with a compiled-lesson session lifecycle while preserving Phase 0 latency bridge wrappers. `docs/specs/engine-api.md` now defines `SessionOpts` and Result-returning lifecycle operations for invalid-state enforcement.
-- 2026-04-16: P1-05 implemented. Added the Rust scoring module and focused scoring behavior tests; runtime sessions now emit configured combo milestone and encouragement events through the engine event stream.
-- 2026-04-16: CR-004 applied. `docs/specs/midi-mapping.md` now reserves generic `cc_map` for a future spec revision, keeps P1-06 scoped to `note_map` plus `hihat_model.source_cc` for hi-hat CC4, defines `DateTime` as an RFC 3339 UTC timestamp string, and requires `created_at`/`updated_at` for Phase 1 preset and persisted profile loading.
-- 2026-04-16: P1-06 implemented. Added the Rust MIDI mapping module and focused mapper tests; `ARCHITECTURE.md` now records the concrete Rust MIDI mapping component.
-- 2026-04-17: P1-16 implemented. Added Rust-owned SQLite local profile persistence, bridge APIs, a Flutter profile home surface, focused Rust profile tests, and a bridge-level Flutter test. `ARCHITECTURE.md` now records the concrete profile storage and UI components.
-- 2026-04-17: P1-08 implemented. Added Rust-owned SQLite device-profile persistence, bridge JSON APIs, focused persistence tests, and a bridge-level Flutter test. `ARCHITECTURE.md` now records the concrete device-profile storage schema and ownership flow.
-- 2026-04-17: P1-19 implemented. Added the bundled standard 5-piece drum layout JSON and focused bundled-layout validation tests; `ARCHITECTURE.md` now records the bundled content component.
-- 2026-04-17: P1-18 implemented. Added 13 bundled starter lessons plus the standard scoring profile asset and focused load/compile validation; `ARCHITECTURE.md` now records the starter content component.
-- 2026-04-17: P1-15 implemented. Added Rust metronome schedule events, a Flutter metronome audio platform adapter, Windows WASAPI scheduled click output, Android AAudio scheduled click output, focused Rust/Dart tests, and native build validation. `ARCHITECTURE.md` now records the concrete metronome audio component and engine-to-native audio flow.
-- 2026-04-17: P1-07 implemented. Added Flutter calibration session math, a calibration wizard screen, persisted device-profile offset updates, focused logic tests, and a widget-level synthetic MIDI calibration test. `ARCHITECTURE.md` now records the concrete calibration flow.
-- 2026-04-17: P1-09 implemented. Added the reusable Flutter note-highway painter and focused geometry/widget tests; `ARCHITECTURE.md` now records the concrete practice-view component.
-- 2026-04-17: P1-10 implemented. Added the reusable Flutter notation painter and focused geometry/widget tests; `ARCHITECTURE.md` now records the concrete notation practice-view component.
-- 2026-04-17: P1-11 implemented. Added the reusable Flutter visual drum kit painter and focused geometry/widget tests; `ARCHITECTURE.md` now records the concrete visual kit practice-view component.
-- 2026-04-17: P1-12 implemented. Added the Flutter Practice Mode screen/controller and focused transport/view/loop tests; `ARCHITECTURE.md` now records the concrete Practice Mode UI boundary.
-- 2026-04-17: P1-14 implemented. Added the Flutter post-lesson review screen and focused metric/suggestion/action tests; `ARCHITECTURE.md` now records the concrete review UI boundary.
-- 2026-04-17: CR-005 applied. `docs/specs/analytics-model.md` now defines `PracticeAttemptContext` and the post-`session_stop` Rust storage API for writing `PracticeAttempt` rows from `AttemptSummary + PracticeAttemptContext`; `docs/specs/engine-api.md` clarifies that `session_stop(session)` remains summary-only and performs no SQLite I/O. P1-21 is unblocked for implementation.
-- 2026-04-17: P1-21 implemented. Added Rust-owned SQLite practice-attempt persistence, generated bridge APIs, focused Rust storage tests, and a Flutter bridge test. `ARCHITECTURE.md` now records the concrete practice-attempt storage component and post-session persistence flow.
-- 2026-04-17: P1-13 implemented. Added the Flutter Play Mode screen/controller and focused assessment-mode tests; `ARCHITECTURE.md` now records the concrete Play Mode UI boundary and post-run persistence handoff.
-- 2026-04-17: P1-22 implemented. Added the Flutter app shell, adaptive navigation, profile-aware home surface, Home/Settings profile switchers, focused shell tests, and `main.dart` shell wiring. `ARCHITECTURE.md` now records the concrete app shell and navigation boundary.
-- 2026-04-17: P1-20 blocked before implementation. The phase plan requires persisted settings across MIDI/audio/display/profile/auto-pause, but no current spec defines the complete settings persistence contract or Rust bridge API. A narrow CR is the smallest unblocker; no ADR is expected unless the persistence ownership boundary changes.
-- 2026-04-17: CR-006 applied. `docs/specs/engine-api.md` now defines the P1-20 app/profile settings model, defaults, and Rust storage/bridge API shape; `docs/specs/midi-mapping.md` clarifies device-profile-owned Settings fields/defaults; `docs/specs/analytics-model.md` names the Practice Mode attempt-recording preference. P1-20 is unblocked for implementation without changing the Rust-owned SQLite persistence boundary.
-- 2026-04-17: P1-20 implemented. Added Rust-owned app/profile settings persistence, a narrow device-profile settings helper for manual latency and velocity curve changes, generated settings bridge APIs, the Flutter Settings screen inside the app shell, focused Rust/Flutter tests, and `ARCHITECTURE.md` updates for the concrete settings flow.
-- 2026-04-17: CR-007 applied. P1-23 now includes the reusable tap-pad input surface plus the thin Practice Mode runtime-session adapter/bridge needed to route both MIDI-derived and touch-generated hits into the Rust `Session`; `InputHit` semantics are clarified as source-neutral after lane resolution without changing frozen field, lifecycle, or event shapes. P1-23 is unblocked for implementation.
-- 2026-04-17: P1-23 implemented. Added the touch tap-pad surface, Rust-owned Practice runtime session bridge, Dart Practice runtime adapter, generated bridge bindings, and focused Rust/Flutter validation. `ARCHITECTURE.md` now records the concrete tap-pad component and MIDI/touch-to-Rust-session flow.
-- 2026-04-17: P1-24 blocked before implementation. Dependencies P1-21 and P1-22 are satisfied, but the current specs do not define the configurable daily-goal field, habit/streak summary model, streak persistence semantics, or Rust storage/bridge API required by the phase plan. CR-008 proposes the narrow habit tracking contract needed to unblock P1-24.
-- 2026-04-18: CR-008 applied. `docs/specs/analytics-model.md` now defines `local_day_key`, the derived `PracticeHabitSnapshot` read model, streak state, weekly summary semantics, and the habit snapshot read API; `docs/specs/engine-api.md` adds `ProfileSettings.daily_goal_minutes`; `plans/phase-1.md` points P1-24 to the derived-model contract.
-- 2026-04-18: P1-24 implemented. Added derived practice habit snapshot storage/query support, daily-goal settings persistence, Flutter bridge bindings, home habit metrics, Settings daily-goal control, active-session display-only goal progress, focused tests, and `ARCHITECTURE.md` updates for the concrete habit flow.
-- 2026-04-18: P1-25 implemented. Added Practice Mode listen-first playback controls, tempo-scaled scheduled drum-hit audio through the existing native metronome channel, visual timeline advancement while listening, focused Flutter tests, Windows/Android native audio renderer updates, and `ARCHITECTURE.md` updates for the listen playback flow.
-- 2026-04-18: P1-26 implemented. Added Practice Mode auto-pause controller state, runtime-adapter detection from Rust miss/hit events, resume-on-next-hit behavior, focused tests, and `ARCHITECTURE.md` updates for the auto-pause flow.
-- 2026-04-18: P1-17 implemented. Added first-run onboarding, starter asset loading from Flutter, no-kit tap-pad demo flow, MIDI handoff into the Practice runtime adapter, focused tests, and `ARCHITECTURE.md` updates for the onboarding flow.
-- 2026-04-18: P1-27 implemented. Added Rust layout compatibility evaluation/scoring filtering, Flutter compatibility indicators and banners, Review scoring-adjustment messaging, focused tests, and `ARCHITECTURE.md`/`README.md` updates for Phase 1 completion.
+### Tranche B: Make Premium
+| ID | Title | Deps | Status |
+|----|-------|------|--------|
+| P1.5-10 | Animation framework | Tranche A complete | Proposed |
+| P1.5-11 | Note highway visual overhaul | Tranche A complete, P1.5-10 | Proposed |
+| P1.5-12 | Drum kit visual overhaul | Tranche A complete, P1.5-01 | Proposed |
+| P1.5-13 | Practice toolbar redesign + count-in | Tranche A complete, P1.5-10 | Proposed |
+| P1.5-14 | Combo + grade visual effects | Tranche A complete, P1.5-10 | Proposed |
+| P1.5-15 | Review screen polish | Tranche A complete, P1.5-10, P1.5-14 | Proposed |
+| P1.5-16 | Daily goal ring + streak visual | Tranche A complete, P1.5-01 | Proposed |
+| P1.5-17 | Tap pad visual + interaction polish | Tranche A complete, P1.5-03, P1.5-12 | Proposed |
+| P1.5-18 | Global polish pass | All P1.5 tasks | Proposed |
 
 ## Blockers
-- None. Phase 1 is complete; Phase 2 has not been started.
-
-## Operational Caveats
-- P0-08 merge blocking: CI workflow is present and locally validated, but GitHub branch protection / required status checks could not be verified from this environment (`gh` CLI unavailable; connector does not expose branch-protection settings). If not already enabled, require the CI checks in GitHub repository settings.
-- P1-00 Android caveat: Android tail latency is localized before Rust entry, most likely within Android main-thread/EventChannel/Dart dispatch before the immediate Rust bridge call. Continue Phase 1 on the platform-channel path. The next Android latency measurement should split native-to-Dart delivery from Dart-to-Rust entry. Reconsider only if later full-path Android measurements show sustained p99 above 30 ms, total latency above 40 ms, or consistent frame drops on the real animated Practice Mode path.
-- P1-15 audio caveat: Native audio code compiles on Windows and Android, and scheduling behavior is covered by deterministic tests, but audible sync and hardware output latency were not measured in this environment. Verify on target Windows/Android devices when P1-07/P1-12 exercise the audio path with real UI.
-
-## Open Questions
-1. Frame-drop / animation validation is deferred to the first real animated Practice Mode path.
-2. Theme detection thresholds — TBD values in analytics-model.md, tuned during Phase 3
-3. Velocity/dynamics scoring formula — deferred post-v1
+- Phase 1.5 execution blocked pending CR-009 approval

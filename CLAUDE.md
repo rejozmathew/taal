@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 Read `AGENTS.md` first and follow it strictly.
+Read `PROJECT.md` for taal-specific rules.
 
 Use:
 - `docs/prd.md` as product source of truth
@@ -9,4 +10,4 @@ Use:
 - active `plans/phase-x.md` as execution contract
 - `STATUS.md` as the running state file
 
-Do not maintain separate behavioral rules here. `AGENTS.md` is canonical.
+Do not maintain separate behavioral rules here. `AGENTS.md` + `PROJECT.md` are canonical.
