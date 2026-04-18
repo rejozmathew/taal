@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:taal/design/motion.dart';
 import 'package:taal/features/player/drum_kit/drum_kit.dart';
 import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/notation/notation_view.dart';
@@ -108,15 +109,20 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
 
     return Column(
       children: [
-        _PracticeTransportBar(
-          controller: controller,
-          dailyGoalProgress: widget.dailyGoalProgress,
-          listenPlayback:
-              widget.listenPlayback ?? const PracticeListenPlayback(),
-          notes: widget.notes,
-          layoutCompatibility: compatibility,
-          midiConnectionState: widget.midiConnectionState,
-          onRescanMidi: widget.onRescanMidi,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 120),
+          child: SingleChildScrollView(
+            child: _PracticeTransportBar(
+              controller: controller,
+              dailyGoalProgress: widget.dailyGoalProgress,
+              listenPlayback:
+                  widget.listenPlayback ?? const PracticeListenPlayback(),
+              notes: widget.notes,
+              layoutCompatibility: compatibility,
+              midiConnectionState: widget.midiConnectionState,
+              onRescanMidi: widget.onRescanMidi,
+            ),
+          ),
         ),
         if (compatibility != null && compatibility.hasExcludedLanes)
           Padding(
@@ -157,7 +163,7 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
   }
 }
 
-enum PracticeTransportState { stopped, running, paused, listening }
+enum PracticeTransportState { stopped, running, paused, listening, countIn }
 
 enum PracticeDisplayView { noteHighway, notation, drumKit }
 
@@ -349,13 +355,16 @@ class PracticeModeController extends ChangeNotifier {
     double minTempoBpm = 40,
     double maxTempoBpm = 240,
     PracticeAutoPauseConfig autoPauseConfig = const PracticeAutoPauseConfig(),
+    int countInBars = 0,
   }) : assert(baseBpm > 0, 'baseBpm must be positive'),
        assert(totalDurationMs > 0, 'totalDurationMs must be positive'),
+       assert(countInBars >= 0 && countInBars <= 4, 'countInBars must be 0-4'),
        _sections = List.unmodifiable(sections),
        _tempoBpm = initialTempoBpm ?? baseBpm,
        _minTempoBpm = minTempoBpm,
        _maxTempoBpm = maxTempoBpm,
-       _autoPauseConfig = autoPauseConfig {
+       _autoPauseConfig = autoPauseConfig,
+       _countInBars = countInBars {
     final firstSection = _sections
         .where((section) => section.loopable)
         .firstOrNull;
@@ -389,6 +398,8 @@ class PracticeModeController extends ChangeNotifier {
   int _combo = 0;
   String? _encouragementText;
   double _activeSessionElapsedMs = 0;
+  int _countInBars;
+  double _countInRemainingMs = 0;
 
   PracticeTransportState get transportState => _transportState;
 
@@ -434,13 +445,25 @@ class PracticeModeController extends ChangeNotifier {
 
   double get activeSessionElapsedMs => _activeSessionElapsedMs;
 
+  int get countInBars => _countInBars;
+
+  double get countInRemainingMs => _countInRemainingMs;
+
+  int get countInRemainingBeats {
+    if (_transportState != PracticeTransportState.countIn) return 0;
+    final beatMs = 60000.0 / _tempoBpm;
+    return (_countInRemainingMs / beatMs).ceil().clamp(1, _countInBars * 4);
+  }
+
+  bool get isCountingIn => _transportState == PracticeTransportState.countIn;
+
   bool get isRunning => _transportState == PracticeTransportState.running;
 
   bool get isPaused => _transportState == PracticeTransportState.paused;
 
   bool get isListening => _transportState == PracticeTransportState.listening;
 
-  bool get isTimelineAdvancing => isRunning || isListening;
+  bool get isTimelineAdvancing => isRunning || isListening || isCountingIn;
 
   PracticeListenRange get listenRange {
     switch (_listenScope) {
@@ -458,8 +481,16 @@ class PracticeModeController extends ChangeNotifier {
     if (_transportState == PracticeTransportState.listening) {
       return;
     }
+    if (_transportState == PracticeTransportState.countIn) {
+      return;
+    }
     _autoPauseTriggered = false;
-    _transportState = PracticeTransportState.running;
+    if (_countInBars > 0) {
+      _countInRemainingMs = _countInBars * 4 * 60000.0 / _tempoBpm;
+      _transportState = PracticeTransportState.countIn;
+    } else {
+      _transportState = PracticeTransportState.running;
+    }
     notifyListeners();
   }
 
@@ -480,6 +511,16 @@ class PracticeModeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void stop() {
+    _transportState = PracticeTransportState.stopped;
+    _currentTimeMs = _loopEnabled ? _loopStartMs : 0;
+    _combo = 0;
+    _encouragementText = null;
+    _autoPauseTriggered = false;
+    _countInRemainingMs = 0;
+    notifyListeners();
+  }
+
   void togglePlayPause() {
     switch (_transportState) {
       case PracticeTransportState.stopped:
@@ -490,7 +531,20 @@ class PracticeModeController extends ChangeNotifier {
         pause();
       case PracticeTransportState.listening:
         return;
+      case PracticeTransportState.countIn:
+        // Cancel count-in and stop.
+        _transportState = PracticeTransportState.stopped;
+        _countInRemainingMs = 0;
+        notifyListeners();
     }
+  }
+
+  void setCountInBars(int bars) {
+    if (bars < 0 || bars > 4) {
+      throw ArgumentError.value(bars, 'bars', 'must be 0-4');
+    }
+    _countInBars = bars;
+    notifyListeners();
   }
 
   void selectView(PracticeDisplayView view) {
@@ -638,6 +692,17 @@ class PracticeModeController extends ChangeNotifier {
       return;
     }
 
+    // Count-in phase: tick down, then transition to running.
+    if (_transportState == PracticeTransportState.countIn) {
+      _countInRemainingMs -= elapsed.inMicroseconds / 1000.0;
+      if (_countInRemainingMs <= 0) {
+        _countInRemainingMs = 0;
+        _transportState = PracticeTransportState.running;
+      }
+      notifyListeners();
+      return;
+    }
+
     final scaledDeltaMs =
         elapsed.inMicroseconds / 1000.0 * (_tempoBpm / baseBpm);
     if (_transportState == PracticeTransportState.running) {
@@ -722,137 +787,331 @@ class _PracticeTransportBar extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
         child: Wrap(
-          spacing: 12,
+          spacing: 16,
           runSpacing: 10,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            FilledButton(
-              onPressed: controller.isListening
-                  ? null
-                  : controller.togglePlayPause,
-              child: Text(controller.isRunning ? 'Pause' : 'Play'),
+            _TransportGroup(controller: controller, scheme: scheme),
+            _ModeGroup(
+              controller: controller,
+              listenPlayback: listenPlayback,
+              notes: notes,
             ),
-            FilledButton.tonal(
-              key: const ValueKey('practice-listen-button'),
-              onPressed: controller.isRunning
-                  ? null
-                  : () => listenPlayback.toggle(
-                      controller: controller,
-                      notes: notes,
-                    ),
-              child: Text(controller.isListening ? 'Stop Listening' : 'Listen'),
+            _ToolsGroup(controller: controller),
+            _StatusGroup(
+              controller: controller,
+              dailyGoalProgress: dailyGoalProgress,
+              layoutCompatibility: layoutCompatibility,
+              midiConnectionState: midiConnectionState,
+              onRescanMidi: onRescanMidi,
             ),
-            SegmentedButton<PracticeListenScope>(
-              segments: const [
-                ButtonSegment(
-                  value: PracticeListenScope.wholeLesson,
-                  label: Text('Whole'),
-                ),
-                ButtonSegment(
-                  value: PracticeListenScope.selectedRange,
-                  label: Text('Section'),
-                ),
-              ],
-              selected: {controller.listenScope},
-              onSelectionChanged: controller.isListening
-                  ? null
-                  : (selection) => controller.setListenScope(selection.single),
-            ),
-            FilterChip(
-              label: const Text('Metronome'),
-              selected: controller.metronomeEnabled,
-              onSelected: controller.isListening
-                  ? null
-                  : controller.setMetronomeEnabled,
-            ),
-            FilterChip(
-              label: const Text('Loop'),
-              selected: controller.loopEnabled,
-              onSelected: controller.isListening
-                  ? null
-                  : controller.setLoopEnabled,
-            ),
-            SizedBox(
-              width: 260,
-              child: Row(
-                children: [
-                  Text('${controller.tempoBpm.round()} BPM'),
-                  Expanded(
-                    child: Slider(
-                      value: controller.tempoBpm,
-                      min: controller.minTempoBpm,
-                      max: controller.maxTempoBpm,
-                      onChanged: controller.isListening
-                          ? null
-                          : controller.setTempoBpm,
-                    ),
-                  ),
-                ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Transport group: Play/Pause (large), Stop, Count-in selector.
+class _TransportGroup extends StatelessWidget {
+  const _TransportGroup({required this.controller, required this.scheme});
+  final PracticeModeController controller;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = controller.isRunning ||
+        controller.isCountingIn ||
+        controller.transportState == PracticeTransportState.paused;
+    final playLabel = controller.isRunning || controller.isCountingIn
+        ? 'Pause'
+        : 'Play';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 48,
+          child: PressableScale(
+            onTap: controller.isListening ? null : controller.togglePlayPause,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(80, 48),
               ),
+              onPressed:
+                  controller.isListening ? null : controller.togglePlayPause,
+              icon: Icon(
+                controller.isRunning || controller.isCountingIn
+                    ? Icons.pause_rounded
+                    : Icons.play_arrow_rounded,
+              ),
+              label: Text(playLabel),
             ),
-            SegmentedButton<PracticeDisplayView>(
-              segments: const [
-                ButtonSegment(
-                  value: PracticeDisplayView.noteHighway,
-                  label: Text('Highway'),
-                ),
-                ButtonSegment(
-                  value: PracticeDisplayView.notation,
-                  label: Text('Notation'),
-                ),
-                ButtonSegment(
-                  value: PracticeDisplayView.drumKit,
-                  label: Text('Kit'),
-                ),
-              ],
-              selected: {controller.displayView},
-              onSelectionChanged: (selection) =>
-                  controller.selectView(selection.single),
+          ),
+        ),
+        if (isActive) ...[
+          const SizedBox(width: 6),
+          IconButton(
+            key: const ValueKey('practice-stop-button'),
+            icon: const Icon(Icons.stop_rounded),
+            onPressed: () {
+              controller.stop();
+            },
+            tooltip: 'Stop',
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
+        const SizedBox(width: 6),
+        _CountInSelector(controller: controller),
+        if (controller.isCountingIn)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              '${controller.countInRemainingBeats}',
+              key: const ValueKey('practice-countin-display'),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: scheme.primary,
+                  ),
             ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Count-in bars selector (0-4 bars).
+class _CountInSelector extends StatelessWidget {
+  const _CountInSelector({required this.controller});
+  final PracticeModeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<int>(
+      key: const ValueKey('practice-countin-selector'),
+      tooltip: 'Count-in bars',
+      initialValue: controller.countInBars,
+      onSelected: controller.setCountInBars,
+      itemBuilder: (context) => List.generate(5, (i) {
+        return PopupMenuItem(
+          value: i,
+          child: Text(i == 0 ? 'No count-in' : '$i bar${i > 1 ? 's' : ''}'),
+        );
+      }),
+      child: Chip(
+        avatar: const Icon(Icons.timer_outlined, size: 16),
+        label: Text(
+          controller.countInBars == 0
+              ? 'No count-in'
+              : '${controller.countInBars}bar',
+        ),
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+}
+
+/// Mode group: Listen toggle, listen scope, View selector.
+class _ModeGroup extends StatelessWidget {
+  const _ModeGroup({
+    required this.controller,
+    required this.listenPlayback,
+    required this.notes,
+  });
+  final PracticeModeController controller;
+  final PracticeListenPlayback listenPlayback;
+  final List<PracticeTimelineNote> notes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        FilledButton.tonal(
+          key: const ValueKey('practice-listen-button'),
+          onPressed: controller.isRunning
+              ? null
+              : () => listenPlayback.toggle(
+                    controller: controller,
+                    notes: notes,
+                  ),
+          child: Text(controller.isListening ? 'Stop Listening' : 'Listen'),
+        ),
+        SegmentedButton<PracticeListenScope>(
+          segments: const [
+            ButtonSegment(
+              value: PracticeListenScope.wholeLesson,
+              label: Text('Whole'),
+            ),
+            ButtonSegment(
+              value: PracticeListenScope.selectedRange,
+              label: Text('Section'),
+            ),
+          ],
+          selected: {controller.listenScope},
+          onSelectionChanged: controller.isListening
+              ? null
+              : (selection) => controller.setListenScope(selection.single),
+        ),
+        SegmentedButton<PracticeDisplayView>(
+          segments: const [
+            ButtonSegment(
+              value: PracticeDisplayView.noteHighway,
+              label: Text('Highway'),
+            ),
+            ButtonSegment(
+              value: PracticeDisplayView.notation,
+              label: Text('Notation'),
+            ),
+            ButtonSegment(
+              value: PracticeDisplayView.drumKit,
+              label: Text('Kit'),
+            ),
+          ],
+          selected: {controller.displayView},
+          onSelectionChanged: (selection) =>
+              controller.selectView(selection.single),
+        ),
+      ],
+    );
+  }
+}
+
+/// Practice tools group: Metronome + BPM, Loop toggle.
+class _ToolsGroup extends StatelessWidget {
+  const _ToolsGroup({required this.controller});
+  final PracticeModeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        FilterChip(
+          label: const Text('Metronome'),
+          selected: controller.metronomeEnabled,
+          onSelected: controller.isListening
+              ? null
+              : controller.setMetronomeEnabled,
+        ),
+        SizedBox(
+          width: 260,
+          child: Row(
+            children: [
+              Text('${controller.tempoBpm.round()} BPM'),
+              Expanded(
+                child: Slider(
+                  value: controller.tempoBpm,
+                  min: controller.minTempoBpm,
+                  max: controller.maxTempoBpm,
+                  onChanged: controller.isListening
+                      ? null
+                      : controller.setTempoBpm,
+                ),
+              ),
+            ],
+          ),
+        ),
+        FilterChip(
+          label: const Text('Loop'),
+          selected: controller.loopEnabled,
+          onSelected: controller.isListening
+              ? null
+              : controller.setLoopEnabled,
+        ),
+      ],
+    );
+  }
+}
+
+/// Status group: Combo, encouragement, alerts, MIDI, daily goal.
+class _StatusGroup extends StatelessWidget {
+  const _StatusGroup({
+    required this.controller,
+    required this.dailyGoalProgress,
+    required this.layoutCompatibility,
+    required this.midiConnectionState,
+    this.onRescanMidi,
+  });
+  final PracticeModeController controller;
+  final DailyGoalProgress? dailyGoalProgress;
+  final LayoutCompatibilitySnapshot? layoutCompatibility;
+  final MidiConnectionState? midiConnectionState;
+  final VoidCallback? onRescanMidi;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Text(
               'Combo ${controller.combo}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            if (controller.encouragementText case final message?)
-              Text(
-                message,
-                style: TextStyle(
-                  color: scheme.secondary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            if (controller.autoPauseTriggered)
-              Text(
-                'Paused - tap any pad to resume',
-                key: const ValueKey('practice-auto-pause-message'),
-                style: TextStyle(
-                  color: scheme.tertiary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            if (controller.midiDisconnected)
-              Text(
-                'MIDI disconnected - reconnect to resume',
-                key: const ValueKey('practice-midi-disconnect-message'),
-                style: TextStyle(
-                  color: scheme.error,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            if (dailyGoalProgress case final goal?)
-              _DailyGoalProgressChip(
-                goal: goal,
-                currentSessionElapsedMs: controller.activeSessionElapsedMs,
-              ),
-            if (layoutCompatibility case final compatibility?)
-              LayoutCompatibilityIndicator(compatibility: compatibility),
+            const SizedBox(width: 8),
             _MidiConnectionIndicator(
               connectionState: midiConnectionState,
               onRescan: onRescanMidi,
             ),
           ],
         ),
-      ),
+        if (controller.encouragementText case final message?)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              message,
+              style: TextStyle(
+                color: scheme.secondary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        if (controller.autoPauseTriggered)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              'Paused - tap any pad to resume',
+              key: const ValueKey('practice-auto-pause-message'),
+              style: TextStyle(
+                color: scheme.tertiary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        if (controller.midiDisconnected)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              'MIDI disconnected - reconnect to resume',
+              key: const ValueKey('practice-midi-disconnect-message'),
+              style: TextStyle(
+                color: scheme.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        if (dailyGoalProgress case final goal?)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: _DailyGoalProgressChip(
+              goal: goal,
+              currentSessionElapsedMs: controller.activeSessionElapsedMs,
+            ),
+          ),
+        if (layoutCompatibility case final compatibility?)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: LayoutCompatibilityIndicator(compatibility: compatibility),
+          ),
+      ],
     );
   }
 }

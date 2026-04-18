@@ -187,18 +187,31 @@ class NoteHighwayPainter extends CustomPainter {
   }
 
   void _paintLanes(Canvas canvas, Size size, NoteHighwayGeometry geometry) {
-    final lanePaint = Paint();
     final separatorPaint = Paint()
-      ..color = colorScheme.outlineVariant
+      ..color = colorScheme.outlineVariant.withValues(alpha: 0.4)
       ..strokeWidth = 1;
 
     for (var index = 0; index < lanes.length; index += 1) {
       final rect = geometry.laneRect(index);
-      lanePaint.color = Color.alphaBlend(
-        lanes[index].color.withValues(alpha: 0.12),
-        colorScheme.surface,
+      // Subtle top-to-bottom gradient per lane.
+      final laneGradient = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color.alphaBlend(
+            lanes[index].color.withValues(alpha: 0.06),
+            colorScheme.surface,
+          ),
+          Color.alphaBlend(
+            lanes[index].color.withValues(alpha: 0.16),
+            colorScheme.surface,
+          ),
+        ],
       );
-      canvas.drawRect(rect, lanePaint);
+      canvas.drawRect(
+        rect,
+        Paint()..shader = laneGradient.createShader(rect),
+      );
       canvas.drawLine(rect.topRight, rect.bottomRight, separatorPaint);
     }
 
@@ -207,19 +220,37 @@ class NoteHighwayPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1
-        ..color = colorScheme.outlineVariant,
+        ..color = colorScheme.outlineVariant.withValues(alpha: 0.5),
     );
   }
 
   void _paintHitLine(Canvas canvas, Size size, double hitLineY) {
+    // Soft glow behind the hit line.
+    final glowRect = Rect.fromLTWH(0, hitLineY - 6, size.width, 12);
+    final glowGradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        colorScheme.secondary.withValues(alpha: 0.0),
+        colorScheme.secondary.withValues(alpha: 0.22),
+        colorScheme.secondary.withValues(alpha: 0.22),
+        colorScheme.secondary.withValues(alpha: 0.0),
+      ],
+      stops: const [0.0, 0.35, 0.65, 1.0],
+    );
+    canvas.drawRect(
+      glowRect,
+      Paint()..shader = glowGradient.createShader(glowRect),
+    );
+
+    // Main hit line.
     final paint = Paint()
       ..color = colorScheme.secondary
-      ..strokeWidth = 3;
+      ..strokeWidth = 2.5;
     canvas.drawLine(Offset(0, hitLineY), Offset(size.width, hitLineY), paint);
   }
 
   void _paintNotes(Canvas canvas, NoteHighwayGeometry geometry) {
-    final notePaint = Paint();
     for (final note in notes) {
       final laneIndex = lanes.indexWhere((lane) => lane.laneId == note.laneId);
       if (laneIndex < 0) {
@@ -235,13 +266,65 @@ class NoteHighwayPainter extends CustomPainter {
         currentTimeMs: currentTimeMs,
         pixelsPerSecond: pixelsPerSecond,
       );
-      notePaint.color = lanes[laneIndex].color;
+      final laneColor = lanes[laneIndex].color;
+
+      // Approaching glow: notes brighten as they approach the hit line.
+      // Proximity 0.0 = far away, 1.0 = at the hit line.
+      final proximity = relativeMs > 0
+          ? (1.0 - (relativeMs / lookaheadMs)).clamp(0.0, 1.0)
+          : 0.0;
+      final glowAlpha = 0.15 + 0.55 * proximity;
+
+      // Past-window fade: notes fade out over ~300ms after passing.
+      final fadeAlpha = relativeMs < 0
+          ? (1.0 - (-relativeMs / pastWindowMs).clamp(0.0, 1.0))
+          : 1.0;
+
+      final noteAlpha = (glowAlpha * fadeAlpha).clamp(0.0, 1.0);
+      final noteColor = laneColor.withValues(alpha: noteAlpha);
+
+      // Note pill with rounded ends.
+      final pillRect = RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center, width: 36, height: 16),
+        const Radius.circular(8),
+      );
+
+      // Glow halo for approaching notes.
+      if (proximity > 0.4) {
+        final haloOpacity = (proximity - 0.4) * 1.2;
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(center: center, width: 44, height: 24),
+            const Radius.circular(12),
+          ),
+          Paint()..color = laneColor.withValues(alpha: 0.18 * haloOpacity),
+        );
+      }
+
+      // Gradient fill on the note pill.
+      final pillGradient = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          noteColor,
+          Color.alphaBlend(
+            Colors.black.withValues(alpha: 0.2),
+            noteColor,
+          ),
+        ],
+      );
       canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: center, width: 34, height: 18),
-          const Radius.circular(8),
-        ),
-        notePaint,
+        pillRect,
+        Paint()..shader = pillGradient.createShader(pillRect.outerRect),
+      );
+
+      // Subtle outline.
+      canvas.drawRRect(
+        pillRect,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8
+          ..color = laneColor.withValues(alpha: 0.5 * fadeAlpha),
       );
     }
   }
@@ -258,20 +341,78 @@ class NoteHighwayPainter extends CustomPainter {
         laneIndex: laneIndex,
         deltaMs: marker.deltaMs,
       );
-      final paint = Paint()..color = gradeColor(marker.grade, colorScheme);
-      canvas.drawCircle(
-        center,
-        marker.grade == NoteHighwayGrade.miss ? 8 : 10,
-        paint,
-      );
-      canvas.drawCircle(
-        center,
-        14,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
-          ..color = paint.color.withValues(alpha: 0.8),
-      );
+      final color = gradeColor(marker.grade, colorScheme);
+
+      switch (marker.grade) {
+        case NoteHighwayGrade.perfect:
+          // Perfect: bright core + expanding ring.
+          canvas.drawCircle(center, 10, Paint()..color = color);
+          canvas.drawCircle(
+            center,
+            16,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2.5
+              ..color = color.withValues(alpha: 0.7),
+          );
+          canvas.drawCircle(
+            center,
+            22,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1.2
+              ..color = color.withValues(alpha: 0.3),
+          );
+
+        case NoteHighwayGrade.good:
+          // Good: solid core + single ring.
+          canvas.drawCircle(center, 9, Paint()..color = color);
+          canvas.drawCircle(
+            center,
+            14,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2
+              ..color = color.withValues(alpha: 0.65),
+          );
+
+        case NoteHighwayGrade.early:
+        case NoteHighwayGrade.late:
+          // Early/Late: colored dot offset from center.
+          canvas.drawCircle(center, 8, Paint()..color = color);
+          canvas.drawCircle(
+            center,
+            12,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1.5
+              ..color = color.withValues(alpha: 0.5),
+          );
+
+        case NoteHighwayGrade.miss:
+          // Miss: dim hollow outline + faded cross.
+          canvas.drawCircle(
+            center,
+            9,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1.8
+              ..color = color.withValues(alpha: 0.5),
+          );
+          final crossPaint = Paint()
+            ..strokeWidth = 1.5
+            ..color = color.withValues(alpha: 0.35);
+          canvas.drawLine(
+            Offset(center.dx - 5, center.dy - 5),
+            Offset(center.dx + 5, center.dy + 5),
+            crossPaint,
+          );
+          canvas.drawLine(
+            Offset(center.dx + 5, center.dy - 5),
+            Offset(center.dx - 5, center.dy + 5),
+            crossPaint,
+          );
+      }
     }
   }
 

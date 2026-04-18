@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:taal/design/motion.dart';
 import 'package:taal/features/app_shell/practice_habit_store.dart';
 import 'package:taal/features/library/lesson_catalog.dart';
 import 'package:taal/features/library/library_screen.dart';
@@ -308,12 +309,18 @@ class _TaalAppShellState extends State<TaalAppShell> {
       builder: (context, constraints) {
         final useRail = constraints.maxWidth >= 760;
         final selected = _destinations[_selectedIndex];
+        final sectionChild = _sectionBody(
+          context,
+          selected.kind,
+          profileState,
+          activeProfile,
+        );
         final body = _ShellSectionScaffold(
-          child: _sectionBody(
-            context,
-            selected.kind,
-            profileState,
-            activeProfile,
+          child: SectionTransition(
+            child: KeyedSubtree(
+              key: ValueKey(selected.kind),
+              child: sectionChild,
+            ),
           ),
         );
 

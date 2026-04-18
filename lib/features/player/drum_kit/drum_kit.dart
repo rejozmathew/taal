@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:taal/design/colors.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 
 class VisualDrumKitWidget extends StatelessWidget {
@@ -220,11 +221,11 @@ class VisualDrumKitPainter extends CustomPainter {
     final bounds = geometry.kitBounds;
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(bounds.center.dx, bounds.bottom - bounds.height * 0.14),
-        width: bounds.width * 0.68,
-        height: bounds.height * 0.18,
+        center: Offset(bounds.center.dx, bounds.bottom - bounds.height * 0.10),
+        width: bounds.width * 0.72,
+        height: bounds.height * 0.16,
       ),
-      Paint()..color = colorScheme.shadow.withValues(alpha: 0.18),
+      Paint()..color = colorScheme.shadow.withValues(alpha: 0.12),
     );
   }
 
@@ -249,16 +250,119 @@ class VisualDrumKitPainter extends CustomPainter {
       height: rect.height,
     );
 
-    if (flashColor != null) {
-      canvas.drawOval(
-        localRect.inflate(10 + 10 * flash),
-        Paint()..color = flashColor.withValues(alpha: 0.22 * flash),
+    // Expanding ring hit flash effect.
+    if (flashColor != null && flash > 0) {
+      final ringRadius = localRect.shortestSide / 2 + 12 * flash + 8;
+      canvas.drawCircle(
+        Offset.zero,
+        ringRadius,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.0 * flash
+          ..color = flashColor.withValues(alpha: 0.55 * flash),
       );
     }
 
-    final baseColor = pad.kind == VisualDrumKitPadKind.cymbal
-        ? colorScheme.tertiaryContainer
-        : colorScheme.surfaceContainerHighest;
+    switch (pad.kind) {
+      case VisualDrumKitPadKind.cymbal:
+        _paintCymbal(canvas, localRect, pad, flashColor, flash);
+      case VisualDrumKitPadKind.kick:
+        _paintKick(canvas, localRect, flashColor, flash);
+      case VisualDrumKitPadKind.drum:
+        _paintDrum(canvas, localRect, flashColor, flash);
+    }
+
+    canvas.restore();
+  }
+
+  void _paintCymbal(
+    Canvas canvas,
+    Rect rect,
+    VisualDrumKitPad pad,
+    Color? flashColor,
+    double flash,
+  ) {
+    // Cymbal body — wider ellipse with distinct metallic coloring.
+    final baseColor = TaalColors.secondary.withValues(alpha: 0.25);
+    final fill = flashColor == null
+        ? baseColor
+        : Color.alphaBlend(flashColor.withValues(alpha: 0.45), baseColor);
+    final outlineColor = flashColor == null
+        ? TaalColors.secondary.withValues(alpha: 0.50)
+        : Color.alphaBlend(
+            flashColor.withValues(alpha: 0.70),
+            TaalColors.secondary.withValues(alpha: 0.50),
+          );
+
+    // Edge ring — thin outer stroke.
+    canvas.drawOval(
+      rect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8
+        ..color = outlineColor,
+    );
+    canvas.drawOval(rect, Paint()..color = fill);
+
+    // Inner grooves for realism.
+    canvas.drawOval(
+      rect.deflate(rect.shortestSide * 0.18),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.7
+        ..color = outlineColor.withValues(alpha: 0.35),
+    );
+
+    // Bell dot at center.
+    final bellRadius = rect.shortestSide * 0.12;
+    canvas.drawCircle(
+      Offset.zero,
+      bellRadius,
+      Paint()..color = TaalColors.secondary.withValues(alpha: 0.45),
+    );
+    canvas.drawCircle(
+      Offset.zero,
+      bellRadius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.8
+        ..color = outlineColor.withValues(alpha: 0.60),
+    );
+
+    // Hi-hat pedal indicator.
+    if (pad.laneId == 'hihat') {
+      final pedalTop = Offset(0, rect.bottom + 2);
+      final pedalBottom = Offset(0, rect.bottom + rect.height * 0.6);
+      canvas.drawLine(
+        pedalTop,
+        pedalBottom,
+        Paint()
+          ..strokeWidth = 2.5
+          ..color = colorScheme.outlineVariant,
+      );
+      // Pedal base.
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: pedalBottom,
+            width: rect.width * 0.25,
+            height: rect.height * 0.22,
+          ),
+          const Radius.circular(2),
+        ),
+        Paint()..color = colorScheme.outlineVariant.withValues(alpha: 0.6),
+      );
+    }
+  }
+
+  void _paintKick(
+    Canvas canvas,
+    Rect rect,
+    Color? flashColor,
+    double flash,
+  ) {
+    // Kick drum — large circle with concentric rings for the drum head.
+    final baseColor = colorScheme.surfaceContainerHighest;
     final fill = flashColor == null
         ? baseColor
         : Color.alphaBlend(flashColor.withValues(alpha: 0.42), baseColor);
@@ -269,26 +373,84 @@ class VisualDrumKitPainter extends CustomPainter {
             colorScheme.outline,
           );
 
-    canvas.drawOval(localRect, Paint()..color = fill);
-    canvas.drawOval(
-      localRect,
+    // Use a circle (inscribed in the rect).
+    final radius = rect.shortestSide / 2;
+    canvas.drawCircle(Offset.zero, radius, Paint()..color = fill);
+    canvas.drawCircle(
+      Offset.zero,
+      radius,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = hit == null ? 1.4 : 3
+        ..strokeWidth = 2.5
         ..color = outline,
     );
 
-    if (pad.kind == VisualDrumKitPadKind.kick) {
-      canvas.drawOval(
-        localRect.deflate(8),
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1
-          ..color = colorScheme.outlineVariant,
-      );
-    }
+    // Shell ring.
+    canvas.drawCircle(
+      Offset.zero,
+      radius * 0.82,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = outline.withValues(alpha: 0.40),
+    );
 
-    canvas.restore();
+    // Beater patch (center).
+    canvas.drawCircle(
+      Offset.zero,
+      radius * 0.22,
+      Paint()..color = outline.withValues(alpha: 0.25),
+    );
+  }
+
+  void _paintDrum(
+    Canvas canvas,
+    Rect rect,
+    Color? flashColor,
+    double flash,
+  ) {
+    // Drum (snare / toms) — oval with rim highlight and head tension lines.
+    final baseColor = colorScheme.surfaceContainerHighest;
+    final fill = flashColor == null
+        ? baseColor
+        : Color.alphaBlend(flashColor.withValues(alpha: 0.42), baseColor);
+    final outline = flashColor == null
+        ? colorScheme.outlineVariant
+        : Color.alphaBlend(
+            flashColor.withValues(alpha: 0.75),
+            colorScheme.outline,
+          );
+
+    // Drum body.
+    canvas.drawOval(rect, Paint()..color = fill);
+    canvas.drawOval(
+      rect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2
+        ..color = outline,
+    );
+
+    // Drum rim — inner ring for the head edge.
+    canvas.drawOval(
+      rect.deflate(rect.shortestSide * 0.12),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9
+        ..color = outline.withValues(alpha: 0.35),
+    );
+
+    // Subtle cross-hair tension lines on the head.
+    final cx = rect.center.dx;
+    final cy = rect.center.dy;
+    final halfW = rect.width * 0.28;
+    final halfH = rect.height * 0.28;
+    final lineColor = outline.withValues(alpha: 0.15);
+    final linePaint = Paint()
+      ..strokeWidth = 0.6
+      ..color = lineColor;
+    canvas.drawLine(Offset(cx - halfW, cy), Offset(cx + halfW, cy), linePaint);
+    canvas.drawLine(Offset(cx, cy - halfH), Offset(cx, cy + halfH), linePaint);
   }
 
   void _paintLabel(Canvas canvas, Rect rect, VisualDrumKitPad pad) {

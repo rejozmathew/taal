@@ -375,6 +375,103 @@ void main() {
       expect(controller.transportState, PracticeTransportState.stopped);
     },
   );
+
+  test('count-in delays running state by configured bars', () {
+    final controller = PracticeModeController(
+      baseBpm: 120,
+      totalDurationMs: 8000,
+      countInBars: 2,
+    );
+
+    controller.play();
+    expect(controller.transportState, PracticeTransportState.countIn);
+    expect(controller.isCountingIn, isTrue);
+    expect(controller.countInRemainingBeats, greaterThan(0));
+
+    // At 120 BPM, 2 bars = 8 beats = 4000ms. Advance 3000ms.
+    controller.advanceBy(const Duration(milliseconds: 3000));
+    expect(controller.transportState, PracticeTransportState.countIn);
+
+    // Advance past the remaining 1000ms.
+    controller.advanceBy(const Duration(milliseconds: 1100));
+    expect(controller.transportState, PracticeTransportState.running);
+    expect(controller.isCountingIn, isFalse);
+  });
+
+  test('count-in of zero bars starts running immediately', () {
+    final controller = PracticeModeController(
+      baseBpm: 120,
+      totalDurationMs: 8000,
+      countInBars: 0,
+    );
+
+    controller.play();
+    expect(controller.transportState, PracticeTransportState.running);
+  });
+
+  test('setCountInBars rejects values outside 0-4', () {
+    final controller = _controller();
+    expect(() => controller.setCountInBars(-1), throwsArgumentError);
+    expect(() => controller.setCountInBars(5), throwsArgumentError);
+  });
+
+  test('togglePlayPause cancels count-in', () {
+    final controller = PracticeModeController(
+      baseBpm: 120,
+      totalDurationMs: 8000,
+      countInBars: 1,
+    );
+
+    controller.play();
+    expect(controller.isCountingIn, isTrue);
+
+    controller.togglePlayPause();
+    expect(controller.transportState, PracticeTransportState.stopped);
+    expect(controller.countInRemainingMs, 0);
+  });
+
+  test('stop clears count-in state', () {
+    final controller = PracticeModeController(
+      baseBpm: 120,
+      totalDurationMs: 8000,
+      countInBars: 1,
+    );
+
+    controller.play();
+    expect(controller.isCountingIn, isTrue);
+
+    controller.stop();
+    expect(controller.transportState, PracticeTransportState.stopped);
+    expect(controller.countInRemainingMs, 0);
+  });
+
+  testWidgets('stop button appears during playback and stops transport', (
+    tester,
+  ) async {
+    final controller = _controller()..play();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PracticeModeScreen(
+            controller: controller,
+            lanes: _lanes,
+            notes: _notes,
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('practice-stop-button')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('practice-stop-button')));
+    await tester.pump();
+
+    expect(controller.transportState, PracticeTransportState.stopped);
+  });
 }
 
 PracticeModeController _controller() {

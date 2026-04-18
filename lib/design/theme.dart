@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'colors.dart';
+import 'motion.dart';
 import 'tokens.dart';
 import 'typography.dart';
 
@@ -92,6 +93,7 @@ abstract final class TaalTheme {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(_radius)),
           ),
+          animationDuration: TaalMotion.durationFast,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -99,6 +101,7 @@ abstract final class TaalTheme {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(_radius)),
           ),
+          animationDuration: TaalMotion.durationFast,
         ),
       ),
       inputDecorationTheme: const InputDecorationTheme(
@@ -107,12 +110,50 @@ abstract final class TaalTheme {
         ),
       ),
       dividerTheme: DividerThemeData(color: outline),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.windows: _TaalPageTransitionsBuilder(),
+          TargetPlatform.android: _TaalPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: _TaalPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(_radius)),
         ),
       ),
+    );
+  }
+}
+
+/// Slide + fade page transition for Navigator-pushed routes (non-iOS).
+class _TaalPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _TaalPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final slide = Tween<Offset>(
+      begin: const Offset(0.05, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: animation,
+      curve: TaalMotion.curveStandard,
+    ));
+    return FadeTransition(
+      opacity: CurvedAnimation(
+        parent: animation,
+        curve: TaalMotion.curveStandard,
+      ),
+      child: SlideTransition(position: slide, child: child),
     );
   }
 }
