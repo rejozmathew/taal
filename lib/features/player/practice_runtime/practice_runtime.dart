@@ -404,9 +404,7 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
               grade: NoteHighwayGrade.miss,
             ),
           );
-          controller.setRuntimeFeedback(
-            lastGrade: NoteHighwayGrade.miss,
-          );
+          controller.setRuntimeFeedback(lastGrade: NoteHighwayGrade.miss);
           if (allowAutoPause && _shouldAutoPauseAfterMiss(event)) {
             shouldAutoPause = true;
           }

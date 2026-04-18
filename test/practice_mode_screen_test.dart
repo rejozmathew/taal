@@ -485,10 +485,7 @@ void main() {
   test('setRuntimeFeedback preserves lastGrade when not supplied', () {
     final controller = _controller();
 
-    controller.setRuntimeFeedback(
-      combo: 3,
-      lastGrade: NoteHighwayGrade.good,
-    );
+    controller.setRuntimeFeedback(combo: 3, lastGrade: NoteHighwayGrade.good);
     controller.setRuntimeFeedback(combo: 4);
 
     expect(controller.lastGrade, NoteHighwayGrade.good);
@@ -569,20 +566,14 @@ void main() {
       ),
     );
 
-    expect(
-      find.byKey(const ValueKey('practice-grade-flash')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('practice-grade-flash')), findsOneWidget);
 
     controller.setRuntimeFeedback(lastGrade: NoteHighwayGrade.perfect);
     await tester.pump();
     await tester.pumpAndSettle();
 
     // Flash overlay still in the tree (animation completed).
-    expect(
-      find.byKey(const ValueKey('practice-grade-flash')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('practice-grade-flash')), findsOneWidget);
   });
 
   testWidgets('combo reset to zero triggers shake animation', (tester) async {

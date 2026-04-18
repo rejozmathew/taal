@@ -138,8 +138,10 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
           child: Stack(
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 child: _PracticeViewSurface(
                   controller: controller,
                   lanes: widget.lanes,
@@ -1141,11 +1143,7 @@ class _DailyGoalProgressChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        DailyGoalRing(
-          progress: progress,
-          size: 32,
-          strokeWidth: 3,
-        ),
+        DailyGoalRing(progress: progress, size: 32, strokeWidth: 3),
         const SizedBox(width: 6),
         Text(
           'Daily goal ${_formatMinutes(completed)} / ${goal.dailyGoalMinutes} min',
@@ -1419,8 +1417,9 @@ class _AnimatedComboCounterState extends State<_AnimatedComboCounter>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final double dx =
-            _isReset ? math.sin(_shake.value * math.pi) * 4.0 : 0.0;
+        final double dx = _isReset
+            ? math.sin(_shake.value * math.pi) * 4.0
+            : 0.0;
         final double scale = _isReset ? 1.0 : _scale.value;
         return Transform.translate(
           offset: Offset(dx, 0),
@@ -1429,10 +1428,9 @@ class _AnimatedComboCounterState extends State<_AnimatedComboCounter>
             child: Text(
               'Combo ${widget.combo}',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: _comboColor(scheme),
-                    fontWeight:
-                        isMilestone ? FontWeight.w900 : FontWeight.w600,
-                  ),
+                color: _comboColor(scheme),
+                fontWeight: isMilestone ? FontWeight.w900 : FontWeight.w600,
+              ),
             ),
           ),
         );
@@ -1443,10 +1441,7 @@ class _AnimatedComboCounterState extends State<_AnimatedComboCounter>
 
 /// Slides encouragement text in from the right with a fade.
 class _AnimatedEncouragement extends StatefulWidget {
-  const _AnimatedEncouragement({
-    super.key,
-    required this.message,
-  });
+  const _AnimatedEncouragement({super.key, required this.message});
   final String message;
 
   @override
@@ -1466,12 +1461,10 @@ class _AnimatedEncouragementState extends State<_AnimatedEncouragement>
       vsync: this,
       duration: TaalMotion.durationMedium,
     );
-    _slide = Tween<Offset>(
-      begin: const Offset(0.3, 0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
-    );
+    _slide = Tween<Offset>(begin: const Offset(0.3, 0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
+        );
     _opacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
     );

@@ -1032,9 +1032,7 @@ class _HomeMetricsRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                WeeklyPracticeGrid(
-                  daysPracticed: snapshot.week.daysPracticed,
-                ),
+                WeeklyPracticeGrid(daysPracticed: snapshot.week.daysPracticed),
                 const SizedBox(height: 8),
                 Text(
                   '${snapshot.week.totalMinutesCompleted} min / ${snapshot.week.fullLessonCompletions} lessons',

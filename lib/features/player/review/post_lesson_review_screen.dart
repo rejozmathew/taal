@@ -43,15 +43,16 @@ class PostLessonReviewScreen extends StatelessWidget {
               DecoratedBox(
                 key: const ValueKey('best-stat'),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primaryContainer
-                      .withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -64,10 +65,8 @@ class PostLessonReviewScreen extends StatelessWidget {
                       Flexible(
                         child: Text(
                           summary.bestStatText(),
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],
@@ -370,11 +369,11 @@ class _ScoreHeader extends StatelessWidget {
           duration: const Duration(milliseconds: 450),
           curve: Curves.easeOutCubic,
           builder: (context, value, _) {
-            final scaleFactor = 1.0 +
+            final scaleFactor =
+                1.0 +
                 0.15 *
                     Curves.easeOutCubic.transform(
-                      (value / math.max(summary.scoreTotal, 1))
-                          .clamp(0.0, 1.0),
+                      (value / math.max(summary.scoreTotal, 1)).clamp(0.0, 1.0),
                     );
             return Transform.scale(
               scale: scaleFactor,

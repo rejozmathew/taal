@@ -108,11 +108,7 @@ class _RingPainter extends CustomPainter {
 
 /// Streak counter with a flame icon and day count.
 class StreakCounter extends StatelessWidget {
-  const StreakCounter({
-    super.key,
-    required this.days,
-    this.message,
-  });
+  const StreakCounter({super.key, required this.days, this.message});
 
   final int days;
   final String? message;
@@ -133,8 +129,8 @@ class StreakCounter extends StatelessWidget {
         Text(
           '$days day${days == 1 ? '' : 's'}',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: isActive ? null : scheme.onSurfaceVariant,
-              ),
+            color: isActive ? null : scheme.onSurfaceVariant,
+          ),
         ),
         if (message != null) ...[
           const SizedBox(width: 8),
