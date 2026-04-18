@@ -13,7 +13,8 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Component | Location | Status |
 |-----------|----------|--------|
 | PRD + specs + plans | `docs/`, `plans/` | Implemented |
-| Flutter app shell | `lib/features/app_shell/`, `lib/main.dart`, `test/app_shell_test.dart` | Implemented (P1-22 adaptive home/navigation shell with profile switcher, recommended lesson surface, safe placeholders for incomplete sections, P1-20 Settings destination wiring, and P1-24 habit metrics on Home) |
+| Flutter app shell | `lib/features/app_shell/`, `lib/main.dart`, `test/app_shell_test.dart` | Implemented (P1-22 adaptive home/navigation shell with profile switcher, recommended lesson surface, safe placeholders for incomplete sections, P1-20 Settings destination wiring, P1-24 habit metrics on Home, and P1-17 first-run onboarding routing when no local profiles exist) |
+| Flutter onboarding flow | `lib/features/onboarding/`, `test/onboarding_flow_test.dart` | Implemented (P1-17 first-run welcome/profile/experience/connect/calibrate/first-lesson flow, starter lesson selection by experience, no-kit demo mode with tap pads, MIDI device handoff, and first-lesson feedback through the existing Practice runtime adapter) |
 | Flutter practice habit store | `lib/features/app_shell/practice_habit_store.dart`, `test/practice_habit_bridge_test.dart` | Implemented (P1-24 Dart model/store over the Rust habit snapshot bridge for streak, daily goal, and weekly summary rendering) |
 | Flutter Settings screen | `lib/features/settings/`, `test/settings_*_test.dart` | Implemented (P1-20 profile, MIDI kit profile, manual latency, velocity curve, audio, display, auto-pause, Practice Mode history preferences, and P1-24 daily goal minutes backed by Rust-owned persistence) |
 | Flutter local profile UI | `lib/features/profiles/` | Implemented (P1-16 create/switch/delete local profiles, experience/avatar selection, preferred view control) |
@@ -120,7 +121,7 @@ Taal has three layers with strict ownership boundaries.
 
 ## App Shell and Navigation
 
-The P1-22 app shell is now the `MaterialApp.home` entry point. It opens the Rust-backed local profile store, resolves the active player, and provides the top-level landing surface and navigation frame.
+The P1-22 app shell is now the `MaterialApp.home` entry point. It opens the Rust-backed local profile store, resolves the active player, and provides the top-level landing surface and navigation frame. If the profile store is empty, the shell mounts the P1-17 onboarding flow instead of the navigation frame.
 
 ```
 main.dart
@@ -154,6 +155,29 @@ PracticeAttemptStore / LocalProfileStore -> SQLite
 Flutter supplies `today_local_day_key` from the local calendar date. Rust derives streaks, today's completed minutes, and the weekly summary from player-owned `PracticeAttempt.local_day_key` rows and reads `ProfileSettings.daily_goal_minutes` from the existing profile settings table. There is no streak table in SQLite.
 
 Profile switching remains Rust-owned for persistence. Flutter requests `setActiveLocalProfile` through `LocalProfileStore`, updates the active profile state, and profile-specific home content changes immediately.
+
+## Onboarding Flow
+
+The P1-17 onboarding flow is a Flutter orchestration surface over existing profile, MIDI, content, and Practice runtime boundaries. It creates the first local player profile through the Rust profile store, records the selected `ExperienceLevel`, detects MIDI input devices through the native MIDI adapter, and either uses the selected kit path or switches to no-kit demo mode with tap pads.
+
+```
+TaalAppShell with no profiles
+       |
+OnboardingFlow
+       |-- createProfile(...) -> Rust local profile storage
+       |-- listDevices/openDevice(...) -> native MIDI adapter
+       |-- load bundled starter lesson/layout/scoring assets
+       |-- PracticeModeRuntimeAdapter -> Rust Practice runtime session
+       |
+First lesson PracticeModeScreen
+       |-- tap pads -> source-neutral touch InputHit
+       |-- selected MIDI device -> default GM-style onboarding DeviceProfile -> Rust MidiMapper
+       |-- Rust EngineEvent stream -> Practice Mode feedback markers
+```
+
+Experience selection chooses the first starter lesson: beginner loads `beginner-basic-rock.json`, intermediate loads `intermediate-syncopated-kick.json`, and teacher/creator-oriented onboarding loads `variety-funk-groove.json`. Flutter bundles the starter lessons, standard layout, and standard scoring profile as app assets so onboarding can start the first lesson without going through Library.
+
+The onboarding MIDI map is an ephemeral General MIDI-style 5-piece `DeviceProfile` passed only to the runtime adapter so a detected kit can produce first-lesson feedback quickly. Persisted per-player kit profiles, calibration offsets, and manual fine-tuning remain owned by the P1-08/P1-20 device-profile and settings flows. Skipping MIDI enters demo mode; tap pads still submit hits through the same Rust session lifecycle and event stream.
 
 ## Settings and Preferences
 

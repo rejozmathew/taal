@@ -962,11 +962,11 @@ class _ErrorBanner extends StatelessWidget {
 String _recommendedLessonTitle(rust_profiles.PlayerProfileDto? profile) {
   switch (profile?.experienceLevel) {
     case rust_profiles.ProfileExperienceLevelDto.beginner:
-      return 'Basic Rock Beat 1';
+      return 'Basic Rock Beat';
     case rust_profiles.ProfileExperienceLevelDto.intermediate:
-      return 'Syncopated 16ths';
+      return 'Syncopated Kick Push';
     case rust_profiles.ProfileExperienceLevelDto.teacher:
-      return 'Teacher Demo Groove';
+      return 'Pocket Funk Groove';
     case null:
       return 'First Steps: Kick and Snare';
   }

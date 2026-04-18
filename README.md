@@ -51,10 +51,11 @@ Once available:
 - **Android:** Google Play Store + sideload APK from Releases
 
 ### First Launch (when released)
-1. Connect your e-kit via USB
-2. Taal detects your kit automatically
-3. Quick calibration (30 seconds)
-4. Play your first lesson
+1. Create a local player profile
+2. Choose your experience level
+3. Connect your e-kit via USB, or continue with on-screen tap pads
+4. Calibrate when a kit profile is ready
+5. Play your first starter lesson
 
 To build from source or follow progress, see [STATUS.md](STATUS.md).
 

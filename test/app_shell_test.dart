@@ -82,7 +82,7 @@ void main() {
     await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
 
     expect(find.text('Welcome back, Ada.'), findsOneWidget);
-    expect(find.text('Basic Rock Beat 1'), findsOneWidget);
+    expect(find.text('Basic Rock Beat'), findsOneWidget);
 
     await tester.ensureVisible(
       find.byKey(const ValueKey('profile-switch-ben')),
@@ -92,7 +92,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Welcome back, Ben.'), findsOneWidget);
-    expect(find.text('Syncopated 16ths'), findsOneWidget);
+    expect(find.text('Syncopated Kick Push'), findsOneWidget);
   });
 
   testWidgets('settings exposes the same profile switcher', (tester) async {
