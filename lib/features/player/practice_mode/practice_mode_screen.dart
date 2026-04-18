@@ -820,7 +820,8 @@ class _TransportGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive = controller.isRunning ||
+    final isActive =
+        controller.isRunning ||
         controller.isCountingIn ||
         controller.transportState == PracticeTransportState.paused;
     final playLabel = controller.isRunning || controller.isCountingIn
@@ -834,11 +835,10 @@ class _TransportGroup extends StatelessWidget {
           child: PressableScale(
             onTap: controller.isListening ? null : controller.togglePlayPause,
             child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(80, 48),
-              ),
-              onPressed:
-                  controller.isListening ? null : controller.togglePlayPause,
+              style: FilledButton.styleFrom(minimumSize: const Size(80, 48)),
+              onPressed: controller.isListening
+                  ? null
+                  : controller.togglePlayPause,
               icon: Icon(
                 controller.isRunning || controller.isCountingIn
                     ? Icons.pause_rounded
@@ -869,9 +869,9 @@ class _TransportGroup extends StatelessWidget {
               '${controller.countInRemainingBeats}',
               key: const ValueKey('practice-countin-display'),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: scheme.primary,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: scheme.primary,
+              ),
             ),
           ),
       ],
@@ -932,10 +932,8 @@ class _ModeGroup extends StatelessWidget {
           key: const ValueKey('practice-listen-button'),
           onPressed: controller.isRunning
               ? null
-              : () => listenPlayback.toggle(
-                    controller: controller,
-                    notes: notes,
-                  ),
+              : () =>
+                    listenPlayback.toggle(controller: controller, notes: notes),
           child: Text(controller.isListening ? 'Stop Listening' : 'Listen'),
         ),
         SegmentedButton<PracticeListenScope>(
@@ -1018,9 +1016,7 @@ class _ToolsGroup extends StatelessWidget {
         FilterChip(
           label: const Text('Loop'),
           selected: controller.loopEnabled,
-          onSelected: controller.isListening
-              ? null
-              : controller.setLoopEnabled,
+          onSelected: controller.isListening ? null : controller.setLoopEnabled,
         ),
       ],
     );

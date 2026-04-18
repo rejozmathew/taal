@@ -462,10 +462,7 @@ void main() {
       ),
     );
 
-    expect(
-      find.byKey(const ValueKey('practice-stop-button')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('practice-stop-button')), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('practice-stop-button')));
     await tester.pump();

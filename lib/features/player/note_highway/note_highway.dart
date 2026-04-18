@@ -208,10 +208,7 @@ class NoteHighwayPainter extends CustomPainter {
           ),
         ],
       );
-      canvas.drawRect(
-        rect,
-        Paint()..shader = laneGradient.createShader(rect),
-      );
+      canvas.drawRect(rect, Paint()..shader = laneGradient.createShader(rect));
       canvas.drawLine(rect.topRight, rect.bottomRight, separatorPaint);
     }
 
@@ -307,10 +304,7 @@ class NoteHighwayPainter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: [
           noteColor,
-          Color.alphaBlend(
-            Colors.black.withValues(alpha: 0.2),
-            noteColor,
-          ),
+          Color.alphaBlend(Colors.black.withValues(alpha: 0.2), noteColor),
         ],
       );
       canvas.drawRRect(

@@ -174,10 +174,10 @@ class _InteractiveCardState extends State<InteractiveCard>
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final baseElevation = widget.elevation ?? 1.0;
-    final effectiveElevation =
-        _hovered ? baseElevation + TaalMotion.hoverElevationBoost : baseElevation;
-    final radius =
-        widget.borderRadius ?? BorderRadius.circular(8.0);
+    final effectiveElevation = _hovered
+        ? baseElevation + TaalMotion.hoverElevationBoost
+        : baseElevation;
+    final radius = widget.borderRadius ?? BorderRadius.circular(8.0);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -223,11 +223,7 @@ class _InteractiveCardState extends State<InteractiveCard>
 /// Wrap a [Column] or [ListView] item with this, passing its index, to get a
 /// cascading entrance animation when the list first appears.
 class StaggeredFadeIn extends StatefulWidget {
-  const StaggeredFadeIn({
-    super.key,
-    required this.index,
-    required this.child,
-  });
+  const StaggeredFadeIn({super.key, required this.index, required this.child});
 
   final int index;
   final Widget child;
@@ -253,12 +249,10 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn>
       parent: _controller,
       curve: TaalMotion.curveStandard,
     );
-    _slide = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
-    );
+    _slide = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
+        );
 
     // Stagger: delay proportional to index.
     final delay = TaalMotion.staggerInterval * widget.index;

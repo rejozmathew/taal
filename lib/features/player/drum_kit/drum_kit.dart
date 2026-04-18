@@ -355,12 +355,7 @@ class VisualDrumKitPainter extends CustomPainter {
     }
   }
 
-  void _paintKick(
-    Canvas canvas,
-    Rect rect,
-    Color? flashColor,
-    double flash,
-  ) {
+  void _paintKick(Canvas canvas, Rect rect, Color? flashColor, double flash) {
     // Kick drum — large circle with concentric rings for the drum head.
     final baseColor = colorScheme.surfaceContainerHighest;
     final fill = flashColor == null
@@ -403,12 +398,7 @@ class VisualDrumKitPainter extends CustomPainter {
     );
   }
 
-  void _paintDrum(
-    Canvas canvas,
-    Rect rect,
-    Color? flashColor,
-    double flash,
-  ) {
+  void _paintDrum(Canvas canvas, Rect rect, Color? flashColor, double flash) {
     // Drum (snare / toms) — oval with rim highlight and head tension lines.
     final baseColor = colorScheme.surfaceContainerHighest;
     final fill = flashColor == null

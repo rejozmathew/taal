@@ -141,13 +141,10 @@ class _TaalPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    final slide = Tween<Offset>(
-      begin: const Offset(0.05, 0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: animation,
-      curve: TaalMotion.curveStandard,
-    ));
+    final slide = Tween<Offset>(begin: const Offset(0.05, 0), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: animation, curve: TaalMotion.curveStandard),
+        );
     return FadeTransition(
       opacity: CurvedAnimation(
         parent: animation,

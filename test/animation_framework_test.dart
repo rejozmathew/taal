@@ -34,11 +34,7 @@ void main() {
     testWidgets('renders child', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: SectionTransition(
-              child: Text('Hello'),
-            ),
-          ),
+          home: Scaffold(body: SectionTransition(child: Text('Hello'))),
         ),
       );
       expect(find.text('Hello'), findsOneWidget);
@@ -49,10 +45,7 @@ void main() {
         return MaterialApp(
           home: Scaffold(
             body: SectionTransition(
-              child: KeyedSubtree(
-                key: ValueKey(text),
-                child: Text(text),
-              ),
+              child: KeyedSubtree(key: ValueKey(text), child: Text(text)),
             ),
           ),
         );
@@ -118,11 +111,16 @@ void main() {
         tester.getCenter(find.text('btn')),
       );
       await tester.pump();
-      await tester.pump(TaalMotion.durationFast + const Duration(milliseconds: 50));
+      await tester.pump(
+        TaalMotion.durationFast + const Duration(milliseconds: 50),
+      );
 
       // The ScaleTransition should have reached pressScale.
       final during = tester.widget<ScaleTransition>(scaleFinder.first);
-      expect(during.scale.value, lessThanOrEqualTo(TaalMotion.pressScale + 0.01));
+      expect(
+        during.scale.value,
+        lessThanOrEqualTo(TaalMotion.pressScale + 0.01),
+      );
 
       await gesture.up();
       await tester.pumpAndSettle();
