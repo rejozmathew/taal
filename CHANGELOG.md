@@ -7,6 +7,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Post-lesson review screen polish: score header now animates in with a scale effect and color-codes by performance (green for 90%+, teal for 70%+, gold for 50%+), best stat displayed as a trophy badge, lane breakdown bars colored by hit rate, improvement suggestions shown as styled cards with lightbulb icons, and "Next Lesson" promoted to primary button with "Retry" as secondary.
+- Animated combo counter in Practice Mode: scales up on each increment, shakes on combo reset, and color intensifies at milestones (8 = green, 16 = gold, 32 = perfect green). Combo milestones display with extra-bold weight.
+- Grade flash overlay during practice: a brief screen-edge color wash on Perfect hits (green) and Misses (gray) provides instant visual feedback without blocking the play surface.
+- Animated encouragement messages that slide in from the right with a fade when milestone text appears (e.g., "Great streak!").
+- Daily goal progress ring replacing the previous linear progress bar: a circular arc rendered with CustomPainter that fills from teal to gold as you approach your daily practice goal, shown on both the home screen and practice toolbar.
+- Streak counter with flame icon and day count on the home screen, replacing the plain text metric panel.
+- Weekly practice summary as a 7-day grid of practiced vs. skipped day indicators on the home screen.
 - Practice toolbar redesign with grouped layout: Transport section (large Play/Pause with icon, Stop button), Mode section (Listen toggle, scope selector, view switcher), Practice Tools section (Metronome, BPM slider, Loop), and Status section (Combo, MIDI indicator, alerts, daily goal). Groups wrap responsively on narrow windows. Toolbar height is constrained with scroll for tight layouts.
 - Count-in support for Practice Mode: configurable 0–4 bars of count-in before playback begins. A count-in chip selector in the transport group lets you choose the number of bars. The count-in beat number displays prominently during the countdown. Count-in can be cancelled via Play/Pause toggle.
 - Animation framework with shared motion tokens (durations, curves, press scale, hover elevation) in the design system, smooth crossfade+slide transitions when switching between Home, Practice, Library, and Settings, subtle scale feedback on button presses, interactive cards that respond to hover (desktop) and press (mobile) with elevation and border highlight, staggered fade-in for list items, and slide+fade page transitions for Navigator-pushed routes.

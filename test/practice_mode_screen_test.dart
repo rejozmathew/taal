@@ -469,6 +469,152 @@ void main() {
 
     expect(controller.transportState, PracticeTransportState.stopped);
   });
+
+  test('setRuntimeFeedback accepts lastGrade and updates controller', () {
+    final controller = _controller();
+
+    controller.setRuntimeFeedback(
+      combo: 5,
+      lastGrade: NoteHighwayGrade.perfect,
+    );
+
+    expect(controller.combo, 5);
+    expect(controller.lastGrade, NoteHighwayGrade.perfect);
+  });
+
+  test('setRuntimeFeedback preserves lastGrade when not supplied', () {
+    final controller = _controller();
+
+    controller.setRuntimeFeedback(
+      combo: 3,
+      lastGrade: NoteHighwayGrade.good,
+    );
+    controller.setRuntimeFeedback(combo: 4);
+
+    expect(controller.lastGrade, NoteHighwayGrade.good);
+    expect(controller.combo, 4);
+  });
+
+  testWidgets('animated combo counter renders and updates on combo change', (
+    tester,
+  ) async {
+    final controller = _controller();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PracticeModeScreen(
+            controller: controller,
+            lanes: _lanes,
+            notes: _notes,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Combo 0'), findsOneWidget);
+
+    controller.setRuntimeFeedback(combo: 8);
+    await tester.pump();
+
+    expect(find.text('Combo 8'), findsOneWidget);
+
+    // Let animation complete.
+    await tester.pumpAndSettle();
+
+    expect(find.text('Combo 8'), findsOneWidget);
+  });
+
+  testWidgets('encouragement text slides in when set', (tester) async {
+    final controller = _controller();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PracticeModeScreen(
+            controller: controller,
+            lanes: _lanes,
+            notes: _notes,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Great streak!'), findsNothing);
+
+    controller.setRuntimeFeedback(encouragementText: 'Great streak!');
+    await tester.pump();
+
+    expect(find.text('Great streak!'), findsOneWidget);
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Great streak!'), findsOneWidget);
+  });
+
+  testWidgets('grade flash overlay is present in the widget tree', (
+    tester,
+  ) async {
+    final controller = _controller();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PracticeModeScreen(
+            controller: controller,
+            lanes: _lanes,
+            notes: _notes,
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('practice-grade-flash')),
+      findsOneWidget,
+    );
+
+    controller.setRuntimeFeedback(lastGrade: NoteHighwayGrade.perfect);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Flash overlay still in the tree (animation completed).
+    expect(
+      find.byKey(const ValueKey('practice-grade-flash')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('combo reset to zero triggers shake animation', (tester) async {
+    final controller = _controller();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PracticeModeScreen(
+            controller: controller,
+            lanes: _lanes,
+            notes: _notes,
+          ),
+        ),
+      ),
+    );
+
+    controller.setRuntimeFeedback(combo: 10);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Combo 10'), findsOneWidget);
+
+    controller.setRuntimeFeedback(combo: 0, lastGrade: NoteHighwayGrade.miss);
+    await tester.pump();
+
+    expect(find.text('Combo 0'), findsOneWidget);
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Combo 0'), findsOneWidget);
+  });
 }
 
 PracticeModeController _controller() {

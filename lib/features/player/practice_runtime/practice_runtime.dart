@@ -389,7 +389,10 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
               grade: event.grade!.toNoteHighwayGrade(),
             ),
           );
-          controller.setRuntimeFeedback(combo: event.combo);
+          controller.setRuntimeFeedback(
+            combo: event.combo,
+            lastGrade: event.grade!.toNoteHighwayGrade(),
+          );
           changed = true;
         case PracticeRuntimeEventType.missed:
           _feedback.add(
@@ -400,6 +403,9 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
               deltaMs: 0,
               grade: NoteHighwayGrade.miss,
             ),
+          );
+          controller.setRuntimeFeedback(
+            lastGrade: NoteHighwayGrade.miss,
           );
           if (allowAutoPause && _shouldAutoPauseAfterMiss(event)) {
             shouldAutoPause = true;

@@ -40,10 +40,39 @@ class PostLessonReviewScreen extends StatelessWidget {
                 Text(label, style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 18),
               ],
-              Text(
-                summary.bestStatText(),
+              DecoratedBox(
                 key: const ValueKey('best-stat'),
-                style: Theme.of(context).textTheme.titleMedium,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primaryContainer
+                      .withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.emoji_events,
+                        color: TaalColors.comboActive,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          summary.bestStatText(),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 18),
               if (compatibility != null && compatibility.hasExcludedLanes) ...[
@@ -62,9 +91,33 @@ class PostLessonReviewScreen extends StatelessWidget {
               for (final suggestion in suggestions)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    suggestion,
-                    key: ValueKey('suggestion-$suggestion'),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.lightbulb_outline,
+                            color: Theme.of(context).colorScheme.secondary,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              suggestion,
+                              key: ValueKey('suggestion-$suggestion'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               const SizedBox(height: 18),
@@ -72,10 +125,14 @@ class PostLessonReviewScreen extends StatelessWidget {
                 spacing: 12,
                 runSpacing: 10,
                 children: [
-                  FilledButton(onPressed: onRetry, child: const Text('Retry')),
+                  if (onNextLesson != null)
+                    FilledButton(
+                      onPressed: onNextLesson,
+                      child: const Text('Next Lesson'),
+                    ),
                   OutlinedButton(
-                    onPressed: onNextLesson,
-                    child: const Text('Next Lesson'),
+                    onPressed: onRetry,
+                    child: const Text('Retry'),
                   ),
                   TextButton(
                     onPressed: onBackToLibrary,
@@ -291,9 +348,17 @@ class _ScoreHeader extends StatelessWidget {
 
   final PostLessonAttemptSummary summary;
 
+  Color _scoreColor(ColorScheme scheme) {
+    if (summary.scoreTotal >= 90) return TaalColors.gradePerfect;
+    if (summary.scoreTotal >= 70) return TaalColors.gradeGood;
+    if (summary.scoreTotal >= 50) return TaalColors.comboActive;
+    return scheme.onSurface;
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,10 +370,23 @@ class _ScoreHeader extends StatelessWidget {
           duration: const Duration(milliseconds: 450),
           curve: Curves.easeOutCubic,
           builder: (context, value, _) {
-            return Text(
-              value.round().toString(),
-              key: const ValueKey('score-total'),
-              style: textTheme.displayLarge,
+            final scaleFactor = 1.0 +
+                0.15 *
+                    Curves.easeOutCubic.transform(
+                      (value / math.max(summary.scoreTotal, 1))
+                          .clamp(0.0, 1.0),
+                    );
+            return Transform.scale(
+              scale: scaleFactor,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value.round().toString(),
+                key: const ValueKey('score-total'),
+                style: textTheme.displayLarge?.copyWith(
+                  color: _scoreColor(scheme),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             );
           },
         ),
@@ -352,8 +430,16 @@ class _LaneRow extends StatelessWidget {
   final String laneId;
   final PostLessonLaneStats stats;
 
+  Color _barColor() {
+    if (stats.hitRatePct >= 90) return TaalColors.gradePerfect;
+    if (stats.hitRatePct >= 70) return TaalColors.gradeGood;
+    if (stats.hitRatePct >= 50) return TaalColors.comboActive;
+    return TaalColors.gradeMiss;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -366,7 +452,15 @@ class _LaneRow extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        LinearProgressIndicator(value: (stats.hitRatePct / 100).clamp(0, 1)),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: (stats.hitRatePct / 100).clamp(0, 1),
+            color: _barColor(),
+            backgroundColor: scheme.surfaceContainerHighest,
+            minHeight: 8,
+          ),
+        ),
       ],
     );
   }
@@ -392,6 +486,7 @@ class _TimingBarWidget extends StatelessWidget {
       'Early' => TaalColors.gradeEarly,
       'Perfect' => TaalColors.gradePerfect,
       'Late' => TaalColors.gradeLate,
+      'Miss' => TaalColors.gradeMiss,
       _ => scheme.outline,
     };
 

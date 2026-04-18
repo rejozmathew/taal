@@ -5,8 +5,8 @@
 - Repository: taal
 - PRD version: 1.9
 - Current phase: Phase 1.5 — Tranche B in progress
-- Current task: P1.5-13 Practice Toolbar Redesign + Count-in — Complete
-- Overall status: Phase 1 functionally complete. Phase 1.5 Tranche A complete. Tranche B in progress. P1.5-13 practice toolbar redesign with grouped layout and count-in support landed. P1.5-11 note highway visual overhaul landed. P1.5-12 drum kit visual overhaul landed. P1.5-10 animation framework landed. P1.5-03 through P1.5-09 complete. CI bridge fixture sync completed for the P1.5-03 kit-hit sound setting.
+- Current task: P1.5-15 Review Screen Polish — Complete
+- Overall status: Phase 1 functionally complete. Phase 1.5 Tranche A complete. Tranche B in progress. P1.5-15 review screen polish landed. P1.5-16 daily goal ring and streak visual landed. P1.5-14 combo/grade visual effects landed. P1.5-13 practice toolbar redesign with grouped layout and count-in support landed. P1.5-11 note highway visual overhaul landed. P1.5-12 drum kit visual overhaul landed. P1.5-10 animation framework landed. P1.5-03 through P1.5-09 complete. CI bridge fixture sync completed for the P1.5-03 kit-hit sound setting.
 
 ## Release Boundary
 - **MVP (Phases 0-2):** Playable + creatable + course runtime. Not yet distributed.
@@ -49,9 +49,9 @@
 | P1.5-11 | Note highway visual overhaul | Tranche A complete, P1.5-10 | Complete |
 | P1.5-12 | Drum kit visual overhaul | Tranche A complete, P1.5-01 | Complete |
 | P1.5-13 | Practice toolbar redesign + count-in | Tranche A complete, P1.5-10 | Complete |
-| P1.5-14 | Combo + grade visual effects | Tranche A complete, P1.5-10 | Proposed |
-| P1.5-15 | Review screen polish | Tranche A complete, P1.5-10, P1.5-14 | Proposed |
-| P1.5-16 | Daily goal ring + streak visual | Tranche A complete, P1.5-01 | Proposed |
+| P1.5-14 | Combo + grade visual effects | Tranche A complete, P1.5-10 | Complete |
+| P1.5-15 | Review screen polish | Tranche A complete, P1.5-10, P1.5-14 | Complete |
+| P1.5-16 | Daily goal ring + streak visual | Tranche A complete, P1.5-01 | Complete |
 | P1.5-17 | Tap pad visual + interaction polish | Tranche A complete, P1.5-03, P1.5-12 | Proposed |
 | P1.5-18 | Global polish pass | All P1.5 tasks | Proposed |
 

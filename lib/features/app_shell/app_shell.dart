@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:taal/design/daily_goal_ring.dart';
 import 'package:taal/design/motion.dart';
 import 'package:taal/features/app_shell/practice_habit_store.dart';
 import 'package:taal/features/library/lesson_catalog.dart';
@@ -1013,16 +1014,35 @@ class _HomeMetricsRow extends StatelessWidget {
       runSpacing: 12,
       children: [
         _DailyGoalPanel(snapshot: snapshot),
-        _MetricPanel(
-          label: 'Streak',
-          value: '${snapshot.currentStreakDays} days',
-          detail: snapshot.milestoneMessage ?? snapshot.streakMessage,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 180),
+          child: _Panel(
+            title: 'Streak',
+            child: StreakCounter(
+              days: snapshot.currentStreakDays,
+              message: snapshot.milestoneMessage ?? snapshot.streakMessage,
+            ),
+          ),
         ),
-        _MetricPanel(
-          label: 'Weekly summary',
-          value:
-              '${snapshot.week.daysPracticed} days / ${snapshot.week.totalMinutesCompleted} min / ${snapshot.week.fullLessonCompletions} lessons',
-          detail: '${snapshot.week.scoredAttemptCount} scored attempts',
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 200),
+          child: _Panel(
+            title: 'Weekly summary',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                WeeklyPracticeGrid(
+                  daysPracticed: snapshot.week.daysPracticed,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${snapshot.week.totalMinutesCompleted} min / ${snapshot.week.fullLessonCompletions} lessons',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
         ),
         _MetricPanel(
           label: 'Preferred view',
@@ -1077,21 +1097,37 @@ class _DailyGoalPanel extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 220),
       child: _Panel(
         title: 'Daily goal',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '$completed / $goal min',
-              style: Theme.of(context).textTheme.titleLarge,
+            DailyGoalRing(
+              progress: progress,
+              size: 56,
+              strokeWidth: 5,
+              child: Text(
+                '${(progress * 100).round()}%',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
             ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(value: progress),
-            const SizedBox(height: 6),
-            Text(
-              snapshot.todayGoalMet
-                  ? 'Goal met today.'
-                  : 'Every focused minute counts.',
-              style: Theme.of(context).textTheme.bodySmall,
+            const SizedBox(width: 12),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$completed / $goal min',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    snapshot.todayGoalMet
+                        ? 'Goal met today.'
+                        : 'Every focused minute counts.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
           ],
         ),

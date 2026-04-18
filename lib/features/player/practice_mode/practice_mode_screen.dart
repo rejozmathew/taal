@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:taal/design/colors.dart';
+import 'package:taal/design/daily_goal_ring.dart';
 import 'package:taal/design/motion.dart';
 import 'package:taal/features/player/drum_kit/drum_kit.dart';
 import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
@@ -133,15 +135,24 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
             ),
           ),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: _PracticeViewSurface(
-              controller: controller,
-              lanes: widget.lanes,
-              notes: widget.notes,
-              feedback: widget.feedback,
-              kitPads: widget.kitPads,
-            ),
+          child: Stack(
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: _PracticeViewSurface(
+                  controller: controller,
+                  lanes: widget.lanes,
+                  notes: widget.notes,
+                  feedback: widget.feedback,
+                  kitPads: widget.kitPads,
+                ),
+              ),
+              _GradeFlashOverlay(
+                key: const ValueKey('practice-grade-flash'),
+                grade: controller.lastGrade,
+              ),
+            ],
           ),
         ),
         if (tapPadInput != null)
@@ -400,6 +411,7 @@ class PracticeModeController extends ChangeNotifier {
   double _activeSessionElapsedMs = 0;
   int _countInBars;
   double _countInRemainingMs = 0;
+  NoteHighwayGrade? _lastGrade;
 
   PracticeTransportState get transportState => _transportState;
 
@@ -440,6 +452,8 @@ class PracticeModeController extends ChangeNotifier {
   int get combo => _combo;
 
   String? get encouragementText => _encouragementText;
+
+  NoteHighwayGrade? get lastGrade => _lastGrade;
 
   List<PracticeSection> get sections => _sections;
 
@@ -625,9 +639,14 @@ class PracticeModeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setRuntimeFeedback({int? combo, String? encouragementText}) {
+  void setRuntimeFeedback({
+    int? combo,
+    String? encouragementText,
+    NoteHighwayGrade? lastGrade,
+  }) {
     _combo = combo ?? _combo;
     _encouragementText = encouragementText;
+    _lastGrade = lastGrade ?? _lastGrade;
     notifyListeners();
   }
 
@@ -1048,9 +1067,9 @@ class _StatusGroup extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Combo ${controller.combo}',
-              style: Theme.of(context).textTheme.titleMedium,
+            _AnimatedComboCounter(
+              combo: controller.combo,
+              key: const ValueKey('practice-combo-counter'),
             ),
             const SizedBox(width: 8),
             _MidiConnectionIndicator(
@@ -1060,15 +1079,9 @@ class _StatusGroup extends StatelessWidget {
           ],
         ),
         if (controller.encouragementText case final message?)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              message,
-              style: TextStyle(
-                color: scheme.secondary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          _AnimatedEncouragement(
+            key: ValueKey('practice-encouragement-$message'),
+            message: message,
           ),
         if (controller.autoPauseTriggered)
           Padding(
@@ -1125,20 +1138,20 @@ class _DailyGoalProgressChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final completed = goal.completedMinutesWithSession(currentSessionElapsedMs);
     final progress = goal.progressWithSession(currentSessionElapsedMs);
-    return SizedBox(
-      width: 220,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Daily goal ${_formatMinutes(completed)} / ${goal.dailyGoalMinutes} min',
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-          const SizedBox(height: 4),
-          LinearProgressIndicator(value: progress),
-        ],
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DailyGoalRing(
+          progress: progress,
+          size: 32,
+          strokeWidth: 3,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          'Daily goal ${_formatMinutes(completed)} / ${goal.dailyGoalMinutes} min',
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+      ],
     );
   }
 }
@@ -1339,6 +1352,238 @@ class _PracticeLoopControls extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Animated combo counter with scale-up on increment, shake on reset,
+/// and color intensification at milestones (8, 16, 32).
+class _AnimatedComboCounter extends StatefulWidget {
+  const _AnimatedComboCounter({super.key, required this.combo});
+  final int combo;
+
+  @override
+  State<_AnimatedComboCounter> createState() => _AnimatedComboCounterState();
+}
+
+class _AnimatedComboCounterState extends State<_AnimatedComboCounter>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+  late Animation<double> _shake;
+  bool _isReset = false;
+
+  static const _milestones = {8, 16, 32};
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: TaalMotion.durationMedium,
+    );
+    _scale = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
+    );
+    _shake = Tween<double>(begin: 0.0, end: 6.0).animate(
+      CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _AnimatedComboCounter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.combo != oldWidget.combo) {
+      _isReset = widget.combo == 0 && oldWidget.combo > 0;
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Color _comboColor(ColorScheme scheme) {
+    if (widget.combo >= 32) return TaalColors.gradePerfect;
+    if (widget.combo >= 16) return TaalColors.comboActive;
+    if (widget.combo >= 8) return TaalColors.gradeGood;
+    return scheme.onSurface;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isMilestone = _milestones.contains(widget.combo);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final double dx =
+            _isReset ? math.sin(_shake.value * math.pi) * 4.0 : 0.0;
+        final double scale = _isReset ? 1.0 : _scale.value;
+        return Transform.translate(
+          offset: Offset(dx, 0),
+          child: Transform.scale(
+            scale: scale,
+            child: Text(
+              'Combo ${widget.combo}',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: _comboColor(scheme),
+                    fontWeight:
+                        isMilestone ? FontWeight.w900 : FontWeight.w600,
+                  ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Slides encouragement text in from the right with a fade.
+class _AnimatedEncouragement extends StatefulWidget {
+  const _AnimatedEncouragement({
+    super.key,
+    required this.message,
+  });
+  final String message;
+
+  @override
+  State<_AnimatedEncouragement> createState() => _AnimatedEncouragementState();
+}
+
+class _AnimatedEncouragementState extends State<_AnimatedEncouragement>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _slide;
+  late Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: TaalMotion.durationMedium,
+    );
+    _slide = Tween<Offset>(
+      begin: const Offset(0.3, 0),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
+    );
+    _opacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: SlideTransition(
+        position: _slide,
+        child: FadeTransition(
+          opacity: _opacity,
+          child: Text(
+            widget.message,
+            style: TextStyle(
+              color: scheme.secondary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Brief screen-edge color wash for Perfect (green) and Miss (gray).
+class _GradeFlashOverlay extends StatefulWidget {
+  const _GradeFlashOverlay({super.key, this.grade});
+  final NoteHighwayGrade? grade;
+
+  @override
+  State<_GradeFlashOverlay> createState() => _GradeFlashOverlayState();
+}
+
+class _GradeFlashOverlayState extends State<_GradeFlashOverlay>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+  NoteHighwayGrade? _activeGrade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: TaalMotion.durationFast,
+    );
+    _opacity = Tween<double>(begin: 0.25, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: TaalMotion.curveStandard),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _GradeFlashOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.grade != oldWidget.grade && widget.grade != null) {
+      if (widget.grade == NoteHighwayGrade.perfect ||
+          widget.grade == NoteHighwayGrade.miss) {
+        _activeGrade = widget.grade;
+        _controller.forward(from: 0);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Color _flashColor() {
+    return switch (_activeGrade) {
+      NoteHighwayGrade.perfect => TaalColors.gradePerfect,
+      NoteHighwayGrade.miss => TaalColors.gradeMiss,
+      _ => Colors.transparent,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        if (_activeGrade == null || _opacity.value <= 0) {
+          return const SizedBox.shrink();
+        }
+        return Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.center,
+                  colors: [
+                    _flashColor().withValues(alpha: _opacity.value),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
