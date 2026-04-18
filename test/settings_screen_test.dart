@@ -85,6 +85,39 @@ void main() {
 
     expect(store.profileSettings.dailyGoalMinutes, 25);
   });
+
+  testWidgets('sections are collapsible with expansion tiles', (
+    tester,
+  ) async {
+    await _pumpSettings(tester, store: _FakeSettingsStore());
+
+    // All sections are visible as ExpansionTiles
+    expect(find.text('Profile'), findsOneWidget);
+    expect(find.text('MIDI'), findsOneWidget);
+    expect(find.text('Audio'), findsOneWidget);
+    expect(find.text('Display'), findsOneWidget);
+    expect(find.text('Practice'), findsOneWidget);
+    expect(find.text('About'), findsOneWidget);
+
+    // Verify ExpansionTile widgets exist
+    expect(find.byType(ExpansionTile), findsAtLeast(6));
+  });
+
+  testWidgets('about section shows version and credits', (tester) async {
+    await _pumpSettings(tester, store: _FakeSettingsStore());
+
+    // About section is collapsed by default — expand it
+    await tester.ensureVisible(find.text('About'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('About'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Version'), findsOneWidget);
+    expect(find.textContaining('0.1.0'), findsOneWidget);
+    expect(find.text('Credits'), findsOneWidget);
+    expect(find.textContaining('Flutter + Rust'), findsOneWidget);
+    expect(find.text('License'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpSettings(

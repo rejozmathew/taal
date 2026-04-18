@@ -1,13 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:taal/design/colors.dart';
+import 'package:taal/design/tokens.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/practice_mode/practice_mode_screen.dart';
-import 'package:taal/features/player/practice_runtime/practice_runtime.dart';
-import 'package:taal/features/player/tap_pads/tap_pad_surface.dart';
 import 'package:taal/platform/midi/midi_adapter.dart';
 import 'package:taal/src/rust/api/profiles.dart' as rust_profiles;
 
@@ -18,24 +15,17 @@ typedef OnboardingCreateProfile =
       required rust_profiles.ProfileExperienceLevelDto experienceLevel,
     });
 
-typedef OnboardingContentLoader =
-    Future<OnboardingLessonContent> Function(OnboardingStarterLesson lesson);
-
 class OnboardingFlow extends StatefulWidget {
   const OnboardingFlow({
     super.key,
     required this.onCreateProfile,
     required this.onComplete,
     this.midiAdapter,
-    this.runtimeEngine,
-    this.contentLoader = loadDefaultOnboardingLessonContent,
   });
 
   final OnboardingCreateProfile onCreateProfile;
   final ValueChanged<rust_profiles.LocalProfileStateDto> onComplete;
   final Phase0MidiAdapter? midiAdapter;
-  final PracticeRuntimeEngine? runtimeEngine;
-  final OnboardingContentLoader contentLoader;
 
   @override
   State<OnboardingFlow> createState() => _OnboardingFlowState();
@@ -104,7 +94,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       appBar: AppBar(title: const Text('Taal')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(TaalTokens.space24),
           children: [
             Center(
               child: ConstrainedBox(
@@ -112,16 +102,36 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Step ${_step.index + 1} of ${_OnboardingStep.values.length}',
-                      style: Theme.of(context).textTheme.labelLarge,
+                    _DotStepIndicator(
+                      currentIndex: _step.index,
+                      totalSteps: _OnboardingStep.values.length,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: TaalTokens.space16),
                     if (_error != null) ...[
                       _OnboardingBanner(message: _error!),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: TaalTokens.space16),
                     ],
-                    _buildStep(context),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.15, 0),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: KeyedSubtree(
+                        key: ValueKey(_step),
+                        child: _buildStep(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -137,7 +147,6 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       case _OnboardingStep.welcome:
         return _WelcomeStep(
           onNext: () => _goTo(_OnboardingStep.profile),
-          onSkip: () => _goTo(_OnboardingStep.profile),
         );
       case _OnboardingStep.profile:
         return _ProfileStep(
@@ -147,6 +156,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           onAvatarChanged: (avatar) => setState(() {
             _avatar = avatar;
           }),
+          onNameChanged: () => setState(() {}),
           onNext: () => _goTo(_OnboardingStep.experience),
           onSkip: () {
             if (_nameController.text.trim().isEmpty) {
@@ -207,13 +217,8 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           onSkip: () => _goTo(_OnboardingStep.firstLesson),
         );
       case _OnboardingStep.firstLesson:
-        return _FirstLessonStep(
+        return _ReadyStep(
           lesson: starterLessonForExperience(_experience),
-          demoMode: _demoMode,
-          selectedDevice: _selectedDevice(),
-          midiAdapter: _midiAdapter,
-          runtimeEngine: widget.runtimeEngine,
-          contentLoader: widget.contentLoader,
           onComplete: _profileState == null
               ? null
               : () => widget.onComplete(_profileState!),
@@ -325,38 +330,10 @@ OnboardingStarterLesson starterLessonForExperience(
   }
 }
 
-class OnboardingLessonContent {
-  const OnboardingLessonContent({
-    required this.lessonJson,
-    required this.layoutJson,
-    required this.scoringProfileJson,
-  });
-
-  final String lessonJson;
-  final String layoutJson;
-  final String scoringProfileJson;
-}
-
-Future<OnboardingLessonContent> loadDefaultOnboardingLessonContent(
-  OnboardingStarterLesson lesson,
-) async {
-  final values = await Future.wait([
-    rootBundle.loadString(lesson.assetPath),
-    rootBundle.loadString(_standardLayoutAssetPath),
-    rootBundle.loadString(_standardScoringAssetPath),
-  ]);
-  return OnboardingLessonContent(
-    lessonJson: values[0],
-    layoutJson: values[1],
-    scoringProfileJson: values[2],
-  );
-}
-
 class _WelcomeStep extends StatelessWidget {
-  const _WelcomeStep({required this.onNext, required this.onSkip});
+  const _WelcomeStep({required this.onNext});
 
   final VoidCallback onNext;
-  final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
@@ -367,20 +344,25 @@ class _WelcomeStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Center(
+            child: Icon(
+              Icons.music_note_rounded,
+              size: 64,
+              color: TaalColors.primary,
+            ),
+          ),
+          const SizedBox(height: TaalTokens.space16),
           const Text(
             'Create a local profile, connect a kit when one is available, and start a short starter lesson.',
           ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 8,
-            children: [
-              FilledButton(
-                key: const ValueKey('onboarding-get-started'),
-                onPressed: onNext,
-                child: const Text('Get started'),
-              ),
-              TextButton(onPressed: onSkip, child: const Text('Skip intro')),
-            ],
+          const SizedBox(height: TaalTokens.space24),
+          Center(
+            child: FilledButton.icon(
+              key: const ValueKey('onboarding-get-started'),
+              onPressed: onNext,
+              icon: const Icon(Icons.arrow_forward),
+              label: const Text('Get started'),
+            ),
           ),
         ],
       ),
@@ -394,6 +376,7 @@ class _ProfileStep extends StatelessWidget {
     required this.avatar,
     required this.busy,
     required this.onAvatarChanged,
+    required this.onNameChanged,
     required this.onNext,
     required this.onSkip,
   });
@@ -402,11 +385,15 @@ class _ProfileStep extends StatelessWidget {
   final String? avatar;
   final bool busy;
   final ValueChanged<String?> onAvatarChanged;
+  final VoidCallback onNameChanged;
   final VoidCallback onNext;
   final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
+    final initials = nameController.text.trim().isEmpty
+        ? '?'
+        : nameController.text.trim()[0].toUpperCase();
     return _OnboardingPanel(
       key: const ValueKey('onboarding-step-profile'),
       title: 'Who is playing?',
@@ -414,6 +401,22 @@ class _ProfileStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Center(
+            child: CircleAvatar(
+              key: const ValueKey('onboarding-profile-avatar'),
+              radius: 36,
+              backgroundColor: TaalColors.primary,
+              child: Text(
+                initials,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: TaalTokens.space16),
           TextField(
             key: const ValueKey('onboarding-profile-name'),
             controller: nameController,
@@ -421,12 +424,14 @@ class _ProfileStep extends StatelessWidget {
             decoration: const InputDecoration(
               labelText: 'Name',
               hintText: 'Player name',
+              prefixIcon: Icon(Icons.person_outline),
             ),
+            onChanged: (_) => onNameChanged(),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: TaalTokens.space16),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: TaalTokens.space8,
+            runSpacing: TaalTokens.space8,
             children: [
               for (final choice in _avatarChoices)
                 ChoiceChip(
@@ -438,9 +443,9 @@ class _ProfileStep extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: TaalTokens.space24),
           Wrap(
-            spacing: 8,
+            spacing: TaalTokens.space8,
             children: [
               FilledButton(
                 key: const ValueKey('onboarding-profile-next'),
@@ -484,31 +489,54 @@ class _ExperienceStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SegmentedButton<rust_profiles.ProfileExperienceLevelDto>(
-            segments: const [
-              ButtonSegment(
-                value: rust_profiles.ProfileExperienceLevelDto.beginner,
-                label: Text('Just starting'),
-              ),
-              ButtonSegment(
-                value: rust_profiles.ProfileExperienceLevelDto.intermediate,
-                label: Text('Playing regularly'),
-              ),
-              ButtonSegment(
-                value: rust_profiles.ProfileExperienceLevelDto.teacher,
-                label: Text('Teaching'),
-              ),
-            ],
-            selected: {experience},
-            onSelectionChanged: busy
+          _ExperienceCard(
+            key: const ValueKey('onboarding-exp-beginner'),
+            icon: Icons.child_care,
+            label: 'Just starting',
+            description: 'Never played drums, or just a few sessions.',
+            selected: experience ==
+                rust_profiles.ProfileExperienceLevelDto.beginner,
+            onTap: busy
                 ? null
-                : (selection) => onExperienceChanged(selection.single),
+                : () => onExperienceChanged(
+                      rust_profiles.ProfileExperienceLevelDto.beginner,
+                    ),
           ),
-          const SizedBox(height: 16),
-          Text('First lesson: ${starterLessonForExperience(experience).title}'),
-          const SizedBox(height: 20),
+          const SizedBox(height: TaalTokens.space8),
+          _ExperienceCard(
+            key: const ValueKey('onboarding-exp-intermediate'),
+            icon: Icons.music_note,
+            label: 'Playing regularly',
+            description: 'Comfortable with basic beats and fills.',
+            selected: experience ==
+                rust_profiles.ProfileExperienceLevelDto.intermediate,
+            onTap: busy
+                ? null
+                : () => onExperienceChanged(
+                      rust_profiles.ProfileExperienceLevelDto.intermediate,
+                    ),
+          ),
+          const SizedBox(height: TaalTokens.space8),
+          _ExperienceCard(
+            key: const ValueKey('onboarding-exp-teacher'),
+            icon: Icons.school,
+            label: 'Teaching',
+            description: 'Advanced player who teaches others.',
+            selected: experience ==
+                rust_profiles.ProfileExperienceLevelDto.teacher,
+            onTap: busy
+                ? null
+                : () => onExperienceChanged(
+                      rust_profiles.ProfileExperienceLevelDto.teacher,
+                    ),
+          ),
+          const SizedBox(height: TaalTokens.space16),
+          Text(
+            'First lesson: ${starterLessonForExperience(experience).title}',
+          ),
+          const SizedBox(height: TaalTokens.space24),
           Wrap(
-            spacing: 8,
+            spacing: TaalTokens.space8,
             children: [
               FilledButton(
                 key: const ValueKey('onboarding-experience-next'),
@@ -557,6 +585,14 @@ class _ConnectKitStep extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Center(
+            child: Icon(
+              Icons.usb_rounded,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: TaalTokens.space16),
           if (loading)
             const LinearProgressIndicator()
           else if (devices.isEmpty)
@@ -565,7 +601,7 @@ class _ConnectKitStep extends StatelessWidget {
             )
           else ...[
             Text('${devices.length} MIDI device found.'),
-            const SizedBox(height: 8),
+            const SizedBox(height: TaalTokens.space8),
             RadioGroup<int>(
               groupValue: selectedDeviceId,
               onChanged: (value) {
@@ -587,10 +623,10 @@ class _ConnectKitStep extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: TaalTokens.space24),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: TaalTokens.space8,
+            runSpacing: TaalTokens.space8,
             children: [
               FilledButton(
                 key: const ValueKey('onboarding-use-selected-kit'),
@@ -646,9 +682,9 @@ class _CalibrateStep extends StatelessWidget {
                 ? 'Start in demo mode now. Connect your kit later for the best experience.'
                 : '${device?.name ?? 'Your kit'} can be calibrated from Settings after mapping is saved.',
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: TaalTokens.space24),
           Wrap(
-            spacing: 8,
+            spacing: TaalTokens.space8,
             children: [
               FilledButton(
                 key: const ValueKey('onboarding-calibration-next'),
@@ -667,241 +703,159 @@ class _CalibrateStep extends StatelessWidget {
   }
 }
 
-class _FirstLessonStep extends StatefulWidget {
-  const _FirstLessonStep({
-    required this.lesson,
-    required this.demoMode,
-    required this.selectedDevice,
-    required this.midiAdapter,
-    required this.runtimeEngine,
-    required this.contentLoader,
-    required this.onComplete,
-  });
+class _ReadyStep extends StatelessWidget {
+  const _ReadyStep({required this.lesson, required this.onComplete});
 
   final OnboardingStarterLesson lesson;
-  final bool demoMode;
-  final MidiInputDevice? selectedDevice;
-  final Phase0MidiAdapter midiAdapter;
-  final PracticeRuntimeEngine? runtimeEngine;
-  final OnboardingContentLoader contentLoader;
   final VoidCallback? onComplete;
 
   @override
-  State<_FirstLessonStep> createState() => _FirstLessonStepState();
-}
-
-class _FirstLessonStepState extends State<_FirstLessonStep> {
-  PracticeModeController? _controller;
-  PracticeModeRuntimeAdapter? _runtimeAdapter;
-  StreamSubscription<MidiNoteOnEvent>? _midiSubscription;
-  String? _lastPadHit;
-  String? _error;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_startLesson());
-  }
-
-  @override
-  void didUpdateWidget(covariant _FirstLessonStep oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final deviceChanged =
-        oldWidget.selectedDevice?.id != widget.selectedDevice?.id ||
-        oldWidget.demoMode != widget.demoMode;
-    if (oldWidget.lesson.assetPath != widget.lesson.assetPath ||
-        deviceChanged) {
-      unawaited(_startLesson());
-    }
-  }
-
-  @override
-  void dispose() {
-    unawaited(_midiSubscription?.cancel());
-    _runtimeAdapter?.removeListener(_onRuntimeChanged);
-    _runtimeAdapter?.disposeRuntimeSession();
-    _controller?.dispose();
-    if (!widget.demoMode) {
-      unawaited(widget.midiAdapter.closeDevice());
-    }
-    super.dispose();
-  }
-
-  Future<void> _startLesson() async {
-    await _midiSubscription?.cancel();
-    _midiSubscription = null;
-    _runtimeAdapter?.removeListener(_onRuntimeChanged);
-    _runtimeAdapter?.disposeRuntimeSession();
-    _runtimeAdapter = null;
-    _controller?.dispose();
-    _controller = null;
-
-    if (mounted) {
-      setState(() {
-        _loading = true;
-        _error = null;
-        _lastPadHit = null;
-      });
-    }
-
-    try {
-      final content = await widget.contentLoader(widget.lesson);
-      final controller = PracticeModeController(
-        baseBpm: widget.lesson.bpm,
-        totalDurationMs: widget.lesson.totalDurationMs,
-        sections: widget.lesson.sections,
-      );
-      final adapter = PracticeModeRuntimeAdapter(
-        controller: controller,
-        engine: widget.runtimeEngine ?? RustPracticeRuntimeEngine(),
-      )..addListener(_onRuntimeChanged);
-
-      adapter.start(
-        lessonJson: content.lessonJson,
-        layoutJson: content.layoutJson,
-        scoringProfileJson: content.scoringProfileJson,
-        deviceProfileJson: widget.demoMode
-            ? null
-            : _defaultOnboardingDeviceProfileJson(
-                widget.selectedDevice,
-                widget.midiAdapter.platformName,
-              ),
-        bpm: widget.lesson.bpm,
-      );
-
-      if (!widget.demoMode && widget.selectedDevice != null) {
-        await widget.midiAdapter.openDevice(widget.selectedDevice!.id);
-        _midiSubscription = widget.midiAdapter.noteOnEvents.listen(
-          _submitMidiHit,
-          onError: (Object error) {
-            if (mounted) {
-              setState(() {
-                _error = error.toString();
-              });
-            }
-          },
-        );
-      }
-
-      if (!mounted) {
-        adapter.disposeRuntimeSession();
-        controller.dispose();
-        return;
-      }
-      setState(() {
-        _controller = controller;
-        _runtimeAdapter = adapter;
-        _loading = false;
-      });
-    } on Object catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _loading = false;
-        _error = error.toString();
-      });
-    }
-  }
-
-  void _onRuntimeChanged() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _submitMidiHit(MidiNoteOnEvent event) {
-    if (widget.demoMode || event.deviceId != widget.selectedDevice?.id) {
-      return;
-    }
-    try {
-      _runtimeAdapter?.submitMidiNoteOn(
-        channel: event.channel,
-        note: event.note,
-        velocity: event.velocity,
-        timestampNs: event.timestampNs,
-      );
-    } on Object catch (error) {
-      if (mounted) {
-        setState(() {
-          _error = error.toString();
-        });
-      }
-    }
-  }
-
-  void _submitTapPadHit(TapPadHit hit) {
-    setState(() {
-      _lastPadHit = hit.laneId;
-    });
-    try {
-      _runtimeAdapter?.submitTouchHit(
-        laneId: hit.laneId,
-        velocity: hit.velocity,
-      );
-    } on Object catch (error) {
-      setState(() {
-        _error = error.toString();
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final controller = _controller;
-    final adapter = _runtimeAdapter;
-    final timeline = adapter?.timeline;
-    final lanes = timeline?.toNoteHighwayLanes() ?? widget.lesson.lanes;
-    final notes = timeline?.toPracticeTimelineNotes() ?? widget.lesson.notes;
     return _OnboardingPanel(
       key: const ValueKey('onboarding-step-first-lesson'),
-      title: 'First lesson',
-      subtitle: widget.lesson.title,
+      title: 'You\'re all set!',
+      subtitle: 'Your first lesson is ready.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(widget.lesson.detail),
-          if (_error != null) ...[
-            const SizedBox(height: 8),
-            _OnboardingBanner(message: _error!),
-          ],
-          if (widget.demoMode) ...[
-            const SizedBox(height: 8),
-            const Text('Demo mode with tap pads is on.'),
-          ] else if (widget.selectedDevice != null) ...[
-            const SizedBox(height: 8),
-            Text('Listening to ${widget.selectedDevice!.name}.'),
-          ],
-          if (_lastPadHit != null) ...[
-            const SizedBox(height: 8),
-            Text('Last pad: $_lastPadHit'),
-          ],
-          const SizedBox(height: 16),
-          if (_loading || controller == null)
-            const Center(child: CircularProgressIndicator())
-          else
-            SizedBox(
-              height: 620,
-              child: PracticeModeScreen(
-                controller: controller,
-                lanes: lanes,
-                notes: notes,
-                feedback: adapter?.feedback ?? const [],
-                layoutCompatibility: timeline?.layoutCompatibility,
-                tapPadInput: PracticeTapPadInput(
-                  enabledLaneIds: lanes.map((lane) => lane.laneId).toSet(),
-                  onPadHit: _submitTapPadHit,
-                ),
-              ),
+          Center(
+            child: Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: TaalColors.gradePerfect,
             ),
-          const SizedBox(height: 16),
-          FilledButton(
-            key: const ValueKey('onboarding-finish'),
-            onPressed: widget.onComplete,
-            child: const Text('Finish onboarding'),
+          ),
+          const SizedBox(height: TaalTokens.space16),
+          Text(
+            'Recommended lesson: ${lesson.title}',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: TaalTokens.space8),
+          Text(lesson.detail),
+          const SizedBox(height: TaalTokens.space24),
+          Center(
+            child: FilledButton.icon(
+              key: const ValueKey('onboarding-finish'),
+              onPressed: onComplete,
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Start your first lesson'),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DotStepIndicator extends StatelessWidget {
+  const _DotStepIndicator({
+    required this.currentIndex,
+    required this.totalSteps,
+  });
+
+  final int currentIndex;
+  final int totalSteps;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      key: const ValueKey('onboarding-dot-indicator'),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (int i = 0; i < totalSteps; i++) ...[
+          if (i > 0) const SizedBox(width: TaalTokens.space8),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            width: i == currentIndex ? 24 : 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: i == currentIndex
+                  ? TaalColors.primary
+                  : i < currentIndex
+                      ? TaalColors.primary.withValues(alpha: 0.4)
+                      : Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(TaalTokens.radiusFull),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ExperienceCard extends StatelessWidget {
+  const _ExperienceCard({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.description,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String description;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: selected
+          ? TaalColors.primary.withValues(alpha: 0.12)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(TaalTokens.radiusMedium),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(TaalTokens.radiusMedium),
+        child: Container(
+          padding: const EdgeInsets.all(TaalTokens.space16),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: selected ? TaalColors.primary : scheme.outlineVariant,
+              width: selected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(TaalTokens.radiusMedium),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 32,
+                color: selected ? TaalColors.primary : scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: TaalTokens.space12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight:
+                            selected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    const SizedBox(height: TaalTokens.space4),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_circle, color: TaalColors.primary),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -925,17 +879,17 @@ class _OnboardingPanel extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: scheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(TaalTokens.radiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(TaalTokens.space24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title, style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: TaalTokens.space8),
             Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 20),
+            const SizedBox(height: TaalTokens.space24),
             child,
           ],
         ),
@@ -954,15 +908,26 @@ class _OnboardingBanner extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(TaalTokens.radiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Text(
-          message,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
+        padding: const EdgeInsets.all(TaalTokens.space12),
+        child: Row(
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+            const SizedBox(width: TaalTokens.space8),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -970,9 +935,6 @@ class _OnboardingBanner extends StatelessWidget {
 }
 
 const _avatarChoices = <String>['sticks', 'snare', 'metronome', 'cymbal'];
-const _standardLayoutAssetPath = 'assets/content/layouts/std-5pc-v1.json';
-const _standardScoringAssetPath =
-    'assets/content/scoring/score-standard-v1.json';
 
 String _avatarLabel(String avatar) {
   switch (avatar) {
@@ -987,72 +949,6 @@ String _avatarLabel(String avatar) {
     default:
       return avatar;
   }
-}
-
-String? _defaultOnboardingDeviceProfileJson(
-  MidiInputDevice? device,
-  String platformName,
-) {
-  if (device == null) {
-    return null;
-  }
-  final now = DateTime.now().toUtc().toIso8601String();
-  return jsonEncode({
-    'id': '550e8400-e29b-41d4-a716-44665544f117',
-    'name': '${device.name} onboarding map',
-    'instrument_family': 'drums',
-    'layout_id': 'std-5pc-v1',
-    'device_fingerprint': {
-      'vendor_name': device.manufacturerName,
-      'model_name': device.productName ?? device.name,
-      'platform_id': '$platformName:${device.id}',
-    },
-    'transport': 'usb',
-    'midi_channel': null,
-    'note_map': [
-      _noteMap(35, 'kick', 'normal'),
-      _noteMap(36, 'kick', 'normal'),
-      _noteMap(37, 'snare', 'rim'),
-      _noteMap(38, 'snare', 'normal'),
-      _noteMap(40, 'snare', 'rim'),
-      _noteMap(42, 'hihat', 'closed'),
-      _noteMap(44, 'hihat', 'pedal'),
-      _noteMap(46, 'hihat', 'open'),
-      _noteMap(49, 'crash', 'normal'),
-      _noteMap(55, 'crash', 'normal'),
-      _noteMap(57, 'crash', 'normal'),
-    ],
-    'hihat_model': {
-      'source_cc': 4,
-      'invert': false,
-      'thresholds': [
-        {'max_cc_value': 31, 'state': 'closed'},
-        {'max_cc_value': 95, 'state': 'semi_open'},
-        {'max_cc_value': 127, 'state': 'open'},
-      ],
-      'auto_articulation_notes': [42, 46],
-    },
-    'input_offset_ms': 0.0,
-    'dedupe_window_ms': 8.0,
-    'velocity_curve': 'linear',
-    'preset_origin': 'onboarding-gm-5pc',
-    'created_at': now,
-    'updated_at': now,
-  });
-}
-
-Map<String, Object?> _noteMap(
-  int midiNote,
-  String laneId,
-  String articulation,
-) {
-  return {
-    'midi_note': midiNote,
-    'lane_id': laneId,
-    'articulation': articulation,
-    'min_velocity': 1,
-    'max_velocity': 127,
-  };
 }
 
 const _starterLanes = [

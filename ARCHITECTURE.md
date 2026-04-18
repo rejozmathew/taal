@@ -14,10 +14,10 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 |-----------|----------|--------|
 | PRD + specs + plans | `docs/`, `plans/` | Implemented |
 | Design system | `lib/design/`, `assets/fonts/`, `test/design_system_test.dart` | Implemented (P1.5-01 color tokens, spacing/radius/elevation tokens, Inter typography scale, dark + light ThemeData; all raw Color literals consolidated into `lib/design/colors.dart`) |
-| Flutter app shell | `lib/features/app_shell/`, `lib/main.dart`, `test/app_shell_test.dart` | Implemented (P1-22 adaptive home/navigation shell with profile switcher, recommended lesson surface, safe placeholders for incomplete sections, P1-20 Settings destination wiring, P1-24 habit metrics on Home, and P1-17 first-run onboarding routing when no local profiles exist) |
+| Flutter app shell | `lib/features/app_shell/`, `lib/main.dart`, `test/app_shell_test.dart` | Implemented (P1-22 adaptive home/navigation shell with profile switcher dropdown, recommended lesson surface, safe placeholders for incomplete sections, P1-20 Settings destination wiring, P1-24 habit metrics on Home, P1-17 first-run onboarding routing when no local profiles exist, and P1.5-04 onboarding re-entry from Settings, profile creation/deletion from Settings, and home-screen dropdown profile switcher) |
 | Flutter onboarding flow | `lib/features/onboarding/`, `test/onboarding_flow_test.dart` | Implemented (P1-17 first-run welcome/profile/experience/connect/calibrate/first-lesson flow, starter lesson selection by experience, no-kit demo mode with tap pads, MIDI device handoff, and first-lesson feedback through the existing Practice runtime adapter) |
 | Flutter practice habit store | `lib/features/app_shell/practice_habit_store.dart`, `test/practice_habit_bridge_test.dart` | Implemented (P1-24 Dart model/store over the Rust habit snapshot bridge for streak, daily goal, and weekly summary rendering) |
-| Flutter Settings screen | `lib/features/settings/`, `test/settings_*_test.dart` | Implemented (P1-20 profile, MIDI kit profile, manual latency, velocity curve, audio, display, auto-pause, Practice Mode history preferences, and P1-24 daily goal minutes backed by Rust-owned persistence) |
+| Flutter Settings screen | `lib/features/settings/`, `test/settings_*_test.dart` | Implemented (P1-20 profile, MIDI kit profile, manual latency, velocity curve, audio, display, auto-pause, Practice Mode history preferences, P1-24 daily goal minutes backed by Rust-owned persistence, and P1.5-04 re-run setup wizard, create new profile, and delete profile with confirmation) |
 | Flutter local profile UI | `lib/features/profiles/` | Implemented (P1-16 create/switch/delete local profiles, experience/avatar selection, preferred view control) |
 | Flutter calibration wizard | `lib/features/calibration/`, `test/calibration_*_test.dart` | Implemented (P1-07 100 BPM snare calibration, median offset/jitter result, persisted device-profile offset updates) |
 | Flutter note-highway widget | `lib/features/player/note_highway/`, `test/note_highway_test.dart` | Implemented (P1-09 vertical lane painter, timeline-synced note geometry, grade-colored hit markers) |
@@ -145,6 +145,8 @@ The shell adapts navigation by available width:
 | Wide / desktop | `NavigationRail` |
 
 The home destination shows the active profile greeting, recommended next lesson, a daily-goal progress indicator, streak counter, rolling weekly summary, preferred view, and profile switcher. Practice, Library, Studio, Insights, and Settings are reachable from the home surface and the top-level navigation. Studio and Insights are intentionally safe placeholders until their later phase work lands. Settings now mounts the concrete settings screen and uses the same active profile state as the shell.
+
+The Library destination mounts `LibraryScreen` which displays all starter lessons loaded from the `LessonCatalog`. The catalog reads JSON lesson files from the asset bundle at startup, extracts display metadata (title, difficulty, BPM, duration, lanes, skills, objectives, tags), and sorts by difficulty. `LibraryScreen` provides text search, difficulty filter chips, and a lesson detail view with a Practice button.
 
 Home habit metrics are read through the Rust habit snapshot bridge:
 

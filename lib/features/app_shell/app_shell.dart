@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:taal/features/app_shell/practice_habit_store.dart';
+import 'package:taal/features/library/lesson_catalog.dart';
+import 'package:taal/features/library/library_screen.dart';
 import 'package:taal/features/onboarding/onboarding_flow.dart';
 import 'package:taal/features/profiles/local_profile_store.dart';
 import 'package:taal/features/settings/settings_screen.dart';
@@ -26,6 +28,8 @@ abstract class AppShellProfileStore {
   });
 
   rust_profiles.LocalProfileStateDto switchProfile(String profileId);
+
+  rust_profiles.LocalProfileStateDto deleteProfile(String profileId);
 }
 
 class TaalAppShell extends StatefulWidget {
@@ -33,10 +37,12 @@ class TaalAppShell extends StatefulWidget {
     super.key,
     this.openProfileStore = _openLocalProfileStore,
     this.midiDeviceMonitor,
+    this.loadCatalog = loadLessonCatalog,
   });
 
   final AppShellProfileStoreOpener openProfileStore;
   final MidiDeviceMonitor? midiDeviceMonitor;
+  final Future<List<LessonSummary>> Function() loadCatalog;
 
   @override
   State<TaalAppShell> createState() => _TaalAppShellState();
@@ -51,6 +57,8 @@ class _TaalAppShellState extends State<TaalAppShell> {
   String? _error;
   bool _loading = true;
   bool _busy = false;
+  bool _rerunOnboarding = false;
+  List<LessonSummary> _lessonCatalog = const [];
   MidiConnectionState _midiConnectionState = MidiConnectionState.disconnected;
   StreamSubscription<MidiDeviceChange>? _deviceChangeSub;
   StreamSubscription<MidiConnectionState>? _connectionStateSub;
@@ -99,7 +107,12 @@ class _TaalAppShellState extends State<TaalAppShell> {
     });
 
     try {
-      final store = await widget.openProfileStore();
+      final results = await Future.wait([
+        widget.openProfileStore(),
+        widget.loadCatalog(),
+      ]);
+      final store = results[0] as AppShellProfileStore;
+      final catalog = results[1] as List<LessonSummary>;
       final state = store.load();
       final habit = _loadHabitForState(store, state);
       if (!mounted) {
@@ -109,6 +122,7 @@ class _TaalAppShellState extends State<TaalAppShell> {
       setState(() {
         _store = store;
         _profileState = state;
+        _lessonCatalog = catalog;
         _habitSnapshot = habit.snapshot;
         _habitError = habit.error;
         _loading = false;
@@ -176,6 +190,93 @@ class _TaalAppShellState extends State<TaalAppShell> {
     }
   }
 
+  void _rerunSetupWizard() {
+    setState(() => _rerunOnboarding = true);
+  }
+
+  void _cancelRerunSetup(rust_profiles.LocalProfileStateDto state) {
+    setState(() {
+      _rerunOnboarding = false;
+      _profileState = state;
+      _selectedIndex = 0;
+    });
+    final store = _store;
+    if (store != null) {
+      _applyPersistedTheme(store, state);
+      final habit = _loadHabitForState(store, state);
+      setState(() {
+        _habitSnapshot = habit.snapshot;
+        _habitError = habit.error;
+      });
+    }
+  }
+
+  Future<void> _deleteProfile(String profileId) async {
+    final store = _store;
+    if (store == null || _busy) return;
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    try {
+      final state = store.deleteProfile(profileId);
+      final habit = _loadHabitForState(store, state);
+      if (!mounted) return;
+      _applyPersistedTheme(store, state);
+      setState(() {
+        _profileState = state;
+        _habitSnapshot = habit.snapshot;
+        _habitError = habit.error;
+        _busy = false;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString();
+        _busy = false;
+      });
+    }
+  }
+
+  Future<void> _createProfileFromSettings({
+    required String name,
+    required String? avatar,
+    required rust_profiles.ProfileExperienceLevelDto experienceLevel,
+  }) async {
+    final store = _store;
+    if (store == null || _busy) return;
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    try {
+      final state = store.createProfile(
+        name: name,
+        avatar: avatar,
+        experienceLevel: experienceLevel,
+      );
+      final habit = _loadHabitForState(store, state);
+      if (!mounted) return;
+      _applyPersistedTheme(store, state);
+      setState(() {
+        _profileState = state;
+        _habitSnapshot = habit.snapshot;
+        _habitError = habit.error;
+        _busy = false;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString();
+        _busy = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -187,7 +288,7 @@ class _TaalAppShellState extends State<TaalAppShell> {
     final activeProfile = _activeProfile(profileState);
     final store = _store;
 
-    if (store != null && profileState.profiles.isEmpty) {
+    if (store != null && (profileState.profiles.isEmpty || _rerunOnboarding)) {
       return OnboardingFlow(
         onCreateProfile:
             ({required name, required avatar, required experienceLevel}) async {
@@ -197,7 +298,9 @@ class _TaalAppShellState extends State<TaalAppShell> {
                 experienceLevel: experienceLevel,
               );
             },
-        onComplete: _setProfileState,
+        onComplete: (state) {
+          _cancelRerunSetup(state);
+        },
       );
     }
 
@@ -315,21 +418,30 @@ class _TaalAppShellState extends State<TaalAppShell> {
           error: _error,
           onSwitchProfile: _switchProfile,
           onSelectSection: _selectKind,
+          onRetry: _load,
         );
       case _ShellDestinationKind.practice:
         return _PlaceholderSection(
           key: const ValueKey('app-shell-section-practice'),
           title: 'Practice',
-          subtitle: 'Play a selected lesson with feedback.',
+          subtitle: 'Choose a lesson from the Library.',
           body:
-              'Choose a lesson in Library, then use Practice Mode or Play Mode.',
+              'No lesson loaded. Pick one from the Library to start practicing.',
+          icon: Icons.music_note_outlined,
           primaryActionLabel: 'Open Library',
           onPrimaryAction: () => _selectKind(_ShellDestinationKind.library),
+          midiMessage: _midiConnectionState == MidiConnectionState.connected
+              ? null
+              : 'No drum kit connected. Tap pads are active.',
+          onScanDevices: widget.midiDeviceMonitor != null
+              ? () => widget.midiDeviceMonitor!.scanDevices()
+              : null,
         );
       case _ShellDestinationKind.library:
-        return _LibrarySection(
-          activeProfile: activeProfile,
-          onStartPractice: () => _selectKind(_ShellDestinationKind.practice),
+        return LibraryScreen(
+          lessons: _lessonCatalog,
+          onStartPractice: (lesson) =>
+              _selectKind(_ShellDestinationKind.practice),
         );
       case _ShellDestinationKind.studio:
         return const _PlaceholderSection(
@@ -337,17 +449,24 @@ class _TaalAppShellState extends State<TaalAppShell> {
           title: 'Studio',
           subtitle: 'Create lessons and courses here soon.',
           body: 'Authoring tools arrive after the core player is complete.',
+          icon: Icons.edit_note_outlined,
         );
       case _ShellDestinationKind.insights:
-        return _InsightsSection(activeProfile: activeProfile);
+        return _InsightsSection(
+          activeProfile: activeProfile,
+          onGoToLibrary: () => _selectKind(_ShellDestinationKind.library),
+        );
       case _ShellDestinationKind.settings:
         final store = _store;
         if (store == null) {
-          return const _PlaceholderSection(
-            key: ValueKey('app-shell-section-settings'),
+          return _PlaceholderSection(
+            key: const ValueKey('app-shell-section-settings'),
             title: 'Settings',
             subtitle: 'Profile, kit, audio, and display settings.',
             body: 'Profile storage is still loading.',
+            icon: Icons.settings_outlined,
+            primaryActionLabel: 'Retry',
+            onPrimaryAction: _load,
           );
         }
         return TaalSettingsScreen(
@@ -358,6 +477,9 @@ class _TaalAppShellState extends State<TaalAppShell> {
           store: store.settingsStore,
           onSwitchProfile: _switchProfile,
           onProfileStateChanged: _setProfileState,
+          onRerunSetup: _rerunSetupWizard,
+          onDeleteProfile: _deleteProfile,
+          onCreateProfile: _createProfileFromSettings,
           onRecalibrate: () => ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Calibration is ready from Settings.'),
@@ -460,6 +582,11 @@ class _LocalAppShellProfileStore implements AppShellProfileStore {
   @override
   rust_profiles.LocalProfileStateDto switchProfile(String profileId) {
     return _delegate.switchProfile(profileId);
+  }
+
+  @override
+  rust_profiles.LocalProfileStateDto deleteProfile(String profileId) {
+    return _delegate.deleteProfile(profileId);
   }
 }
 
@@ -578,6 +705,7 @@ class _HomeSection extends StatelessWidget {
     required this.error,
     required this.onSwitchProfile,
     required this.onSelectSection,
+    this.onRetry,
   });
 
   final rust_profiles.LocalProfileStateDto profileState;
@@ -588,6 +716,7 @@ class _HomeSection extends StatelessWidget {
   final String? error;
   final ValueChanged<String> onSwitchProfile;
   final ValueChanged<_ShellDestinationKind> onSelectSection;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -611,7 +740,10 @@ class _HomeSection extends StatelessWidget {
         ),
         if (error != null) ...[
           const SizedBox(height: 16),
-          _ErrorBanner(message: error!),
+          _ErrorBanner(
+            message: 'Something went wrong. Try restarting.',
+            onRetry: onRetry,
+          ),
         ],
         const SizedBox(height: 24),
         _Panel(
@@ -691,42 +823,27 @@ class _HomeSection extends StatelessWidget {
   }
 }
 
-class _LibrarySection extends StatelessWidget {
-  const _LibrarySection({
+class _InsightsSection extends StatelessWidget {
+  const _InsightsSection({
     required this.activeProfile,
-    required this.onStartPractice,
+    required this.onGoToLibrary,
   });
 
   final rust_profiles.PlayerProfileDto? activeProfile;
-  final VoidCallback onStartPractice;
-
-  @override
-  Widget build(BuildContext context) {
-    return _PlaceholderSection(
-      key: const ValueKey('app-shell-section-library'),
-      title: 'Library',
-      subtitle: 'Pick the next lesson.',
-      body:
-          '${_recommendedLessonTitle(activeProfile)} is ready for ${activeProfile?.name ?? 'the active player'}.',
-      primaryActionLabel: 'Practice',
-      onPrimaryAction: onStartPractice,
-    );
-  }
-}
-
-class _InsightsSection extends StatelessWidget {
-  const _InsightsSection({required this.activeProfile});
-
-  final rust_profiles.PlayerProfileDto? activeProfile;
+  final VoidCallback onGoToLibrary;
 
   @override
   Widget build(BuildContext context) {
     return _PlaceholderSection(
       key: const ValueKey('app-shell-section-insights'),
       title: 'Insights',
-      subtitle: 'Recent practice summary',
+      subtitle: 'No practice sessions yet. Start your first lesson!',
       body:
-          '${activeProfile?.name ?? 'This player'} has no scored attempts yet. Your review history appears here after Play Mode.',
+          '${activeProfile?.name ?? 'This player'} has no scored attempts yet. '
+          'Complete a Play Mode session to see your review history here.',
+      icon: Icons.insights_outlined,
+      primaryActionLabel: 'Go to Library',
+      onPrimaryAction: onGoToLibrary,
     );
   }
 }
@@ -737,15 +854,21 @@ class _PlaceholderSection extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.body,
+    this.icon,
     this.primaryActionLabel,
     this.onPrimaryAction,
+    this.midiMessage,
+    this.onScanDevices,
   });
 
   final String title;
   final String subtitle;
   final String body;
+  final IconData? icon;
   final String? primaryActionLabel;
   final VoidCallback? onPrimaryAction;
+  final String? midiMessage;
+  final Future<void> Function()? onScanDevices;
 
   @override
   Widget build(BuildContext context) {
@@ -756,7 +879,26 @@ class _PlaceholderSection extends StatelessWidget {
         const SizedBox(height: 8),
         Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
         const SizedBox(height: 24),
-        _Panel(title: title, child: Text(body)),
+        _Panel(
+          title: title,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 48, color: Theme.of(context).colorScheme.outline),
+                const SizedBox(height: 12),
+              ],
+              Text(body),
+            ],
+          ),
+        ),
+        if (midiMessage != null) ...[
+          const SizedBox(height: 12),
+          _MidiStatusBanner(
+            message: midiMessage!,
+            onScanDevices: onScanDevices,
+          ),
+        ],
         if (primaryActionLabel != null) ...[
           const SizedBox(height: 16),
           FilledButton(
@@ -765,6 +907,45 @@ class _PlaceholderSection extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _MidiStatusBanner extends StatelessWidget {
+  const _MidiStatusBanner({required this.message, this.onScanDevices});
+
+  final String message;
+  final Future<void> Function()? onScanDevices;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.cable, size: 20, color: scheme.outline),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(message, style: Theme.of(context).textTheme.bodyMedium),
+            ),
+            if (onScanDevices != null) ...[
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                key: const ValueKey('empty-state-scan-devices'),
+                onPressed: () => onScanDevices!(),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Scan'),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -927,20 +1108,47 @@ class _ProfileSwitcherPanel extends StatelessWidget {
       );
     }
 
+    final activeId = profileState.activeProfileId;
+
     return _Panel(
       title: 'Switch profile',
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final profile in profileState.profiles)
-            InputChip(
-              key: ValueKey('profile-switch-${profile.id}'),
-              selected: profile.id == profileState.activeProfileId,
-              avatar: CircleAvatar(child: Text(_avatarInitial(profile))),
-              label: Text(profile.name),
-              onPressed: busy ? null : () => onSwitchProfile(profile.id),
+          DropdownButtonFormField<String>(
+            key: const ValueKey('home-profile-dropdown'),
+            isExpanded: true,
+            value: profileState.profiles.any((p) => p.id == activeId)
+                ? activeId
+                : null,
+            decoration: const InputDecoration(
+              labelText: 'Active profile',
+              border: OutlineInputBorder(),
             ),
+            items: [
+              for (final profile in profileState.profiles)
+                DropdownMenuItem(
+                  value: profile.id,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 14,
+                        child: Text(_avatarInitial(profile)),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(profile.name),
+                    ],
+                  ),
+                ),
+            ],
+            onChanged: busy
+                ? null
+                : (value) {
+                    if (value != null) {
+                      onSwitchProfile(value);
+                    }
+                  },
+          ),
         ],
       ),
     );
@@ -998,9 +1206,10 @@ class _Panel extends StatelessWidget {
 }
 
 class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
+  const _ErrorBanner({required this.message, this.onRetry});
 
   final String message;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -1011,11 +1220,30 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Text(
-          message,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                key: const ValueKey('error-retry'),
+                onPressed: onRetry,
+                child: const Text('Retry'),
+              ),
+            ],
+          ],
         ),
       ),
     );

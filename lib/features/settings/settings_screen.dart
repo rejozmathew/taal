@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taal/design/tokens.dart';
 import 'package:taal/features/settings/settings_store.dart';
 import 'package:taal/main.dart';
 import 'package:taal/platform/audio/metronome_audio.dart' as audio;
@@ -20,6 +21,9 @@ class TaalSettingsScreen extends StatefulWidget {
     this.metronomeAudioOutput,
     this.onScanDevices,
     this.midiConnectionState,
+    this.onRerunSetup,
+    this.onDeleteProfile,
+    this.onCreateProfile,
   });
 
   final SettingsScreenStore store;
@@ -33,6 +37,13 @@ class TaalSettingsScreen extends StatefulWidget {
   final audio.MetronomeAudioOutput? metronomeAudioOutput;
   final Future<List<MidiInputDevice>> Function()? onScanDevices;
   final MidiConnectionState? midiConnectionState;
+  final VoidCallback? onRerunSetup;
+  final ValueChanged<String>? onDeleteProfile;
+  final Future<void> Function({
+    required String name,
+    required String? avatar,
+    required rust_profiles.ProfileExperienceLevelDto experienceLevel,
+  })? onCreateProfile;
 
   @override
   State<TaalSettingsScreen> createState() => _TaalSettingsScreenState();
@@ -147,7 +158,7 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Settings', style: Theme.of(context).textTheme.headlineMedium),
-        const SizedBox(height: 8),
+        const SizedBox(height: TaalTokens.space8),
         Text(
           profile == null
               ? 'Create a local profile to configure practice.'
@@ -155,10 +166,10 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
           style: Theme.of(context).textTheme.bodyLarge,
         ),
         if (widget.error != null || _error != null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: TaalTokens.space16),
           _ErrorBanner(message: widget.error ?? _error!),
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: TaalTokens.space16),
         _ProfileSection(
           profileState: widget.profileState,
           activeProfile: profile,
@@ -166,9 +177,12 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
           nameController: _nameController,
           onSwitchProfile: widget.onSwitchProfile,
           onSaveName: profile == null ? null : () => _saveProfileName(profile),
+          onRerunSetup: widget.onRerunSetup,
+          onDeleteProfile: widget.onDeleteProfile,
+          onCreateProfile: widget.onCreateProfile,
         ),
         if (snapshot != null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: TaalTokens.space12),
           _MidiSection(
             snapshot: snapshot,
             devices: _devices,
@@ -188,7 +202,7 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
             onPreviewTap: _previewLatency,
             onRecalibrate: widget.onRecalibrate,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: TaalTokens.space12),
           _AudioSection(
             profile: snapshot.profile,
             draftVolume: _draftMetronomeVolume,
@@ -203,7 +217,7 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
               refreshProfiles: true,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: TaalTokens.space12),
           _DisplaySection(
             settings: snapshot.profile,
             saving: _saving,
@@ -224,7 +238,7 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
               snapshot.profile.toUpdate().copyWith(highContrast: value),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: TaalTokens.space12),
           _PracticePreferencesSection(
             settings: snapshot.profile,
             saving: _saving,
@@ -248,6 +262,8 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
             ),
           ),
         ],
+        const SizedBox(height: TaalTokens.space12),
+        const _AboutSection(),
       ],
     );
   }
@@ -456,6 +472,9 @@ class _ProfileSection extends StatelessWidget {
     required this.nameController,
     required this.onSwitchProfile,
     required this.onSaveName,
+    this.onRerunSetup,
+    this.onDeleteProfile,
+    this.onCreateProfile,
   });
 
   final rust_profiles.LocalProfileStateDto profileState;
@@ -464,11 +483,19 @@ class _ProfileSection extends StatelessWidget {
   final TextEditingController nameController;
   final ValueChanged<String> onSwitchProfile;
   final VoidCallback? onSaveName;
+  final VoidCallback? onRerunSetup;
+  final ValueChanged<String>? onDeleteProfile;
+  final Future<void> Function({
+    required String name,
+    required String? avatar,
+    required rust_profiles.ProfileExperienceLevelDto experienceLevel,
+  })? onCreateProfile;
 
   @override
   Widget build(BuildContext context) {
     return _SettingsGroup(
       title: 'Profile',
+      icon: Icons.person_outline,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -503,9 +530,146 @@ class _ProfileSection extends StatelessWidget {
                   ),
               ],
             ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (onRerunSetup != null)
+                OutlinedButton.icon(
+                  key: const ValueKey('settings-rerun-setup'),
+                  onPressed: busy ? null : onRerunSetup,
+                  icon: const Icon(Icons.restart_alt),
+                  label: const Text('Re-run setup wizard'),
+                ),
+              if (onCreateProfile != null)
+                OutlinedButton.icon(
+                  key: const ValueKey('settings-create-profile'),
+                  onPressed: busy ? null : () => _showCreateProfileDialog(context),
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Create new profile'),
+                ),
+              if (activeProfile != null && onDeleteProfile != null)
+                FilledButton.icon(
+                  key: const ValueKey('settings-delete-profile'),
+                  onPressed: busy ? null : () => _showDeleteConfirmation(context),
+                  icon: const Icon(Icons.delete_forever),
+                  label: const Text('Delete profile'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    final profile = activeProfile;
+    if (profile == null) return;
+    showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete profile?'),
+        content: Text(
+          'This will permanently delete "${profile.name}" and all associated '
+          'practice history, settings, and device mappings. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            key: const ValueKey('delete-profile-cancel'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const ValueKey('delete-profile-confirm'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) {
+        onDeleteProfile?.call(profile.id);
+      }
+    });
+  }
+
+  void _showCreateProfileDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    var selectedLevel = rust_profiles.ProfileExperienceLevelDto.beginner;
+    showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Create new profile'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const ValueKey('create-profile-name'),
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Name'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<rust_profiles.ProfileExperienceLevelDto>(
+                key: const ValueKey('create-profile-level'),
+                isExpanded: true,
+                value: selectedLevel,
+                decoration: const InputDecoration(labelText: 'Experience'),
+                items: const [
+                  DropdownMenuItem(
+                    value: rust_profiles.ProfileExperienceLevelDto.beginner,
+                    child: Text('Beginner'),
+                  ),
+                  DropdownMenuItem(
+                    value: rust_profiles.ProfileExperienceLevelDto.intermediate,
+                    child: Text('Intermediate'),
+                  ),
+                  DropdownMenuItem(
+                    value: rust_profiles.ProfileExperienceLevelDto.teacher,
+                    child: Text('Teacher'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setDialogState(() => selectedLevel = value);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              key: const ValueKey('create-profile-cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              key: const ValueKey('create-profile-confirm'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    ).then((confirmed) {
+      if (confirmed == true && nameController.text.trim().isNotEmpty) {
+        onCreateProfile?.call(
+          name: nameController.text.trim(),
+          avatar: null,
+          experienceLevel: selectedLevel,
+        );
+      }
+    });
   }
 }
 
@@ -552,6 +716,7 @@ class _MidiSection extends StatelessWidget {
 
     return _SettingsGroup(
       title: 'MIDI',
+      icon: Icons.piano_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -715,6 +880,7 @@ class _AudioSection extends StatelessWidget {
 
     return _SettingsGroup(
       title: 'Audio',
+      icon: Icons.volume_up_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -789,6 +955,7 @@ class _DisplaySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SettingsGroup(
       title: 'Display',
+      icon: Icons.palette_outlined,
       child: Column(
         children: [
           DropdownButtonFormField<SettingsPracticeView>(
@@ -867,6 +1034,7 @@ class _PracticePreferencesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SettingsGroup(
       title: 'Practice',
+      icon: Icons.music_note_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -920,10 +1088,17 @@ class _PracticePreferencesSection extends StatelessWidget {
 }
 
 class _SettingsGroup extends StatelessWidget {
-  const _SettingsGroup({required this.title, required this.child});
+  const _SettingsGroup({
+    required this.title,
+    required this.child,
+    this.icon,
+    this.initiallyExpanded = true,
+  });
 
   final String title;
   final Widget child;
+  final IconData? icon;
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -931,18 +1106,64 @@ class _SettingsGroup extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: scheme.outlineVariant),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(TaalTokens.radiusMedium),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            child,
-          ],
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: ValueKey('settings-group-$title'),
+          initiallyExpanded: initiallyExpanded,
+          tilePadding: const EdgeInsets.symmetric(
+            horizontal: TaalTokens.space16,
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            TaalTokens.space16,
+            0,
+            TaalTokens.space16,
+            TaalTokens.space16,
+          ),
+          leading: icon != null
+              ? Icon(icon, color: scheme.onSurfaceVariant)
+              : null,
+          title: Text(title, style: Theme.of(context).textTheme.titleMedium),
+          children: [child],
         ),
+      ),
+    );
+  }
+}
+
+class _AboutSection extends StatelessWidget {
+  const _AboutSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingsGroup(
+      title: 'About',
+      icon: Icons.info_outline,
+      initiallyExpanded: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            key: const ValueKey('settings-about-version'),
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Version'),
+            subtitle: const Text('0.1.0-dev (Phase 1.5)'),
+          ),
+          ListTile(
+            key: const ValueKey('settings-about-credits'),
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Credits'),
+            subtitle: const Text('Built with Flutter + Rust'),
+          ),
+          ListTile(
+            key: const ValueKey('settings-about-license'),
+            contentPadding: EdgeInsets.zero,
+            title: const Text('License'),
+            subtitle: const Text('See LICENSE file in repository'),
+          ),
+        ],
       ),
     );
   }
@@ -962,11 +1183,22 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Text(
-          message,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

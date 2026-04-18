@@ -29,12 +29,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tap pad haptic feedback on hit.
 - Metronome clicks scheduled through the native audio output during practice sessions when the metronome is enabled.
 - "Play drum sounds on kit hits" setting (off by default for MIDI kit users) with per-profile persistence and settings toggle.
+- Onboarding re-entry from Settings via "Re-run setup wizard" button, returning to onboarding step 1.
+- Profile deletion from Settings with a destructive-red button and confirmation dialog.
+- Create new profile from Settings without reinstalling the app.
+- Profile switcher on the home screen with dropdown showing profile name and avatar initial.
+- Every screen now shows a helpful empty state with icon and constructive action when no data is present: Practice shows "Choose a lesson from the Library" with an Open Library button, Insights shows "No practice sessions yet" with a Go to Library button, Library shows a lesson icon.
+- Error banners across the app now include an icon and retry action for database or loading failures instead of text-only messages.
+- MIDI status banner in Practice showing "No drum kit connected. Tap pads are active." with a Scan for devices button when no kit is connected.
+- Browsable lesson library with all 13 starter lessons displayed as cards with title, difficulty badge, BPM, estimated duration, and lane icons.
+- Lesson search by title in the Library.
+- Difficulty filter (All, Beginner, Intermediate, Variety) in the Library with a "No lessons match your filters" empty state and reset button.
+- Lesson detail view with skills, objectives, tags, and a Practice button that navigates to Practice Mode.
+- Settings organized into collapsible sections (Profile, MIDI, Audio, Display, Practice, About) with icons and ExpansionTile expand/collapse.
+- About section in Settings showing version, credits, and license information.
 - Runtime adapter exposes `scheduleDrumHitSound()` for tap-pad and MIDI-originated drum hit audio, gated by the kit-hit-sounds setting.
 - Audio output device display simplified to read-only "System Default" (v1 scope).
 - Practice habit tracking with per-profile streaks, daily goal progress, rolling weekly summaries, and display-only in-session goal progress.
 - Listen-first playback in Practice Mode, with whole-lesson or selected-section drum audio preview that follows the current tempo and scrolls the visual timeline without scoring.
 - Auto-pause in Practice Mode, with default-off settings, dense-miss inactivity detection, rest-aware behavior, and resume on the next touch or MIDI hit.
 - First-run onboarding for creating a local profile, choosing experience level, connecting or skipping a MIDI kit, and starting the first lesson with tap-pad or MIDI feedback.
+- Onboarding redesign with animated dot step indicator, slide transitions between steps, experience-level cards with icons and descriptions, avatar preview during profile creation, and a ready step that hands off to the real app shell instead of embedding a practice screen inside the wizard.
 - Layout compatibility checks that warn when a lesson uses lanes unavailable on the current kit, keep those notes visible, adjust scoring fairly, and flag required-lane Play results as partial compatibility.
 
 ### Documentation

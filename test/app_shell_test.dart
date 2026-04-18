@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taal/features/app_shell/app_shell.dart';
 import 'package:taal/features/app_shell/practice_habit_store.dart';
+import 'package:taal/features/library/lesson_catalog.dart';
 import 'package:taal/features/settings/settings_store.dart';
 import 'package:taal/src/rust/api/profiles.dart' as rust_profiles;
 
@@ -84,18 +85,23 @@ void main() {
     expect(find.text('Welcome back, Ada.'), findsOneWidget);
     expect(find.text('Basic Rock Beat'), findsOneWidget);
 
+    // Use the dropdown to switch profiles
     await tester.ensureVisible(
-      find.byKey(const ValueKey('profile-switch-ben')),
+      find.byKey(const ValueKey('home-profile-dropdown')),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('profile-switch-ben')));
+    await tester.tap(find.byKey(const ValueKey('home-profile-dropdown')));
+    await tester.pumpAndSettle();
+
+    // Select Ben from the dropdown menu
+    await tester.tap(find.text('Ben').last);
     await tester.pumpAndSettle();
 
     expect(find.text('Welcome back, Ben.'), findsOneWidget);
     expect(find.text('Syncopated Kick Push'), findsOneWidget);
   });
 
-  testWidgets('settings exposes the same profile switcher', (tester) async {
+  testWidgets('settings exposes profile switcher chips', (tester) async {
     await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
 
     await tester.ensureVisible(
@@ -110,6 +116,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Settings for Ada.'), findsOneWidget);
+    // Profile switching chips are in the settings section
     expect(find.byKey(const ValueKey('profile-switch-ben')), findsOneWidget);
   });
 
@@ -125,14 +132,259 @@ void main() {
     expect(find.text('Welcome to Taal'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
+
+  testWidgets('home profile switcher is a dropdown with avatar initials', (
+    tester,
+  ) async {
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    expect(
+      find.byKey(const ValueKey('home-profile-dropdown')),
+      findsOneWidget,
+    );
+    // The dropdown shows the active profile
+    expect(find.text('Ada'), findsAtLeast(1));
+  });
+
+  testWidgets('settings shows re-run setup, create, and delete buttons', (
+    tester,
+  ) async {
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    // Navigate to settings
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('home-action-settings')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-action-settings')));
+    await tester.pumpAndSettle();
+
+    // Scroll down to see the profile management buttons
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settings-rerun-setup')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('settings-rerun-setup')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('settings-create-profile')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('settings-delete-profile')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('re-run setup opens onboarding flow', (tester) async {
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    // Navigate to settings
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('home-action-settings')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-action-settings')));
+    await tester.pumpAndSettle();
+
+    // Tap re-run setup
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settings-rerun-setup')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-rerun-setup')));
+    await tester.pumpAndSettle();
+
+    // Should show onboarding
+    expect(find.byKey(const ValueKey('onboarding-flow')), findsOneWidget);
+    expect(find.text('Welcome to Taal'), findsOneWidget);
+  });
+
+  testWidgets('delete profile shows confirmation dialog', (tester) async {
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    // Navigate to settings
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('home-action-settings')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-action-settings')));
+    await tester.pumpAndSettle();
+
+    // Tap delete profile
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settings-delete-profile')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-delete-profile')));
+    await tester.pumpAndSettle();
+
+    // Confirmation dialog visible
+    expect(find.text('Delete profile?'), findsOneWidget);
+    expect(find.textContaining('permanently delete "Ada"'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('delete-profile-cancel')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('delete-profile-confirm')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('confirming delete removes profile', (tester) async {
+    final store = _FakeProfileStore(_state(activeId: 'ada'));
+    await _pumpShell(tester, store);
+
+    // Navigate to settings
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('home-action-settings')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-action-settings')));
+    await tester.pumpAndSettle();
+
+    // Tap delete
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settings-delete-profile')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-delete-profile')));
+    await tester.pumpAndSettle();
+
+    // Confirm
+    await tester.tap(find.byKey(const ValueKey('delete-profile-confirm')));
+    await tester.pumpAndSettle();
+
+    // Ada should be deleted from the store
+    expect(store._state.profiles.any((p) => p.id == 'ada'), isFalse);
+  });
+
+  testWidgets('create profile dialog creates a new profile', (tester) async {
+    final store = _FakeProfileStore(_state(activeId: 'ada'));
+    await _pumpShell(tester, store);
+
+    // Navigate to settings
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('home-action-settings')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-action-settings')));
+    await tester.pumpAndSettle();
+
+    // Tap create profile
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settings-create-profile')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-create-profile')));
+    await tester.pumpAndSettle();
+
+    // Dialog visible
+    expect(find.byType(AlertDialog), findsOneWidget);
+
+    // Enter name
+    await tester.enterText(
+      find.byKey(const ValueKey('create-profile-name')),
+      'Carol',
+    );
+    await tester.pumpAndSettle();
+
+    // Confirm
+    await tester.tap(find.byKey(const ValueKey('create-profile-confirm')));
+    await tester.pumpAndSettle();
+
+    // New profile should be created
+    expect(store._state.profiles.any((p) => p.name == 'Carol'), isTrue);
+  });
+
+  testWidgets('practice section shows no-lesson empty state with Library action', (
+    tester,
+  ) async {
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    // Navigate to Practice from home screen action button
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('home-action-practice')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-action-practice')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('app-shell-section-practice')),
+      findsOneWidget,
+    );
+    expect(find.text('Choose a lesson from the Library.'), findsOneWidget);
+    expect(find.text('Open Library'), findsOneWidget);
+  });
+
+  testWidgets('insights section shows empty history with library action', (
+    tester,
+  ) async {
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    // Navigate to Insights
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('home-action-insights')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-action-insights')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('app-shell-section-insights')),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('No practice sessions yet'),
+      findsOneWidget,
+    );
+    expect(find.text('Go to Library'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpShell(WidgetTester tester, AppShellProfileStore store) async {
   await tester.pumpWidget(
-    MaterialApp(home: TaalAppShell(openProfileStore: () async => store)),
+    MaterialApp(
+      home: TaalAppShell(
+        openProfileStore: () async => store,
+        loadCatalog: () async => _fakeCatalog,
+      ),
+    ),
   );
   await tester.pumpAndSettle();
 }
+
+const _fakeCatalog = [
+  LessonSummary(
+    id: 'lesson-1',
+    title: 'Basic Rock Beat',
+    assetPath: 'assets/content/lessons/starter/beginner-basic-rock.json',
+    difficulty: 'beginner',
+    bpm: 92,
+    estimatedMinutes: 4,
+    laneIds: ['kick', 'snare', 'hihat'],
+    tags: ['rock', 'backbeat'],
+    skills: ['timing.backbeat'],
+    objectives: ['Lock kick on 1 and 3 with snare on 2 and 4.'],
+  ),
+  LessonSummary(
+    id: 'lesson-2',
+    title: 'Syncopated Kick Push',
+    assetPath: 'assets/content/lessons/starter/intermediate-syncopated-kick.json',
+    difficulty: 'intermediate',
+    bpm: 98,
+    estimatedMinutes: 5,
+    laneIds: ['kick', 'snare', 'hihat'],
+    tags: ['syncopation'],
+    skills: ['timing.syncopation'],
+    objectives: ['Play syncopated kick pattern.'],
+  ),
+];
 
 Future<void> _openHomeSection(
   WidgetTester tester, {
@@ -195,6 +447,18 @@ class _FakeProfileStore implements AppShellProfileStore {
     _state = rust_profiles.LocalProfileStateDto(
       profiles: _state.profiles,
       activeProfileId: profileId,
+    );
+    return _state;
+  }
+
+  @override
+  rust_profiles.LocalProfileStateDto deleteProfile(String profileId) {
+    _state = rust_profiles.LocalProfileStateDto(
+      profiles: _state.profiles.where((p) => p.id != profileId).toList(),
+      activeProfileId: _state.profiles
+          .where((p) => p.id != profileId)
+          .map((p) => p.id)
+          .firstOrNull,
     );
     return _state;
   }
