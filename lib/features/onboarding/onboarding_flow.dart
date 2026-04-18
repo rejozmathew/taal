@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:taal/design/colors.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/practice_mode/practice_mode_screen.dart';
 import 'package:taal/features/player/practice_runtime/practice_runtime.dart';
@@ -1055,10 +1056,10 @@ Map<String, Object?> _noteMap(
 }
 
 const _starterLanes = [
-  NoteHighwayLane(laneId: 'kick', label: 'Kick', color: Color(0xFF16A085)),
-  NoteHighwayLane(laneId: 'snare', label: 'Snare', color: Color(0xFFE0B44C)),
-  NoteHighwayLane(laneId: 'hihat', label: 'Hi-Hat', color: Color(0xFF5DADE2)),
-  NoteHighwayLane(laneId: 'crash', label: 'Crash', color: Color(0xFFD78AD7)),
+  NoteHighwayLane(laneId: 'kick', label: 'Kick', color: TaalColors.primary),
+  NoteHighwayLane(laneId: 'snare', label: 'Snare', color: TaalColors.secondary),
+  NoteHighwayLane(laneId: 'hihat', label: 'Hi-Hat', color: TaalColors.tertiary),
+  NoteHighwayLane(laneId: 'crash', label: 'Crash', color: TaalColors.lanePurple),
 ];
 
 const _beginnerLesson = OnboardingStarterLesson(

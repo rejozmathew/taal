@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:taal/design/colors.dart';
 import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 
 class PostLessonReviewScreen extends StatelessWidget {
@@ -388,9 +389,9 @@ class _TimingBarWidget extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final height = math.max(6.0, bar.value.clamp(0, 100).toDouble());
     final color = switch (bar.label) {
-      'Early' => const Color(0xFF4DABF7),
-      'Perfect' => const Color(0xFF20C997),
-      'Late' => const Color(0xFFFFC857),
+      'Early' => TaalColors.gradeEarly,
+      'Perfect' => TaalColors.gradePerfect,
+      'Late' => TaalColors.gradeLate,
       _ => scheme.outline,
     };
 

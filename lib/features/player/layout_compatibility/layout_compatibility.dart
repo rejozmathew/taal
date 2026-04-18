@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taal/design/colors.dart';
 
 enum LayoutCompatibilityStatus { full, optionalMissing, requiredMissing }
 
@@ -160,12 +161,12 @@ Color _statusColor(ColorScheme scheme, LayoutCompatibilityStatus status) {
   switch (status) {
     case LayoutCompatibilityStatus.full:
       return Color.alphaBlend(
-        const Color(0xFF20C997).withValues(alpha: 0.22),
+        TaalColors.compatFull.withValues(alpha: 0.22),
         scheme.surface,
       );
     case LayoutCompatibilityStatus.optionalMissing:
       return Color.alphaBlend(
-        const Color(0xFFFFC857).withValues(alpha: 0.28),
+        TaalColors.compatOptionalMissing.withValues(alpha: 0.28),
         scheme.surface,
       );
     case LayoutCompatibilityStatus.requiredMissing:

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:taal/features/settings/settings_store.dart';
+import 'package:taal/main.dart';
 import 'package:taal/platform/audio/metronome_audio.dart' as audio;
+import 'package:taal/platform/midi/midi_adapter.dart';
+import 'package:taal/platform/midi/midi_device_monitor.dart';
 import 'package:taal/src/rust/api/profiles.dart' as rust_profiles;
 
 class TaalSettingsScreen extends StatefulWidget {
@@ -15,6 +18,8 @@ class TaalSettingsScreen extends StatefulWidget {
     this.error,
     this.onRecalibrate,
     this.metronomeAudioOutput,
+    this.onScanDevices,
+    this.midiConnectionState,
   });
 
   final SettingsScreenStore store;
@@ -26,6 +31,8 @@ class TaalSettingsScreen extends StatefulWidget {
   final ValueChanged<rust_profiles.LocalProfileStateDto> onProfileStateChanged;
   final VoidCallback? onRecalibrate;
   final audio.MetronomeAudioOutput? metronomeAudioOutput;
+  final Future<List<MidiInputDevice>> Function()? onScanDevices;
+  final MidiConnectionState? midiConnectionState;
 
   @override
   State<TaalSettingsScreen> createState() => _TaalSettingsScreenState();
@@ -39,9 +46,11 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
   String? _error;
   bool _loading = true;
   bool _saving = false;
+  bool _scanning = false;
   double? _draftOffsetMs;
   double? _draftMetronomeVolume;
   String? _previewText;
+  List<MidiInputDevice>? _scannedMidiDevices;
 
   @override
   void initState() {
@@ -105,6 +114,25 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
     }
   }
 
+  Future<void> _scanDevices() async {
+    final onScan = widget.onScanDevices;
+    if (onScan == null || _scanning) return;
+    setState(() => _scanning = true);
+    try {
+      final devices = await onScan();
+      if (mounted) {
+        setState(() {
+          _scannedMidiDevices = devices;
+          _scanning = false;
+        });
+      }
+    } on Object {
+      if (mounted) {
+        setState(() => _scanning = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final profile = widget.activeProfile;
@@ -146,9 +174,13 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
             devices: _devices,
             draftOffsetMs: _draftOffsetMs,
             saving: _saving,
+            scanning: _scanning,
             previewText: _previewText,
+            scannedMidiDevices: _scannedMidiDevices,
+            midiConnectionState: widget.midiConnectionState,
             onSelectDeviceProfile: _selectDeviceProfile,
             onChangeVelocityCurve: _changeVelocityCurve,
+            onScanDevices: widget.onScanDevices != null ? _scanDevices : null,
             onOffsetChanged: (value) => setState(() {
               _draftOffsetMs = value;
             }),
@@ -179,9 +211,12 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
               snapshot.profile.toUpdate().copyWith(preferredView: value),
               refreshProfiles: true,
             ),
-            onThemeChanged: (value) => _saveProfileSettings(
-              snapshot.profile.toUpdate().copyWith(theme: value),
-            ),
+            onThemeChanged: (value) {
+              _saveProfileSettings(
+                snapshot.profile.toUpdate().copyWith(theme: value),
+              );
+              TaalApp.setThemeMode(context, themeModeFromPreference(value));
+            },
             onReduceMotionChanged: (value) => _saveProfileSettings(
               snapshot.profile.toUpdate().copyWith(reduceMotion: value),
             ),
@@ -480,6 +515,7 @@ class _MidiSection extends StatelessWidget {
     required this.devices,
     required this.draftOffsetMs,
     required this.saving,
+    required this.scanning,
     required this.previewText,
     required this.onSelectDeviceProfile,
     required this.onChangeVelocityCurve,
@@ -487,19 +523,26 @@ class _MidiSection extends StatelessWidget {
     required this.onOffsetChangeEnd,
     required this.onPreviewTap,
     required this.onRecalibrate,
+    this.onScanDevices,
+    this.scannedMidiDevices,
+    this.midiConnectionState,
   });
 
   final SettingsSnapshot snapshot;
   final List<DeviceProfileSettings> devices;
   final double? draftOffsetMs;
   final bool saving;
+  final bool scanning;
   final String? previewText;
+  final List<MidiInputDevice>? scannedMidiDevices;
+  final MidiConnectionState? midiConnectionState;
   final ValueChanged<String> onSelectDeviceProfile;
   final ValueChanged<DeviceVelocityCurve> onChangeVelocityCurve;
   final ValueChanged<double> onOffsetChanged;
   final ValueChanged<double> onOffsetChangeEnd;
   final VoidCallback onPreviewTap;
   final VoidCallback? onRecalibrate;
+  final VoidCallback? onScanDevices;
 
   @override
   Widget build(BuildContext context) {
@@ -512,6 +555,47 @@ class _MidiSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Icon(
+                Icons.circle,
+                size: 12,
+                color: midiConnectionState == MidiConnectionState.connected
+                    ? Colors.green
+                    : Colors.grey,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                midiConnectionState == MidiConnectionState.connected
+                    ? 'MIDI connected'
+                    : 'No MIDI device',
+              ),
+              const Spacer(),
+              if (onScanDevices != null)
+                OutlinedButton.icon(
+                  key: const ValueKey('settings-scan-devices'),
+                  onPressed: scanning ? null : onScanDevices,
+                  icon: scanning
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                  label: const Text('Scan for devices'),
+                ),
+            ],
+          ),
+          if (scannedMidiDevices != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              scannedMidiDevices!.isEmpty
+                  ? 'No MIDI devices found.'
+                  : '${scannedMidiDevices!.length} device(s) found: '
+                      '${scannedMidiDevices!.map((d) => d.name).join(', ')}',
+            ),
+          ],
+          const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             key: const ValueKey('settings-active-device-profile'),
             isExpanded: true,

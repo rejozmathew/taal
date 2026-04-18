@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:taal/features/app_shell/practice_habit_store.dart';
 import 'package:taal/features/onboarding/onboarding_flow.dart';
 import 'package:taal/features/profiles/local_profile_store.dart';
 import 'package:taal/features/settings/settings_screen.dart';
 import 'package:taal/features/settings/settings_store.dart';
+import 'package:taal/main.dart';
+import 'package:taal/platform/midi/midi_device_monitor.dart';
 import 'package:taal/src/rust/api/profiles.dart' as rust_profiles;
 
 typedef AppShellProfileStoreOpener = Future<AppShellProfileStore> Function();
@@ -28,9 +32,11 @@ class TaalAppShell extends StatefulWidget {
   const TaalAppShell({
     super.key,
     this.openProfileStore = _openLocalProfileStore,
+    this.midiDeviceMonitor,
   });
 
   final AppShellProfileStoreOpener openProfileStore;
+  final MidiDeviceMonitor? midiDeviceMonitor;
 
   @override
   State<TaalAppShell> createState() => _TaalAppShellState();
@@ -45,11 +51,45 @@ class _TaalAppShellState extends State<TaalAppShell> {
   String? _error;
   bool _loading = true;
   bool _busy = false;
+  MidiConnectionState _midiConnectionState = MidiConnectionState.disconnected;
+  StreamSubscription<MidiDeviceChange>? _deviceChangeSub;
+  StreamSubscription<MidiConnectionState>? _connectionStateSub;
 
   @override
   void initState() {
     super.initState();
+    _initMidiMonitor();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _deviceChangeSub?.cancel();
+    _connectionStateSub?.cancel();
+    super.dispose();
+  }
+
+  void _initMidiMonitor() {
+    final monitor = widget.midiDeviceMonitor;
+    if (monitor == null) return;
+
+    _deviceChangeSub = monitor.deviceChanges.listen((change) {
+      if (!mounted) return;
+      final message = switch (change.type) {
+        MidiDeviceChangeType.connected => '${change.device.name} connected',
+        MidiDeviceChangeType.disconnected => 'MIDI device disconnected',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    });
+
+    _connectionStateSub = monitor.connectionStateChanges.listen((state) {
+      if (!mounted) return;
+      setState(() => _midiConnectionState = state);
+    });
+
+    monitor.startMonitoring();
   }
 
   Future<void> _load() async {
@@ -65,6 +105,7 @@ class _TaalAppShellState extends State<TaalAppShell> {
       if (!mounted) {
         return;
       }
+      _applyPersistedTheme(store, state);
       setState(() {
         _store = store;
         _profileState = state;
@@ -80,6 +121,23 @@ class _TaalAppShellState extends State<TaalAppShell> {
         _error = error.toString();
         _loading = false;
       });
+    }
+  }
+
+  void _applyPersistedTheme(
+    AppShellProfileStore store,
+    rust_profiles.LocalProfileStateDto state,
+  ) {
+    final activeId = state.activeProfileId;
+    if (activeId == null) return;
+    try {
+      final snapshot = store.settingsStore.loadSettings(activeId);
+      TaalApp.setThemeMode(
+        context,
+        themeModeFromPreference(snapshot.profile.theme),
+      );
+    } on Object {
+      // Settings unavailable — keep current theme.
     }
   }
 
@@ -100,6 +158,7 @@ class _TaalAppShellState extends State<TaalAppShell> {
       if (!mounted) {
         return;
       }
+      _applyPersistedTheme(store, state);
       setState(() {
         _profileState = state;
         _habitSnapshot = habit.snapshot;
@@ -304,6 +363,10 @@ class _TaalAppShellState extends State<TaalAppShell> {
               content: Text('Calibration is ready from Settings.'),
             ),
           ),
+          onScanDevices: widget.midiDeviceMonitor != null
+              ? () => widget.midiDeviceMonitor!.scanDevices()
+              : null,
+          midiConnectionState: _midiConnectionState,
         );
     }
   }

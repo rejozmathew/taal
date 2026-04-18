@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:taal/design/colors.dart';
 import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/practice_mode/practice_mode_screen.dart';
@@ -906,13 +907,4 @@ PracticeRuntimeGrade? _grade(String? value) {
   throw PracticeRuntimeException('Unknown grade: $value');
 }
 
-const _lanePalette = [
-  Color(0xFF16A085),
-  Color(0xFFE0B44C),
-  Color(0xFF5DADE2),
-  Color(0xFFD78AD7),
-  Color(0xFF95A5A6),
-  Color(0xFF2ECC71),
-  Color(0xFFF4D03F),
-  Color(0xFF76D7C4),
-];
+const _lanePalette = TaalColors.lanePalette;

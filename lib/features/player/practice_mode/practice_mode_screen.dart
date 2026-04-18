@@ -8,6 +8,7 @@ import 'package:taal/features/player/notation/notation_view.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/tap_pads/tap_pad_surface.dart';
 import 'package:taal/platform/audio/metronome_audio.dart';
+import 'package:taal/platform/midi/midi_device_monitor.dart';
 import 'package:taal/src/rust/api/simple.dart';
 
 class PracticeModeScreen extends StatefulWidget {
@@ -22,6 +23,8 @@ class PracticeModeScreen extends StatefulWidget {
     this.dailyGoalProgress,
     this.listenPlayback,
     this.layoutCompatibility,
+    this.midiConnectionState,
+    this.onRescanMidi,
   });
 
   final PracticeModeController controller;
@@ -33,6 +36,8 @@ class PracticeModeScreen extends StatefulWidget {
   final DailyGoalProgress? dailyGoalProgress;
   final PracticeListenPlayback? listenPlayback;
   final LayoutCompatibilitySnapshot? layoutCompatibility;
+  final MidiConnectionState? midiConnectionState;
+  final VoidCallback? onRescanMidi;
 
   @override
   State<PracticeModeScreen> createState() => _PracticeModeScreenState();
@@ -110,6 +115,8 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
               widget.listenPlayback ?? const PracticeListenPlayback(),
           notes: widget.notes,
           layoutCompatibility: compatibility,
+          midiConnectionState: widget.midiConnectionState,
+          onRescanMidi: widget.onRescanMidi,
         ),
         if (compatibility != null && compatibility.hasExcludedLanes)
           Padding(
@@ -378,6 +385,7 @@ class PracticeModeController extends ChangeNotifier {
   double _listenEndMs = 0;
   PracticeAutoPauseConfig _autoPauseConfig;
   bool _autoPauseTriggered = false;
+  bool _midiDisconnected = false;
   int _combo = 0;
   String? _encouragementText;
   double _activeSessionElapsedMs = 0;
@@ -415,6 +423,8 @@ class PracticeModeController extends ChangeNotifier {
   PracticeAutoPauseConfig get autoPauseConfig => _autoPauseConfig;
 
   bool get autoPauseTriggered => _autoPauseTriggered;
+
+  bool get midiDisconnected => _midiDisconnected;
 
   int get combo => _combo;
 
@@ -603,6 +613,26 @@ class PracticeModeController extends ChangeNotifier {
     return true;
   }
 
+  bool pauseForMidiDisconnect() {
+    if (_transportState != PracticeTransportState.running) {
+      _midiDisconnected = true;
+      notifyListeners();
+      return false;
+    }
+    _midiDisconnected = true;
+    _transportState = PracticeTransportState.paused;
+    notifyListeners();
+    return true;
+  }
+
+  void resumeFromMidiReconnect() {
+    _midiDisconnected = false;
+    if (_transportState == PracticeTransportState.paused) {
+      _transportState = PracticeTransportState.running;
+    }
+    notifyListeners();
+  }
+
   void advanceBy(Duration elapsed) {
     if (!isTimelineAdvancing) {
       return;
@@ -672,6 +702,8 @@ class _PracticeTransportBar extends StatelessWidget {
     required this.listenPlayback,
     required this.notes,
     required this.layoutCompatibility,
+    this.midiConnectionState,
+    this.onRescanMidi,
   });
 
   final PracticeModeController controller;
@@ -679,6 +711,8 @@ class _PracticeTransportBar extends StatelessWidget {
   final PracticeListenPlayback listenPlayback;
   final List<PracticeTimelineNote> notes;
   final LayoutCompatibilitySnapshot? layoutCompatibility;
+  final MidiConnectionState? midiConnectionState;
+  final VoidCallback? onRescanMidi;
 
   @override
   Widget build(BuildContext context) {
@@ -796,6 +830,15 @@ class _PracticeTransportBar extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+            if (controller.midiDisconnected)
+              Text(
+                'MIDI disconnected - reconnect to resume',
+                key: const ValueKey('practice-midi-disconnect-message'),
+                style: TextStyle(
+                  color: scheme.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             if (dailyGoalProgress case final goal?)
               _DailyGoalProgressChip(
                 goal: goal,
@@ -803,6 +846,10 @@ class _PracticeTransportBar extends StatelessWidget {
               ),
             if (layoutCompatibility case final compatibility?)
               LayoutCompatibilityIndicator(compatibility: compatibility),
+            _MidiConnectionIndicator(
+              connectionState: midiConnectionState,
+              onRescan: onRescanMidi,
+            ),
           ],
         ),
       ),
@@ -837,6 +884,47 @@ class _DailyGoalProgressChip extends StatelessWidget {
           LinearProgressIndicator(value: progress),
         ],
       ),
+    );
+  }
+}
+
+class _MidiConnectionIndicator extends StatelessWidget {
+  const _MidiConnectionIndicator({
+    required this.connectionState,
+    this.onRescan,
+  });
+
+  final MidiConnectionState? connectionState;
+  final VoidCallback? onRescan;
+
+  @override
+  Widget build(BuildContext context) {
+    final connected = connectionState == MidiConnectionState.connected;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.circle,
+          size: 12,
+          key: const ValueKey('practice-midi-status-icon'),
+          color: connected ? Colors.green : Colors.grey,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          connected ? 'MIDI' : 'Tap pads',
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+        if (onRescan != null) ...[
+          const SizedBox(width: 4),
+          IconButton(
+            key: const ValueKey('practice-midi-rescan'),
+            icon: const Icon(Icons.refresh, size: 18),
+            onPressed: onRescan,
+            tooltip: 'Scan for MIDI devices',
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
+      ],
     );
   }
 }

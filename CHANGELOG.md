@@ -7,6 +7,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Design system with semantic color tokens, spacing/radius/elevation tokens, Inter font (Regular + Bold), and complete dark and light themes built from tokens instead of `ColorScheme.fromSeed()`.
+- Working Light / Dark / System theme selector in Settings that applies immediately without restart and persists across sessions.
+- MIDI device lifecycle management with "Scan for devices" in Settings, connection status indicator in Practice Mode, hot-plug SnackBar notifications, disconnect-during-session pause with reconnection prompt, and refresh icon for manual re-enumeration.
 - Local player profiles with create, switch, delete, preferred practice view, and last-active profile memory backed by local SQLite storage.
 - Persistent device profiles for MIDI mappings and calibration offsets, including per-player ownership and last-used profile recall for reconnecting kits.
 - Bundled standard 5-piece drum layout for starter lessons, visual drum-kit mapping, and common MIDI note hints.

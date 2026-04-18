@@ -333,6 +333,45 @@ void main() {
       findsOneWidget,
     );
   });
+
+  test('pauseForMidiDisconnect pauses running session and sets flag', () {
+    final controller = _controller()..play();
+    expect(controller.isRunning, isTrue);
+
+    final paused = controller.pauseForMidiDisconnect();
+    expect(paused, isTrue);
+    expect(controller.isPaused, isTrue);
+    expect(controller.midiDisconnected, isTrue);
+  });
+
+  test('pauseForMidiDisconnect sets flag even when not running', () {
+    final controller = _controller();
+    expect(controller.transportState, PracticeTransportState.stopped);
+
+    final paused = controller.pauseForMidiDisconnect();
+    expect(paused, isFalse);
+    expect(controller.midiDisconnected, isTrue);
+  });
+
+  test('resumeFromMidiReconnect resumes paused session and clears flag', () {
+    final controller = _controller()..play();
+    controller.pauseForMidiDisconnect();
+    expect(controller.isPaused, isTrue);
+    expect(controller.midiDisconnected, isTrue);
+
+    controller.resumeFromMidiReconnect();
+    expect(controller.isRunning, isTrue);
+    expect(controller.midiDisconnected, isFalse);
+  });
+
+  test('resumeFromMidiReconnect clears flag without starting stopped session', () {
+    final controller = _controller();
+    controller.pauseForMidiDisconnect();
+
+    controller.resumeFromMidiReconnect();
+    expect(controller.midiDisconnected, isFalse);
+    expect(controller.transportState, PracticeTransportState.stopped);
+  });
 }
 
 PracticeModeController _controller() {

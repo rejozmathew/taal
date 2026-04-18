@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:taal/design/theme.dart';
 import 'package:taal/features/app_shell/app_shell.dart';
+import 'package:taal/features/settings/settings_store.dart';
 import 'package:taal/src/rust/frb_generated.dart';
 
 Future<void> main() async {
@@ -8,58 +10,49 @@ Future<void> main() async {
   runApp(const TaalApp());
 }
 
-class TaalApp extends StatelessWidget {
+class TaalApp extends StatefulWidget {
   const TaalApp({super.key});
+
+  /// Update the app-level [ThemeMode] from anywhere in the widget tree.
+  /// No-op if called from a context without a [TaalApp] ancestor (e.g. tests).
+  static void setThemeMode(BuildContext context, ThemeMode mode) {
+    context.findAncestorStateOfType<_TaalAppState>()?._setThemeMode(mode);
+  }
+
+  @override
+  State<TaalApp> createState() => _TaalAppState();
+}
+
+class _TaalAppState extends State<TaalApp> {
+  ThemeMode _themeMode = ThemeMode.dark;
+
+  void _setThemeMode(ThemeMode mode) {
+    if (_themeMode != mode) {
+      setState(() => _themeMode = mode);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    const radius = 8.0;
-
     return MaterialApp(
       title: 'Taal',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme:
-            ColorScheme.fromSeed(
-              seedColor: const Color(0xFF0E7C7B),
-              brightness: Brightness.dark,
-            ).copyWith(
-              primary: const Color(0xFF16A085),
-              secondary: const Color(0xFFE0B44C),
-              tertiary: const Color(0xFF5DADE2),
-            ),
-        useMaterial3: true,
-        cardTheme: const CardThemeData(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(radius)),
-          ),
-        ),
-        chipTheme: const ChipThemeData(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(radius)),
-          ),
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(radius)),
-            ),
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(radius)),
-            ),
-          ),
-        ),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(radius)),
-          ),
-        ),
-      ),
+      theme: TaalTheme.light,
+      darkTheme: TaalTheme.dark,
+      themeMode: _themeMode,
       home: const TaalAppShell(),
     );
+  }
+}
+
+/// Convert a persisted [ThemePreference] to Flutter's [ThemeMode].
+ThemeMode themeModeFromPreference(ThemePreference pref) {
+  switch (pref) {
+    case ThemePreference.system:
+      return ThemeMode.system;
+    case ThemePreference.light:
+      return ThemeMode.light;
+    case ThemePreference.dark:
+      return ThemeMode.dark;
   }
 }

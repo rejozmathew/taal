@@ -13,6 +13,7 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Component | Location | Status |
 |-----------|----------|--------|
 | PRD + specs + plans | `docs/`, `plans/` | Implemented |
+| Design system | `lib/design/`, `assets/fonts/`, `test/design_system_test.dart` | Implemented (P1.5-01 color tokens, spacing/radius/elevation tokens, Inter typography scale, dark + light ThemeData; all raw Color literals consolidated into `lib/design/colors.dart`) |
 | Flutter app shell | `lib/features/app_shell/`, `lib/main.dart`, `test/app_shell_test.dart` | Implemented (P1-22 adaptive home/navigation shell with profile switcher, recommended lesson surface, safe placeholders for incomplete sections, P1-20 Settings destination wiring, P1-24 habit metrics on Home, and P1-17 first-run onboarding routing when no local profiles exist) |
 | Flutter onboarding flow | `lib/features/onboarding/`, `test/onboarding_flow_test.dart` | Implemented (P1-17 first-run welcome/profile/experience/connect/calibrate/first-lesson flow, starter lesson selection by experience, no-kit demo mode with tap pads, MIDI device handoff, and first-lesson feedback through the existing Practice runtime adapter) |
 | Flutter practice habit store | `lib/features/app_shell/practice_habit_store.dart`, `test/practice_habit_bridge_test.dart` | Implemented (P1-24 Dart model/store over the Rust habit snapshot bridge for streak, daily goal, and weekly summary rendering) |
@@ -45,6 +46,7 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Bundled starter lessons | `assets/content/lessons/starter/`, `assets/content/scoring/score-standard-v1.json`, `rust/tests/starter_lessons.rs` | Implemented (P1-18 13 starter lessons that load and compile against the standard layout/scoring profile) |
 | Flutter↔Rust bridge | `rust/`, `lib/src/rust/`, `rust_builder/` | Implemented (Phase 0 `greet` bridge) |
 | Windows MIDI adapter | `windows/runner/windows_midi_adapter.*`, `lib/platform/midi/windows_midi_adapter.dart`, `native/windows/` | Implemented (Phase 0 NoteOn capture and latency benchmark validated) |
+| MIDI device monitor | `lib/platform/midi/midi_device_monitor.dart`, `test/midi_device_monitor_test.dart` | Implemented (P1.5-05 polling-based hot-plug detection, connection state tracking, scan-for-devices, disconnect-during-session pause) |
 | Windows latency harness | `lib/platform/latency/`, `rust/src/api/simple.rs`, `artifacts/phase-0/` | Implemented (P0-05 release measurement captured) |
 | Android MIDI adapter | `android/app/src/main/kotlin/dev/taal/taal/MainActivity.kt`, `lib/platform/midi/android_midi_adapter.dart`, `native/android/` | Implemented (Phase 0 NoteOn capture and latency benchmark validated) |
 | Android latency artifact export | `android/app/src/main/kotlin/dev/taal/taal/MainActivity.kt`, `lib/platform/latency/` | Implemented (writes Phase 0 CSV/report to Android Downloads via MediaStore) |

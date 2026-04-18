@@ -5,8 +5,8 @@
 - Repository: taal
 - PRD version: 1.9
 - Current phase: Phase 1.5 — Tranche A in progress
-- Current task: P1.5-03 Audio Wiring — Complete
-- Overall status: Phase 1 functionally complete. Phase 1.5 Tranche A in progress. P1.5-03 audio wiring landed.
+- Current task: P1.5-05 MIDI Device Lifecycle — Complete
+- Overall status: Phase 1 functionally complete. Phase 1.5 Tranche A in progress. P1.5-03 audio wiring landed. P1.5-01 design system foundation landed. P1.5-02 theme switching fix landed. P1.5-05 MIDI device lifecycle landed.
 
 ## Release Boundary
 - **MVP (Phases 0-2):** Playable + creatable + course runtime. Not yet distributed.
@@ -32,11 +32,11 @@
 ### Tranche A: Fix Broken
 | ID | Title | Deps | Status |
 |----|-------|------|--------|
-| P1.5-01 | Design system foundation | — | Proposed |
-| P1.5-02 | Theme switching fix | P1.5-01 | Proposed |
+| P1.5-01 | Design system foundation | — | Complete |
+| P1.5-02 | Theme switching fix | P1.5-01 | Complete |
 | P1.5-03 | Audio wiring | — | Complete |
 | P1.5-04 | Onboarding re-entry + profile management | — | Proposed |
-| P1.5-05 | MIDI device lifecycle | — | Proposed |
+| P1.5-05 | MIDI device lifecycle | — | Complete |
 | P1.5-06 | Error states + empty states | P1.5-01 | Proposed |
 | P1.5-07 | Settings screen restructure | P1.5-01, P1.5-02, P1.5-03, P1.5-04, P1.5-05 | Proposed |
 | P1.5-08 | Library UX overhaul | P1.5-01 | Proposed |

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:taal/design/colors.dart';
 
 class NoteHighwayWidget extends StatelessWidget {
   const NoteHighwayWidget({
@@ -317,14 +318,14 @@ class NoteHighwayPainter extends CustomPainter {
 Color gradeColor(NoteHighwayGrade grade, ColorScheme scheme) {
   switch (grade) {
     case NoteHighwayGrade.perfect:
-      return const Color(0xFF20C997);
+      return TaalColors.gradePerfect;
     case NoteHighwayGrade.good:
-      return const Color(0xFF8CE99A);
+      return TaalColors.gradeGood;
     case NoteHighwayGrade.early:
-      return const Color(0xFF4DABF7);
+      return TaalColors.gradeEarly;
     case NoteHighwayGrade.late:
-      return const Color(0xFFFFC857);
+      return TaalColors.gradeLate;
     case NoteHighwayGrade.miss:
-      return scheme.outline;
+      return TaalColors.gradeMiss;
   }
 }

@@ -25,3 +25,10 @@ flutter:
     - assets/content/layouts/
     - assets/content/lessons/starter/
     - assets/content/scoring/
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
