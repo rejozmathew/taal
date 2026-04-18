@@ -497,7 +497,10 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     output.scheduleClicks(
       sessionStartTimeNs: startNs,
       clicks: [
-        ScheduledMetronomeClick(tMs: tMs.round(), accent: event.accent ?? false),
+        ScheduledMetronomeClick(
+          tMs: tMs.round(),
+          accent: event.accent ?? false,
+        ),
       ],
     );
   }
