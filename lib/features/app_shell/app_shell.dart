@@ -181,6 +181,18 @@ class _TaalAppShellState extends State<TaalAppShell> {
         _habitError = habit.error;
         _busy = false;
       });
+      final name = state.profiles
+          .where((p) => p.id == profileId)
+          .map((p) => p.name)
+          .firstOrNull;
+      if (mounted && name != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Switched to $name'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } on Object catch (error) {
       if (!mounted) {
         return;
@@ -233,6 +245,14 @@ class _TaalAppShellState extends State<TaalAppShell> {
         _habitError = habit.error;
         _busy = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile deleted'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } on Object catch (error) {
       if (!mounted) return;
       setState(() {
@@ -270,6 +290,14 @@ class _TaalAppShellState extends State<TaalAppShell> {
         _habitError = habit.error;
         _busy = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile "$name" created'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } on Object catch (error) {
       if (!mounted) return;
       setState(() {
@@ -328,7 +356,7 @@ class _TaalAppShellState extends State<TaalAppShell> {
         if (useRail) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Taal'),
+              title: Text('Taal — ${selected.label}'),
               actions: [
                 IconButton(
                   tooltip: 'Reload profiles',
@@ -361,7 +389,7 @@ class _TaalAppShellState extends State<TaalAppShell> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Taal'),
+            title: Text('Taal — ${selected.label}'),
             actions: [
               IconButton(
                 tooltip: 'Reload profiles',
@@ -1166,7 +1194,7 @@ class _ProfileSwitcherPanel extends StatelessWidget {
           DropdownButtonFormField<String>(
             key: const ValueKey('home-profile-dropdown'),
             isExpanded: true,
-            value: profileState.profiles.any((p) => p.id == activeId)
+            initialValue: profileState.profiles.any((p) => p.id == activeId)
                 ? activeId
                 : null,
             decoration: const InputDecoration(

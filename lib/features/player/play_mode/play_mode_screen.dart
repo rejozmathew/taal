@@ -344,11 +344,14 @@ class _PlayModeTopBar extends StatelessWidget {
           runSpacing: 10,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            FilledButton(
-              onPressed: controller.state == PlayModeState.ready
-                  ? controller.start
-                  : null,
-              child: const Text('Start Play Mode'),
+            Tooltip(
+              message: 'Begin scored play mode',
+              child: FilledButton(
+                onPressed: controller.state == PlayModeState.ready
+                    ? controller.start
+                    : null,
+                child: const Text('Start Play Mode'),
+              ),
             ),
             Text(
               '${controller.lessonBpm.round()} BPM',

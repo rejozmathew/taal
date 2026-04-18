@@ -59,12 +59,7 @@ void main() {
   testWidgets('library shows all lessons with difficulty badges', (
     tester,
   ) async {
-    LessonSummary? practiceLesson;
-    await _pumpLibrary(
-      tester,
-      lessons: _testLessons,
-      onStartPractice: (l) => practiceLesson = l,
-    );
+    await _pumpLibrary(tester, lessons: _testLessons);
 
     // Header
     expect(find.text('Library'), findsOneWidget);

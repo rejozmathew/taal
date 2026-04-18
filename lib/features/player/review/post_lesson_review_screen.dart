@@ -125,17 +125,26 @@ class PostLessonReviewScreen extends StatelessWidget {
                 runSpacing: 10,
                 children: [
                   if (onNextLesson != null)
-                    FilledButton(
-                      onPressed: onNextLesson,
-                      child: const Text('Next Lesson'),
+                    Tooltip(
+                      message: 'Continue to next lesson',
+                      child: FilledButton(
+                        onPressed: onNextLesson,
+                        child: const Text('Next Lesson'),
+                      ),
                     ),
-                  OutlinedButton(
-                    onPressed: onRetry,
-                    child: const Text('Retry'),
+                  Tooltip(
+                    message: 'Try this lesson again',
+                    child: OutlinedButton(
+                      onPressed: onRetry,
+                      child: const Text('Retry'),
+                    ),
                   ),
-                  TextButton(
-                    onPressed: onBackToLibrary,
-                    child: const Text('Back to Library'),
+                  Tooltip(
+                    message: 'Return to lesson list',
+                    child: TextButton(
+                      onPressed: onBackToLibrary,
+                      child: const Text('Back to Library'),
+                    ),
                   ),
                 ],
               ),

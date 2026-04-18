@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:taal/design/colors.dart';
 import 'package:taal/design/daily_goal_ring.dart';
 import 'package:taal/design/motion.dart';
@@ -109,7 +110,46 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
     final tapPadInput = widget.tapPadInput;
     final compatibility = widget.layoutCompatibility;
 
-    return Column(
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        const SingleActivator(LogicalKeyboardKey.space): () {
+          if (!controller.isListening) controller.togglePlayPause();
+        },
+        const SingleActivator(LogicalKeyboardKey.escape): controller.stop,
+        const SingleActivator(LogicalKeyboardKey.keyM): () {
+          if (!controller.isListening) {
+            controller.setMetronomeEnabled(!controller.metronomeEnabled);
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.keyL): () {
+          if (!controller.isListening) {
+            controller.setLoopEnabled(!controller.loopEnabled);
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.equal): () {
+          if (!controller.isListening) {
+            controller.setTempoBpm(
+              (controller.tempoBpm + 5).clamp(
+                controller.minTempoBpm,
+                controller.maxTempoBpm,
+              ),
+            );
+          }
+        },
+        const SingleActivator(LogicalKeyboardKey.minus): () {
+          if (!controller.isListening) {
+            controller.setTempoBpm(
+              (controller.tempoBpm - 5).clamp(
+                controller.minTempoBpm,
+                controller.maxTempoBpm,
+              ),
+            );
+          }
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: Column(
       children: [
         ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 120),
@@ -167,11 +207,15 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
                 enabledLaneIds: tapPadInput.enabledLaneIds,
                 velocity: tapPadInput.velocity,
                 onPadHit: tapPadInput.onPadHit,
+                recentHits: tapPadInput.recentHits,
+                onDismissGuidance: tapPadInput.onDismissGuidance,
               ),
             ),
           ),
         _PracticeLoopControls(controller: controller),
       ],
+    ),
+      ),
     );
   }
 }
@@ -204,12 +248,20 @@ class PracticeTapPadInput {
     this.pads = standardFivePieceDrumKitPads,
     this.enabledLaneIds,
     this.velocity = 96,
+    this.recentHits = const [],
+    this.onDismissGuidance,
   });
 
   final List<VisualDrumKitPad> pads;
   final Set<String>? enabledLaneIds;
   final int velocity;
   final ValueChanged<TapPadHit> onPadHit;
+
+  /// Recent graded hits for grade-colored tap pad feedback.
+  final List<VisualDrumKitHit> recentHits;
+
+  /// Callback to dismiss the guidance banner.
+  final VoidCallback? onDismissGuidance;
 }
 
 class PracticeListenRange {
@@ -855,17 +907,22 @@ class _TransportGroup extends StatelessWidget {
           height: 48,
           child: PressableScale(
             onTap: controller.isListening ? null : controller.togglePlayPause,
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(minimumSize: const Size(80, 48)),
-              onPressed: controller.isListening
-                  ? null
-                  : controller.togglePlayPause,
-              icon: Icon(
-                controller.isRunning || controller.isCountingIn
-                    ? Icons.pause_rounded
-                    : Icons.play_arrow_rounded,
+            child: Tooltip(
+              message: controller.isRunning || controller.isCountingIn
+                  ? 'Pause (Space)'
+                  : 'Play (Space)',
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size(80, 48)),
+                onPressed: controller.isListening
+                    ? null
+                    : controller.togglePlayPause,
+                icon: Icon(
+                  controller.isRunning || controller.isCountingIn
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                ),
+                label: Text(playLabel),
               ),
-              label: Text(playLabel),
             ),
           ),
         ),
@@ -955,7 +1012,10 @@ class _ModeGroup extends StatelessWidget {
               ? null
               : () =>
                     listenPlayback.toggle(controller: controller, notes: notes),
-          child: Text(controller.isListening ? 'Stop Listening' : 'Listen'),
+          child: Tooltip(
+            message: 'Listen to drum audio preview',
+            child: Text(controller.isListening ? 'Stop Listening' : 'Listen'),
+          ),
         ),
         SegmentedButton<PracticeListenScope>(
           segments: const [
@@ -1009,18 +1069,24 @@ class _ToolsGroup extends StatelessWidget {
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        FilterChip(
-          label: const Text('Metronome'),
-          selected: controller.metronomeEnabled,
-          onSelected: controller.isListening
-              ? null
-              : controller.setMetronomeEnabled,
+        Tooltip(
+          message: 'Toggle metronome click (M)',
+          child: FilterChip(
+            label: const Text('Metronome'),
+            selected: controller.metronomeEnabled,
+            onSelected: controller.isListening
+                ? null
+                : controller.setMetronomeEnabled,
+          ),
         ),
         SizedBox(
           width: 260,
           child: Row(
             children: [
-              Text('${controller.tempoBpm.round()} BPM'),
+              Tooltip(
+                message: 'Tempo (+/- to adjust)',
+                child: Text('${controller.tempoBpm.round()} BPM'),
+              ),
               Expanded(
                 child: Slider(
                   value: controller.tempoBpm,
@@ -1034,10 +1100,13 @@ class _ToolsGroup extends StatelessWidget {
             ],
           ),
         ),
-        FilterChip(
-          label: const Text('Loop'),
-          selected: controller.loopEnabled,
-          onSelected: controller.isListening ? null : controller.setLoopEnabled,
+        Tooltip(
+          message: 'Toggle section loop (L)',
+          child: FilterChip(
+            label: const Text('Loop'),
+            selected: controller.loopEnabled,
+            onSelected: controller.isListening ? null : controller.setLoopEnabled,
+          ),
         ),
       ],
     );

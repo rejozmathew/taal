@@ -82,6 +82,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ? IconButton(
                     key: const ValueKey('library-search-clear'),
                     icon: const Icon(Icons.clear),
+                    tooltip: 'Clear search',
                     onPressed: () => setState(() => _searchQuery = ''),
                   )
                 : null,
@@ -440,11 +441,14 @@ class _LessonDetailView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Back button
-        TextButton.icon(
-          key: const ValueKey('library-detail-back'),
-          onPressed: onBack,
-          icon: const Icon(Icons.arrow_back),
-          label: const Text('Back to Library'),
+        Tooltip(
+          message: 'Return to lesson list',
+          child: TextButton.icon(
+            key: const ValueKey('library-detail-back'),
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back),
+            label: const Text('Back to Library'),
+          ),
         ),
         const SizedBox(height: TaalTokens.space8),
         Text(lesson.title, style: Theme.of(context).textTheme.headlineMedium),
@@ -535,11 +539,14 @@ class _LessonDetailView extends StatelessWidget {
         Wrap(
           spacing: TaalTokens.space12,
           children: [
-            FilledButton.icon(
-              key: const ValueKey('library-detail-practice'),
-              onPressed: onStartPractice,
-              icon: const Icon(Icons.music_note),
-              label: const Text('Practice'),
+            Tooltip(
+              message: 'Start practicing this lesson',
+              child: FilledButton.icon(
+                key: const ValueKey('library-detail-practice'),
+                onPressed: onStartPractice,
+                icon: const Icon(Icons.music_note),
+                label: const Text('Practice'),
+              ),
             ),
           ],
         ),

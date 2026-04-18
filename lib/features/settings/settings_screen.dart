@@ -137,6 +137,14 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
           _scannedMidiDevices = devices;
           _scanning = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Found ${devices.length} MIDI device${devices.length == 1 ? '' : 's'}',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
     } on Object {
       if (mounted) {
@@ -449,6 +457,14 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
       setState(() {
         _saving = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile name saved'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } on Object catch (error) {
       setState(() {
         _error = error.toString();
@@ -509,10 +525,13 @@ class _ProfileSection extends StatelessWidget {
               decoration: const InputDecoration(labelText: 'Profile name'),
             ),
             const SizedBox(height: 8),
-            FilledButton(
-              key: const ValueKey('settings-save-profile-name'),
-              onPressed: busy ? null : onSaveName,
-              child: const Text('Save name'),
+            Tooltip(
+              message: 'Save profile display name',
+              child: FilledButton(
+                key: const ValueKey('settings-save-profile-name'),
+                onPressed: busy ? null : onSaveName,
+                child: const Text('Save name'),
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -538,32 +557,41 @@ class _ProfileSection extends StatelessWidget {
             runSpacing: 8,
             children: [
               if (onRerunSetup != null)
-                OutlinedButton.icon(
-                  key: const ValueKey('settings-rerun-setup'),
-                  onPressed: busy ? null : onRerunSetup,
-                  icon: const Icon(Icons.restart_alt),
-                  label: const Text('Re-run setup wizard'),
+                Tooltip(
+                  message: 'Return to onboarding wizard',
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('settings-rerun-setup'),
+                    onPressed: busy ? null : onRerunSetup,
+                    icon: const Icon(Icons.restart_alt),
+                    label: const Text('Re-run setup wizard'),
+                  ),
                 ),
               if (onCreateProfile != null)
-                OutlinedButton.icon(
-                  key: const ValueKey('settings-create-profile'),
-                  onPressed: busy
-                      ? null
-                      : () => _showCreateProfileDialog(context),
-                  icon: const Icon(Icons.person_add),
-                  label: const Text('Create new profile'),
+                Tooltip(
+                  message: 'Create a new player profile',
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('settings-create-profile'),
+                    onPressed: busy
+                        ? null
+                        : () => _showCreateProfileDialog(context),
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('Create new profile'),
+                  ),
                 ),
               if (activeProfile != null && onDeleteProfile != null)
-                FilledButton.icon(
-                  key: const ValueKey('settings-delete-profile'),
-                  onPressed: busy
-                      ? null
-                      : () => _showDeleteConfirmation(context),
-                  icon: const Icon(Icons.delete_forever),
-                  label: const Text('Delete profile'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    foregroundColor: Theme.of(context).colorScheme.onError,
+                Tooltip(
+                  message: 'Permanently delete this profile',
+                  child: FilledButton.icon(
+                    key: const ValueKey('settings-delete-profile'),
+                    onPressed: busy
+                        ? null
+                        : () => _showDeleteConfirmation(context),
+                    icon: const Icon(Icons.delete_forever),
+                    label: const Text('Delete profile'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
+                    ),
                   ),
                 ),
             ],
@@ -629,7 +657,7 @@ class _ProfileSection extends StatelessWidget {
               DropdownButtonFormField<rust_profiles.ProfileExperienceLevelDto>(
                 key: const ValueKey('create-profile-level'),
                 isExpanded: true,
-                value: selectedLevel,
+                initialValue: selectedLevel,
                 decoration: const InputDecoration(labelText: 'Experience'),
                 items: const [
                   DropdownMenuItem(
@@ -743,17 +771,20 @@ class _MidiSection extends StatelessWidget {
               ),
               const Spacer(),
               if (onScanDevices != null)
-                OutlinedButton.icon(
-                  key: const ValueKey('settings-scan-devices'),
-                  onPressed: scanning ? null : onScanDevices,
-                  icon: scanning
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh),
-                  label: const Text('Scan for devices'),
+                Tooltip(
+                  message: 'Search for connected MIDI devices',
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('settings-scan-devices'),
+                    onPressed: scanning ? null : onScanDevices,
+                    icon: scanning
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh),
+                    label: const Text('Scan for devices'),
+                  ),
                 ),
             ],
           ),
@@ -798,10 +829,15 @@ class _MidiSection extends StatelessWidget {
               Expanded(
                 child: Text('Manual latency: ${offset.toStringAsFixed(1)} ms'),
               ),
-              OutlinedButton(
-                key: const ValueKey('settings-preview-latency'),
-                onPressed: activeDevice == null || saving ? null : onPreviewTap,
-                child: const Text('Preview tap'),
+              Tooltip(
+                message: 'Preview latency offset with a test click',
+                child: OutlinedButton(
+                  key: const ValueKey('settings-preview-latency'),
+                  onPressed: activeDevice == null || saving
+                      ? null
+                      : onPreviewTap,
+                  child: const Text('Preview tap'),
+                ),
               ),
             ],
           ),
@@ -850,10 +886,13 @@ class _MidiSection extends StatelessWidget {
                   },
           ),
           const SizedBox(height: 12),
-          OutlinedButton(
-            key: const ValueKey('settings-recalibrate'),
-            onPressed: saving ? null : onRecalibrate,
-            child: const Text('Recalibrate'),
+          Tooltip(
+            message: 'Re-run calibration wizard for this device',
+            child: OutlinedButton(
+              key: const ValueKey('settings-recalibrate'),
+              onPressed: saving ? null : onRecalibrate,
+              child: const Text('Recalibrate'),
+            ),
           ),
         ],
       ),

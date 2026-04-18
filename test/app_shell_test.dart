@@ -334,6 +334,74 @@ void main() {
     expect(find.textContaining('No practice sessions yet'), findsOneWidget);
     expect(find.text('Go to Library'), findsOneWidget);
   });
+
+  testWidgets('shell renders without overflow at 1024px minimum width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1024, 768);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.text('Welcome back, Ada.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shell renders without overflow at 1366px width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1366, 768);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.text('Welcome back, Ada.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shell renders without overflow at 1920px width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.text('Welcome back, Ada.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('AppBar title reflects selected section', (tester) async {
+    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+
+    // Home section title
+    expect(find.text('Taal \u2014 Home'), findsOneWidget);
+
+    // Navigate to Library
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('home-action-library')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('home-action-library')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Taal \u2014 Library'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpShell(WidgetTester tester, AppShellProfileStore store) async {
