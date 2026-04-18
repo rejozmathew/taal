@@ -30,12 +30,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
   List<LessonSummary> get _filtered {
     var lessons = widget.lessons;
     if (_difficultyFilter != null) {
-      lessons =
-          lessons.where((l) => l.difficulty == _difficultyFilter).toList();
+      lessons = lessons
+          .where((l) => l.difficulty == _difficultyFilter)
+          .toList();
     }
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      lessons = lessons.where((l) => l.title.toLowerCase().contains(query)).toList();
+      lessons = lessons
+          .where((l) => l.title.toLowerCase().contains(query))
+          .toList();
     }
     return lessons;
   }
@@ -260,10 +263,7 @@ class _LessonCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: scheme.onSurfaceVariant,
-              ),
+              Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -280,8 +280,14 @@ class _DifficultyBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (Color bg, Color fg) = switch (difficulty) {
-      'beginner' => (TaalColors.gradeGood.withValues(alpha: 0.2), TaalColors.gradeGood),
-      'intermediate' => (TaalColors.secondary.withValues(alpha: 0.2), TaalColors.secondary),
+      'beginner' => (
+        TaalColors.gradeGood.withValues(alpha: 0.2),
+        TaalColors.gradeGood,
+      ),
+      'intermediate' => (
+        TaalColors.secondary.withValues(alpha: 0.2),
+        TaalColors.secondary,
+      ),
       'advanced' => (TaalColors.error.withValues(alpha: 0.2), TaalColors.error),
       _ => (TaalColors.tertiary.withValues(alpha: 0.2), TaalColors.tertiary),
     };
@@ -324,7 +330,11 @@ class _InfoChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(
+          icon,
+          size: 14,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 4),
         Text(
           label,
@@ -350,11 +360,7 @@ class _LaneIcons extends StatelessWidget {
         for (final laneId in laneIds)
           Tooltip(
             message: _laneLabel(laneId),
-            child: Icon(
-              _laneIcon(laneId),
-              size: 16,
-              color: _laneColor(laneId),
-            ),
+            child: Icon(_laneIcon(laneId), size: 16, color: _laneColor(laneId)),
           ),
       ],
     );
@@ -449,10 +455,7 @@ class _LessonDetailView extends StatelessWidget {
           runSpacing: TaalTokens.space4,
           children: [
             _DifficultyBadge(difficulty: lesson.difficulty),
-            _InfoChip(
-              icon: Icons.speed,
-              label: '${lesson.bpm.round()} BPM',
-            ),
+            _InfoChip(icon: Icons.speed, label: '${lesson.bpm.round()} BPM'),
             if (lesson.estimatedMinutes > 0)
               _InfoChip(
                 icon: Icons.timer_outlined,
@@ -496,10 +499,17 @@ class _LessonDetailView extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.check_circle_outline, size: 16, color: scheme.primary),
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 16,
+                    color: scheme.primary,
+                  ),
                   const SizedBox(width: TaalTokens.space8),
                   Expanded(
-                    child: Text(obj, style: Theme.of(context).textTheme.bodyMedium),
+                    child: Text(
+                      obj,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ),
                 ],
               ),

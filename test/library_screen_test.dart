@@ -193,10 +193,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Back to list
-    expect(
-      find.byKey(const ValueKey('library-lesson-list')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('library-lesson-list')), findsOneWidget);
     expect(find.text('Basic Rock Beat'), findsOneWidget);
   });
 }

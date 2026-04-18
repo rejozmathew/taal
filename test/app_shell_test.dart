@@ -138,10 +138,7 @@ void main() {
   ) async {
     await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
 
-    expect(
-      find.byKey(const ValueKey('home-profile-dropdown')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('home-profile-dropdown')), findsOneWidget);
     // The dropdown shows the active profile
     expect(find.text('Ada'), findsAtLeast(1));
   });
@@ -165,10 +162,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.byKey(const ValueKey('settings-rerun-setup')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('settings-rerun-setup')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('settings-create-profile')),
       findsOneWidget,
@@ -225,10 +219,7 @@ void main() {
     // Confirmation dialog visible
     expect(find.text('Delete profile?'), findsOneWidget);
     expect(find.textContaining('permanently delete "Ada"'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('delete-profile-cancel')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('delete-profile-cancel')), findsOneWidget);
     expect(
       find.byKey(const ValueKey('delete-profile-confirm')),
       findsOneWidget,
@@ -301,26 +292,27 @@ void main() {
     expect(store._state.profiles.any((p) => p.name == 'Carol'), isTrue);
   });
 
-  testWidgets('practice section shows no-lesson empty state with Library action', (
-    tester,
-  ) async {
-    await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
+  testWidgets(
+    'practice section shows no-lesson empty state with Library action',
+    (tester) async {
+      await _pumpShell(tester, _FakeProfileStore(_state(activeId: 'ada')));
 
-    // Navigate to Practice from home screen action button
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('home-action-practice')),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('home-action-practice')));
-    await tester.pumpAndSettle();
+      // Navigate to Practice from home screen action button
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('home-action-practice')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('home-action-practice')));
+      await tester.pumpAndSettle();
 
-    expect(
-      find.byKey(const ValueKey('app-shell-section-practice')),
-      findsOneWidget,
-    );
-    expect(find.text('Choose a lesson from the Library.'), findsOneWidget);
-    expect(find.text('Open Library'), findsOneWidget);
-  });
+      expect(
+        find.byKey(const ValueKey('app-shell-section-practice')),
+        findsOneWidget,
+      );
+      expect(find.text('Choose a lesson from the Library.'), findsOneWidget);
+      expect(find.text('Open Library'), findsOneWidget);
+    },
+  );
 
   testWidgets('insights section shows empty history with library action', (
     tester,
@@ -339,10 +331,7 @@ void main() {
       find.byKey(const ValueKey('app-shell-section-insights')),
       findsOneWidget,
     );
-    expect(
-      find.textContaining('No practice sessions yet'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('No practice sessions yet'), findsOneWidget);
     expect(find.text('Go to Library'), findsOneWidget);
   });
 }
@@ -375,7 +364,8 @@ const _fakeCatalog = [
   LessonSummary(
     id: 'lesson-2',
     title: 'Syncopated Kick Push',
-    assetPath: 'assets/content/lessons/starter/intermediate-syncopated-kick.json',
+    assetPath:
+        'assets/content/lessons/starter/intermediate-syncopated-kick.json',
     difficulty: 'intermediate',
     bpm: 98,
     estimatedMinutes: 5,

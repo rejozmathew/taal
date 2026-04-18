@@ -885,7 +885,11 @@ class _PlaceholderSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 48, color: Theme.of(context).colorScheme.outline),
+                Icon(
+                  icon,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
                 const SizedBox(height: 12),
               ],
               Text(body),
@@ -932,7 +936,10 @@ class _MidiStatusBanner extends StatelessWidget {
             Icon(Icons.cable, size: 20, color: scheme.outline),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(message, style: Theme.of(context).textTheme.bodyMedium),
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
             ),
             if (onScanDevices != null) ...[
               const SizedBox(width: 8),

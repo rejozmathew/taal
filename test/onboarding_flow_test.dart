@@ -65,7 +65,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Dot indicator is visible
-    expect(find.byKey(const ValueKey('onboarding-dot-indicator')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('onboarding-dot-indicator')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('onboarding-get-started')));
     await tester.pumpAndSettle();

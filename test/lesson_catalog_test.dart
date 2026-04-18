@@ -27,7 +27,8 @@ const _sampleJson = '''
 
 void main() {
   test('loadLessonCatalog parses JSON and sorts by difficulty', () async {
-    final beginner = _sampleJson.replaceAll('"intermediate"', '"beginner"')
+    final beginner = _sampleJson
+        .replaceAll('"intermediate"', '"beginner"')
         .replaceAll('test-lesson-id', 'beginner-id')
         .replaceAll('Test Lesson', 'Beginner Lesson');
     final intermediate = _sampleJson
@@ -52,25 +53,46 @@ void main() {
   test('LessonSummary.difficultyLabel returns correct labels', () {
     expect(
       const LessonSummary(
-        id: '1', title: 't', assetPath: 'p',
-        difficulty: 'beginner', bpm: 0, estimatedMinutes: 0,
-        laneIds: [], tags: [], skills: [], objectives: [],
+        id: '1',
+        title: 't',
+        assetPath: 'p',
+        difficulty: 'beginner',
+        bpm: 0,
+        estimatedMinutes: 0,
+        laneIds: [],
+        tags: [],
+        skills: [],
+        objectives: [],
       ).difficultyLabel,
       'Beginner',
     );
     expect(
       const LessonSummary(
-        id: '1', title: 't', assetPath: 'p',
-        difficulty: 'intermediate', bpm: 0, estimatedMinutes: 0,
-        laneIds: [], tags: [], skills: [], objectives: [],
+        id: '1',
+        title: 't',
+        assetPath: 'p',
+        difficulty: 'intermediate',
+        bpm: 0,
+        estimatedMinutes: 0,
+        laneIds: [],
+        tags: [],
+        skills: [],
+        objectives: [],
       ).difficultyLabel,
       'Intermediate',
     );
     expect(
       const LessonSummary(
-        id: '1', title: 't', assetPath: 'p',
-        difficulty: 'advanced', bpm: 0, estimatedMinutes: 0,
-        laneIds: [], tags: [], skills: [], objectives: [],
+        id: '1',
+        title: 't',
+        assetPath: 'p',
+        difficulty: 'advanced',
+        bpm: 0,
+        estimatedMinutes: 0,
+        laneIds: [],
+        tags: [],
+        skills: [],
+        objectives: [],
       ).difficultyLabel,
       'Advanced',
     );

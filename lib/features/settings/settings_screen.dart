@@ -43,7 +43,8 @@ class TaalSettingsScreen extends StatefulWidget {
     required String name,
     required String? avatar,
     required rust_profiles.ProfileExperienceLevelDto experienceLevel,
-  })? onCreateProfile;
+  })?
+  onCreateProfile;
 
   @override
   State<TaalSettingsScreen> createState() => _TaalSettingsScreenState();
@@ -489,7 +490,8 @@ class _ProfileSection extends StatelessWidget {
     required String name,
     required String? avatar,
     required rust_profiles.ProfileExperienceLevelDto experienceLevel,
-  })? onCreateProfile;
+  })?
+  onCreateProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -545,14 +547,18 @@ class _ProfileSection extends StatelessWidget {
               if (onCreateProfile != null)
                 OutlinedButton.icon(
                   key: const ValueKey('settings-create-profile'),
-                  onPressed: busy ? null : () => _showCreateProfileDialog(context),
+                  onPressed: busy
+                      ? null
+                      : () => _showCreateProfileDialog(context),
                   icon: const Icon(Icons.person_add),
                   label: const Text('Create new profile'),
                 ),
               if (activeProfile != null && onDeleteProfile != null)
                 FilledButton.icon(
                   key: const ValueKey('settings-delete-profile'),
-                  onPressed: busy ? null : () => _showDeleteConfirmation(context),
+                  onPressed: busy
+                      ? null
+                      : () => _showDeleteConfirmation(context),
                   icon: const Icon(Icons.delete_forever),
                   label: const Text('Delete profile'),
                   style: FilledButton.styleFrom(

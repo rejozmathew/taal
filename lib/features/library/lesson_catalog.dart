@@ -73,8 +73,9 @@ Future<List<LessonSummary>> loadLessonCatalog({
   });
   final summaries = await Future.wait(futures);
   summaries.sort((a, b) {
-    final diffOrder = _difficultyOrder(a.difficulty)
-        .compareTo(_difficultyOrder(b.difficulty));
+    final diffOrder = _difficultyOrder(
+      a.difficulty,
+    ).compareTo(_difficultyOrder(b.difficulty));
     if (diffOrder != 0) return diffOrder;
     return a.title.compareTo(b.title);
   });
@@ -101,12 +102,14 @@ LessonSummary _parseSummary(String assetPath, String jsonStr) {
   final meta = map['metadata'] as Map<String, dynamic>? ?? {};
   final timing = map['timing'] as Map<String, dynamic>? ?? {};
   final tempoMap = timing['tempo_map'] as List<dynamic>? ?? [];
-  final firstTempo =
-      tempoMap.isNotEmpty ? tempoMap[0] as Map<String, dynamic> : null;
+  final firstTempo = tempoMap.isNotEmpty
+      ? tempoMap[0] as Map<String, dynamic>
+      : null;
   final bpm = (firstTempo?['bpm'] as num?)?.toDouble() ?? 0.0;
   final lanes = map['lanes'] as List<dynamic>? ?? [];
-  final laneIds =
-      lanes.map((l) => (l as Map<String, dynamic>)['lane_id'] as String).toList();
+  final laneIds = lanes
+      .map((l) => (l as Map<String, dynamic>)['lane_id'] as String)
+      .toList();
 
   return LessonSummary(
     id: map['id'] as String? ?? assetPath,

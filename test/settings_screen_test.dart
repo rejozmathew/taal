@@ -86,9 +86,7 @@ void main() {
     expect(store.profileSettings.dailyGoalMinutes, 25);
   });
 
-  testWidgets('sections are collapsible with expansion tiles', (
-    tester,
-  ) async {
+  testWidgets('sections are collapsible with expansion tiles', (tester) async {
     await _pumpSettings(tester, store: _FakeSettingsStore());
 
     // All sections are visible as ExpansionTiles

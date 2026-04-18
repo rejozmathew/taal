@@ -145,9 +145,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   Widget _buildStep(BuildContext context) {
     switch (_step) {
       case _OnboardingStep.welcome:
-        return _WelcomeStep(
-          onNext: () => _goTo(_OnboardingStep.profile),
-        );
+        return _WelcomeStep(onNext: () => _goTo(_OnboardingStep.profile));
       case _OnboardingStep.profile:
         return _ProfileStep(
           nameController: _nameController,
@@ -494,13 +492,13 @@ class _ExperienceStep extends StatelessWidget {
             icon: Icons.child_care,
             label: 'Just starting',
             description: 'Never played drums, or just a few sessions.',
-            selected: experience ==
-                rust_profiles.ProfileExperienceLevelDto.beginner,
+            selected:
+                experience == rust_profiles.ProfileExperienceLevelDto.beginner,
             onTap: busy
                 ? null
                 : () => onExperienceChanged(
-                      rust_profiles.ProfileExperienceLevelDto.beginner,
-                    ),
+                    rust_profiles.ProfileExperienceLevelDto.beginner,
+                  ),
           ),
           const SizedBox(height: TaalTokens.space8),
           _ExperienceCard(
@@ -508,13 +506,14 @@ class _ExperienceStep extends StatelessWidget {
             icon: Icons.music_note,
             label: 'Playing regularly',
             description: 'Comfortable with basic beats and fills.',
-            selected: experience ==
+            selected:
+                experience ==
                 rust_profiles.ProfileExperienceLevelDto.intermediate,
             onTap: busy
                 ? null
                 : () => onExperienceChanged(
-                      rust_profiles.ProfileExperienceLevelDto.intermediate,
-                    ),
+                    rust_profiles.ProfileExperienceLevelDto.intermediate,
+                  ),
           ),
           const SizedBox(height: TaalTokens.space8),
           _ExperienceCard(
@@ -522,18 +521,16 @@ class _ExperienceStep extends StatelessWidget {
             icon: Icons.school,
             label: 'Teaching',
             description: 'Advanced player who teaches others.',
-            selected: experience ==
-                rust_profiles.ProfileExperienceLevelDto.teacher,
+            selected:
+                experience == rust_profiles.ProfileExperienceLevelDto.teacher,
             onTap: busy
                 ? null
                 : () => onExperienceChanged(
-                      rust_profiles.ProfileExperienceLevelDto.teacher,
-                    ),
+                    rust_profiles.ProfileExperienceLevelDto.teacher,
+                  ),
           ),
           const SizedBox(height: TaalTokens.space16),
-          Text(
-            'First lesson: ${starterLessonForExperience(experience).title}',
-          ),
+          Text('First lesson: ${starterLessonForExperience(experience).title}'),
           const SizedBox(height: TaalTokens.space24),
           Wrap(
             spacing: TaalTokens.space8,
@@ -772,11 +769,10 @@ class _DotStepIndicator extends StatelessWidget {
               color: i == currentIndex
                   ? TaalColors.primary
                   : i < currentIndex
-                      ? TaalColors.primary.withValues(alpha: 0.4)
-                      : Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withValues(alpha: 0.3),
+                  ? TaalColors.primary.withValues(alpha: 0.4)
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(TaalTokens.radiusFull),
             ),
           ),
@@ -837,8 +833,9 @@ class _ExperienceCard extends StatelessWidget {
                     Text(
                       label,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight:
-                            selected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: selected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                     const SizedBox(height: TaalTokens.space4),
@@ -851,8 +848,7 @@ class _ExperienceCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (selected)
-                Icon(Icons.check_circle, color: TaalColors.primary),
+              if (selected) Icon(Icons.check_circle, color: TaalColors.primary),
             ],
           ),
         ),
