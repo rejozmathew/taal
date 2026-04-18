@@ -27,6 +27,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Listen-first playback in Practice Mode, with whole-lesson or selected-section drum audio preview that follows the current tempo and scrolls the visual timeline without scoring.
 - Auto-pause in Practice Mode, with default-off settings, dense-miss inactivity detection, rest-aware behavior, and resume on the next touch or MIDI hit.
 - First-run onboarding for creating a local profile, choosing experience level, connecting or skipping a MIDI kit, and starting the first lesson with tap-pad or MIDI feedback.
+- Layout compatibility checks that warn when a lesson uses lanes unavailable on the current kit, keep those notes visible, adjust scoring fairly, and flag required-lane Play results as partial compatibility.
 
 ### Documentation
 - Complete product requirements (PRD v1.9) with 77 tasks across 4 phases

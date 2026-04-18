@@ -128,6 +128,13 @@ const DEVICE_PROFILE_JSON: &str = r#"
   "midi_channel": 9,
   "note_map": [
     {
+      "midi_note": 36,
+      "lane_id": "kick",
+      "articulation": "normal",
+      "min_velocity": 1,
+      "max_velocity": 127
+    },
+    {
       "midi_note": 38,
       "lane_id": "snare",
       "articulation": "normal",
@@ -222,6 +229,7 @@ fn start_returns_timeline_data_for_practice_mode_renderers() {
         "550e8400-e29b-41d4-a716-446655440231"
     );
     assert_eq!(timeline["total_duration_ms"], 2000);
+    assert_eq!(timeline["layout_compatibility"]["status"], "full");
     assert_eq!(timeline["lanes"][0]["lane_id"], "kick");
     assert_eq!(timeline["notes"][1]["expected_id"], "snare-1");
     assert_eq!(timeline["sections"][0]["label"], "Main");

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/practice_mode/practice_mode_screen.dart';
 import 'package:taal/src/rust/api/practice_runtime.dart' as rust;
@@ -504,6 +505,16 @@ class PracticeRuntimeTimeline {
     required this.lanes,
     required this.notes,
     required this.sections,
+    this.layoutCompatibility = const LayoutCompatibilitySnapshot(
+      status: LayoutCompatibilityStatus.full,
+      lessonLanes: [],
+      requiredLanes: [],
+      optionalLanes: [],
+      mappedLanes: [],
+      missingRequiredLanes: [],
+      missingOptionalLanes: [],
+      excludedLanes: [],
+    ),
   });
 
   final String lessonId;
@@ -513,8 +524,10 @@ class PracticeRuntimeTimeline {
   final List<PracticeRuntimeLane> lanes;
   final List<PracticeRuntimeNote> notes;
   final List<PracticeRuntimeSection> sections;
+  final LayoutCompatibilitySnapshot layoutCompatibility;
 
   factory PracticeRuntimeTimeline.fromJson(Map<String, Object?> json) {
+    final compatibilityJson = json['layout_compatibility'];
     return PracticeRuntimeTimeline(
       lessonId: json['lesson_id'] as String,
       mode: json['mode'] as String,
@@ -529,6 +542,9 @@ class PracticeRuntimeTimeline {
       sections: _list(json['sections'])
           .map((section) => PracticeRuntimeSection.fromJson(_map(section)))
           .toList(growable: false),
+      layoutCompatibility: compatibilityJson == null
+          ? LayoutCompatibilitySnapshot.full()
+          : LayoutCompatibilitySnapshot.fromJson(_map(compatibilityJson)),
     );
   }
 

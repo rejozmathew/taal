@@ -887,6 +887,7 @@ class _FirstLessonStepState extends State<_FirstLessonStep> {
                 lanes: lanes,
                 notes: notes,
                 feedback: adapter?.feedback ?? const [],
+                layoutCompatibility: timeline?.layoutCompatibility,
                 tapPadInput: PracticeTapPadInput(
                   enabledLaneIds: lanes.map((lane) => lane.laneId).toSet(),
                   onPadHit: _submitTapPadHit,

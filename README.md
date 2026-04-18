@@ -11,7 +11,7 @@ Connect your electronic drum kit via USB MIDI, play along with lessons, and get 
 ## Features
 
 ### Practice Player
-Play along with drum lessons in two views: a note-highway (Guitar Hero-style) or traditional drum notation. Every hit gets instant timing feedback. Adjustable tempo, section looping, listen-first previews, auto-pause, and scored assessment modes. Metronome with low-latency audio. On-screen tap pads for practice without a kit.
+Play along with drum lessons in two views: a note-highway (Guitar Hero-style) or traditional drum notation. Every hit gets instant timing feedback. Adjustable tempo, section looping, listen-first previews, auto-pause, and scored assessment modes. Metronome with low-latency audio. On-screen tap pads for practice without a kit. If a lesson uses lanes your current kit cannot play, Taal keeps the notes visible and adjusts scoring instead of counting impossible hits as misses.
 
 ### Creator Studio
 Author drum lessons on a multi-lane timeline editor. Set tempo, sections, and difficulty. Mark lanes as required or optional for different kit sizes. Build guided courses with progression gates. Export and share as portable `.taalpack` files.
@@ -57,7 +57,7 @@ Once available:
 4. Calibrate when a kit profile is ready
 5. Play your first starter lesson
 
-To build from source or follow progress, see [STATUS.md](STATUS.md).
+The Phase 1 core practice loop is complete in source. To build from source or follow progress, see [STATUS.md](STATUS.md).
 
 ---
 

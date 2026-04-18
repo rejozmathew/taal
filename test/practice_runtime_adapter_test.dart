@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/practice_mode/practice_mode_screen.dart';
 import 'package:taal/features/player/practice_runtime/practice_runtime.dart';
@@ -245,6 +246,36 @@ void main() {
 
     expect(engine.pauseCount, 0);
     expect(controller.transportState, PracticeTransportState.running);
+  });
+
+  test('runtime timeline parses layout compatibility from bridge JSON', () {
+    final timeline = PracticeRuntimeTimeline.fromJson(const {
+      'lesson_id': '550e8400-e29b-41d4-a716-446655440231',
+      'mode': 'play',
+      'bpm': 120.0,
+      'total_duration_ms': 2000,
+      'lanes': [
+        {'lane_id': 'kick', 'label': 'Kick', 'slot_id': 'kick'},
+      ],
+      'notes': [],
+      'sections': [],
+      'layout_compatibility': {
+        'status': 'required_missing',
+        'lesson_lanes': ['kick', 'snare'],
+        'required_lanes': ['kick', 'snare'],
+        'optional_lanes': [],
+        'mapped_lanes': ['kick'],
+        'missing_required_lanes': ['snare'],
+        'missing_optional_lanes': [],
+        'excluded_lanes': ['snare'],
+      },
+    });
+
+    expect(
+      timeline.layoutCompatibility.status,
+      LayoutCompatibilityStatus.requiredMissing,
+    );
+    expect(timeline.layoutCompatibility.excludedLanes, ['snare']);
   });
 }
 

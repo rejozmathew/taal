@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/review/post_lesson_review_screen.dart';
 
 void main() {
@@ -78,6 +79,62 @@ void main() {
     expect(find.text('10%'), findsOneWidget);
   });
 
+  testWidgets('review screen names excluded lanes and personal best rule', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PostLessonReviewScreen(
+          summary: _summary,
+          layoutCompatibility: _requiredMissingCompatibility,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Scoring adjusted: 1 lane unavailable on current kit (Snare).'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Partial compatibility results do not qualify as personal bests.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('review-layout-compatibility')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('optional missing lanes do not show personal best warning', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: PostLessonReviewScreen(
+          summary: _summary,
+          layoutCompatibility: _optionalMissingCompatibility,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Scoring adjusted: 1 lane unavailable on current kit (Cowbell).',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Partial compatibility results do not qualify as personal bests.',
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets('review actions call navigation callbacks', (tester) async {
     var retried = false;
     var next = false;
@@ -136,4 +193,26 @@ const _summary = PostLessonAttemptSummary(
       stdDeltaMs: 20,
     ),
   },
+);
+
+const _requiredMissingCompatibility = LayoutCompatibilitySnapshot(
+  status: LayoutCompatibilityStatus.requiredMissing,
+  lessonLanes: ['kick', 'snare'],
+  requiredLanes: ['kick', 'snare'],
+  optionalLanes: [],
+  mappedLanes: ['kick'],
+  missingRequiredLanes: ['snare'],
+  missingOptionalLanes: [],
+  excludedLanes: ['snare'],
+);
+
+const _optionalMissingCompatibility = LayoutCompatibilitySnapshot(
+  status: LayoutCompatibilityStatus.optionalMissing,
+  lessonLanes: ['kick', 'snare', 'cowbell'],
+  requiredLanes: ['kick', 'snare'],
+  optionalLanes: ['cowbell'],
+  mappedLanes: ['kick', 'snare'],
+  missingRequiredLanes: [],
+  missingOptionalLanes: ['cowbell'],
+  excludedLanes: ['cowbell'],
 );

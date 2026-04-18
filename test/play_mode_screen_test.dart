@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taal/features/player/drum_kit/drum_kit.dart';
+import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/notation/notation_view.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/play_mode/play_mode_screen.dart';
@@ -137,6 +138,50 @@ void main() {
     expect(_findPainter<VisualDrumKitPainter>(), findsOneWidget);
     expect(controller.state, PlayModeState.running);
   });
+
+  testWidgets('play screen flags partial compatibility through review', (
+    tester,
+  ) async {
+    final controller = _controller(countInBeats: 0);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PlayModeScreen(
+            controller: controller,
+            lanes: _lanes,
+            notes: _notes,
+            feedback: _feedback,
+            layoutCompatibility: _requiredMissingCompatibility,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Partial compatibility'), findsOneWidget);
+    expect(
+      find.text('Partial compatibility: 1 lane unavailable.'),
+      findsOneWidget,
+    );
+
+    controller
+      ..start()
+      ..advanceBy(const Duration(milliseconds: 4000))
+      ..completeRun(_summary);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PostLessonReviewScreen), findsOneWidget);
+    expect(
+      find.text('Scoring adjusted: 1 lane unavailable on current kit (Snare).'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Partial compatibility results do not qualify as personal bests.',
+      ),
+      findsOneWidget,
+    );
+  });
 }
 
 class _FakeAttemptRecorder implements PlayModeAttemptRecorder {
@@ -223,4 +268,15 @@ const _summary = PostLessonAttemptSummary(
       stdDeltaMs: 15,
     ),
   },
+);
+
+const _requiredMissingCompatibility = LayoutCompatibilitySnapshot(
+  status: LayoutCompatibilityStatus.requiredMissing,
+  lessonLanes: ['kick', 'snare'],
+  requiredLanes: ['kick', 'snare'],
+  optionalLanes: [],
+  mappedLanes: ['kick'],
+  missingRequiredLanes: ['snare'],
+  missingOptionalLanes: [],
+  excludedLanes: ['snare'],
 );

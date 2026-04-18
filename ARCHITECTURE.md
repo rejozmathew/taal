@@ -22,17 +22,19 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Flutter note-highway widget | `lib/features/player/note_highway/`, `test/note_highway_test.dart` | Implemented (P1-09 vertical lane painter, timeline-synced note geometry, grade-colored hit markers) |
 | Flutter notation view widget | `lib/features/player/notation/`, `test/notation_view_test.dart` | Implemented (P1-10 drum-staff painter, standard 5-piece lane placements, scrolling/page display geometry, grade-colored hit markers) |
 | Flutter visual drum kit widget | `lib/features/player/drum_kit/`, `test/drum_kit_test.dart` | Implemented (P1-11 overhead kit painter, standard 5-piece pad geometry, custom layout adaptation, grade-colored hit flashes) |
+| Flutter layout compatibility UI | `lib/features/player/layout_compatibility/`, `test/*_screen_test.dart` | Implemented (P1-27 shared green/yellow/red compatibility indicator, Practice/Play warning banner copy, and Review scoring-adjustment/personal-best messaging) |
 | Flutter on-screen tap pads | `lib/features/player/tap_pads/`, `test/tap_pad_surface_test.dart` | Implemented (P1-23 touch-responsive no-kit drum-pad input surface with tablet-sized targets, lane filtering, fixed velocity, and guidance to connect a kit for the best experience) |
-| Flutter Practice Mode screen | `lib/features/player/practice_mode/`, `test/practice_mode_screen_test.dart` | Implemented (P1-12 transport, tempo, metronome/loop controls, A-B loop state, combo/encouragement display, switchable practice views; P1-24 display-only daily-goal progress from in-memory session elapsed time; P1-25 listen-first playback controls and visual timeline advancement without scoring; P1-26 auto-pause state and resume prompt) |
-| Flutter Practice runtime input adapter | `lib/features/player/practice_runtime/`, `rust/src/api/practice_runtime.rs`, `test/practice_runtime_adapter_test.dart`, `test/practice_runtime_bridge_test.dart` | Implemented (P1-23 bridge/orchestration for compiled Rust sessions, source-neutral touch hits, MIDI-derived hits through `MidiMapper`, event draining, and Practice Mode feedback adaptation without Flutter-owned scoring; P1-26 Practice Mode auto-pause from Rust miss/hit events and resume-on-next-hit behavior) |
-| Flutter Play Mode screen | `lib/features/player/play_mode/`, `test/play_mode_screen_test.dart` | Implemented (P1-13 locked-tempo scored runs, count-in, review handoff, and post-run attempt recording hook) |
-| Flutter post-lesson review screen | `lib/features/player/review/`, `test/post_lesson_review_screen_test.dart` | Implemented (P1-14 score/accuracy summary, timing histogram, lane breakdown, best-stat highlight, improvement suggestions, review actions) |
-| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime session; P1-01 content parsing/validation; P1-02 time indexing/conversion; P1-03 lesson compilation; P1-04 session lifecycle; P1-05 scoring; P1-06 MIDI mapping; P1-16 local profile persistence; P1-08 device profile persistence; P1-21 practice attempt persistence; P1-20 settings persistence; P1-23 Practice runtime bridge; P1-24 habit snapshot read model) |
-| Rust content module | `rust/src/content/`, `rust/tests/content_validation.rs` | Implemented (P1-01 Lesson, InstrumentLayout, and ScoringProfile parsing/validation) |
+| Flutter Practice Mode screen | `lib/features/player/practice_mode/`, `test/practice_mode_screen_test.dart` | Implemented (P1-12 transport, tempo, metronome/loop controls, A-B loop state, combo/encouragement display, switchable practice views; P1-24 display-only daily-goal progress; P1-25 listen-first playback controls; P1-26 auto-pause state and resume prompt; P1-27 layout compatibility indicator/warnings) |
+| Flutter Practice runtime input adapter | `lib/features/player/practice_runtime/`, `rust/src/api/practice_runtime.rs`, `test/practice_runtime_adapter_test.dart`, `test/practice_runtime_bridge_test.dart` | Implemented (P1-23 bridge/orchestration for compiled Rust sessions, source-neutral touch hits, MIDI-derived hits through `MidiMapper`, event draining, and Practice Mode feedback adaptation without Flutter-owned scoring; P1-26 auto-pause; P1-27 runtime timeline compatibility parsing) |
+| Flutter Play Mode screen | `lib/features/player/play_mode/`, `test/play_mode_screen_test.dart` | Implemented (P1-13 locked-tempo scored runs, count-in, review handoff, post-run attempt recording hook, and P1-27 partial-compatibility warnings/review handoff) |
+| Flutter post-lesson review screen | `lib/features/player/review/`, `test/post_lesson_review_screen_test.dart` | Implemented (P1-14 score/accuracy summary, timing histogram, lane breakdown, best-stat highlight, improvement suggestions, review actions, and P1-27 excluded-lane scoring-adjustment messaging) |
+| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime session; P1-01 content parsing/validation; P1-02 time indexing/conversion; P1-03 lesson compilation; P1-04 session lifecycle; P1-05 scoring; P1-06 MIDI mapping; P1-16 local profile persistence; P1-08 device profile persistence; P1-21 practice attempt persistence; P1-20 settings persistence; P1-23 Practice runtime bridge; P1-24 habit snapshot read model; P1-27 layout compatibility scoring filter) |
+| Rust content module | `rust/src/content/`, `rust/tests/content_validation.rs` | Implemented (P1-01 Lesson, InstrumentLayout, and ScoringProfile parsing/validation; P1-27 runtime layout compatibility evaluation) |
 | Rust compile module | `rust/src/content/compile.rs`, `rust/tests/lesson_compile.rs` | Implemented (P1-03 Lesson + layout + scoring profile to immutable CompiledLesson timeline) |
 | Rust time module | `rust/src/time/`, `rust/tests/time_conversion.rs` | Implemented (P1-02 MusicalPos tick arithmetic and TimingIndex musical <-> millisecond conversion) |
 | Rust runtime session | `rust/src/runtime/session.rs`, `rust/tests/runtime_session.rs` | Implemented (P1-04 compiled-lesson session lifecycle, hit/miss event emission, summary metrics; P1-15 metronome click schedule events) |
-| Rust Practice runtime bridge | `rust/src/api/practice_runtime.rs`, `rust/src/runtime/practice_runtime.rs`, `rust/tests/practice_runtime_bridge.rs` | Implemented (P1-23 bridge-owned session registry for Flutter-held session IDs, compiled lesson/session start, optional `MidiMapper` state, touch/MIDI input submission into the same `Session`, event draining, pause/resume/stop/dispose, and timeline JSON for Practice Mode renderers) |
+| Rust layout compatibility evaluator | `rust/src/content/compatibility.rs`, `rust/tests/layout_compatibility.rs` | Implemented (P1-27 derives lesson/required/optional/mapped/missing lanes, returns status for UI indicators, and filters missing-lane events out of scoring timelines while leaving display timelines intact) |
+| Rust Practice runtime bridge | `rust/src/api/practice_runtime.rs`, `rust/src/runtime/practice_runtime.rs`, `rust/tests/practice_runtime_bridge.rs` | Implemented (P1-23 bridge-owned session registry for Flutter-held session IDs, compiled lesson/session start, optional `MidiMapper` state, touch/MIDI input submission into the same `Session`, event draining, pause/resume/stop/dispose, timeline JSON for Practice Mode renderers, and P1-27 layout compatibility JSON plus scoring-timeline filtering) |
 | Rust scoring module | `rust/src/scoring/`, `rust/tests/scoring_behavior.rs` | Implemented (P1-05 profile-driven grades, score normalization, combos, milestones, lane stats) |
 | Rust MIDI mapping engine | `rust/src/midi/`, `rust/tests/midi_mapping.rs` | Implemented (P1-06 raw MIDI NoteOn/CC to mapped hits, hi-hat CC4 articulation, calibration offset, dedupe, unmapped-note warnings) |
 | Rust local profile storage | `rust/src/storage/profiles.rs`, `rust/tests/local_profiles.rs`, `rust/tests/settings_persistence.rs` | Implemented (P1-16 SQLite-backed player profiles, profile preferences, last-active profile state, cascade delete; P1-20 app/profile settings snapshot and update APIs; P1-24 `daily_goal_minutes`) |
@@ -49,7 +51,7 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | CI pipeline | `.github/workflows/ci.yml` | Implemented (Rust + Flutter checks/builds, locally validated) |
 | Metronome audio output | `lib/platform/audio/`, `windows/runner/windows_metronome_audio.*`, `android/app/src/main/kotlin/dev/taal/taal/MetronomeAudioController.kt`, `android/app/src/main/cpp/` | Implemented (P1-15 scheduled native click playback through WASAPI on Windows and AAudio on Android; P1-25 scheduled synthesized drum-hit playback for listen-first mode through the same audio stream) |
 | SQLite persistence | `rust/src/storage/` | Partial (P1-16 local profiles, P1-08 device profiles, P1-21 practice attempts, P1-20 settings/preferences, and P1-24 derived habit snapshots implemented) |
-| Practice views | `lib/features/player/` | Partial (P1-09 note-highway, P1-10 notation, P1-11 visual drum kit, P1-12 Practice Mode screen, P1-14 review, P1-13 Play Mode screen, P1-23 tap pads/runtime input adapter, P1-25 listen-first playback, and P1-26 auto-pause implemented; later player capabilities still planned) |
+| Practice views | `lib/features/player/` | Implemented (Phase 1 core player surface: P1-09 note-highway, P1-10 notation, P1-11 visual drum kit, P1-12 Practice Mode, P1-14 review, P1-13 Play Mode, P1-23 tap pads/runtime input adapter, P1-25 listen-first, P1-26 auto-pause, and P1-27 layout compatibility) |
 | Lesson Editor | `lib/features/studio/` | Planned (Phase 2) |
 | Course Designer | `lib/features/studio/` | Planned (Phase 2) |
 | Pack Builder | `lib/features/studio/` | Planned (Phase 2) |
@@ -203,7 +205,7 @@ Settings are split by owner:
 
 The Settings screen applies metronome volume/click-sound changes to the Flutter native-audio adapter after Rust returns the updated profile settings. Audio output device selection is persisted as `AppSettings.audio_output_device_id`; native output-device switching remains limited to what the current audio adapter exposes.
 
-Auto-pause behavior is not implemented in P1-20. Settings only persists `auto_pause_enabled` and `auto_pause_timeout_ms` for the later P1-26 Practice Mode behavior.
+Auto-pause behavior is implemented in P1-26. Settings persists `auto_pause_enabled` and `auto_pause_timeout_ms`; Practice Mode reads those values and owns the runtime pause/resume presentation.
 
 ---
 
@@ -525,6 +527,30 @@ PracticeModeController auto-paused UI state
        |
 Next touch/MIDI hit -> Rust practice_runtime resume(session_id) -> Session::on_hit
 ```
+
+## Layout Compatibility and Missing Lanes
+
+P1-27 adds a runtime compatibility check before a Practice or Play session starts. The check is derived in Rust from the compiled lesson events, `Lesson.optional_lanes`, and the active `DeviceProfile.note_map`. It is not stored in lesson JSON and does not widen frozen engine events.
+
+```
+Lesson + InstrumentLayout + ScoringProfile
+       |
+compile_lesson(...)
+       |
+evaluate_layout_compatibility(compiled, optional_lanes, mapped_lanes)
+       |-- lesson_lanes: lanes with at least one compiled event
+       |-- required_lanes: lesson_lanes - optional_lanes
+       |-- missing lanes from active DeviceProfile.note_map
+       |
+timeline JSON keeps all notes for display
+scoring CompiledLesson drops events on missing lanes
+       |
+Rust Session grades only scoreable events
+```
+
+The Flutter UI receives the compatibility snapshot through the Practice runtime timeline JSON. Practice Mode shows a warning banner but still allows play; missing-lane notes remain visible in the player views and are not counted as misses. Play Mode also allows the run; if required lanes are missing, the run is labelled partial compatibility and Review states that partial compatibility results do not qualify as personal bests. If only optional lanes are missing, the indicator is yellow and scoring is adjusted, but the result remains full-compatibility rather than partial.
+
+Post-lesson Review is presentation-only for this feature. It names excluded lanes and explains the scoring adjustment, while Rust remains responsible for the reduced denominator because the session was started with the filtered scoring timeline.
 
 The P1-13 Play Mode screen reuses the same practice-view renderers for scored assessment runs. It removes Practice Mode's operator controls that would change assessment conditions: no pause/resume, no tempo slider, no metronome toggle, and no A-B loop controls.
 

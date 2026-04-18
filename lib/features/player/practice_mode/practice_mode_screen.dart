@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:taal/features/player/drum_kit/drum_kit.dart';
+import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/notation/notation_view.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/tap_pads/tap_pad_surface.dart';
@@ -20,6 +21,7 @@ class PracticeModeScreen extends StatefulWidget {
     this.tapPadInput,
     this.dailyGoalProgress,
     this.listenPlayback,
+    this.layoutCompatibility,
   });
 
   final PracticeModeController controller;
@@ -30,6 +32,7 @@ class PracticeModeScreen extends StatefulWidget {
   final PracticeTapPadInput? tapPadInput;
   final DailyGoalProgress? dailyGoalProgress;
   final PracticeListenPlayback? listenPlayback;
+  final LayoutCompatibilitySnapshot? layoutCompatibility;
 
   @override
   State<PracticeModeScreen> createState() => _PracticeModeScreenState();
@@ -96,6 +99,7 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
   Widget build(BuildContext context) {
     final controller = widget.controller;
     final tapPadInput = widget.tapPadInput;
+    final compatibility = widget.layoutCompatibility;
 
     return Column(
       children: [
@@ -105,7 +109,16 @@ class _PracticeModeScreenState extends State<PracticeModeScreen>
           listenPlayback:
               widget.listenPlayback ?? const PracticeListenPlayback(),
           notes: widget.notes,
+          layoutCompatibility: compatibility,
         ),
+        if (compatibility != null && compatibility.hasExcludedLanes)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: LayoutCompatibilityBanner(
+              compatibility: compatibility,
+              mode: LayoutCompatibilityBannerMode.practice,
+            ),
+          ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -658,12 +671,14 @@ class _PracticeTransportBar extends StatelessWidget {
     required this.dailyGoalProgress,
     required this.listenPlayback,
     required this.notes,
+    required this.layoutCompatibility,
   });
 
   final PracticeModeController controller;
   final DailyGoalProgress? dailyGoalProgress;
   final PracticeListenPlayback listenPlayback;
   final List<PracticeTimelineNote> notes;
+  final LayoutCompatibilitySnapshot? layoutCompatibility;
 
   @override
   Widget build(BuildContext context) {
@@ -786,6 +801,8 @@ class _PracticeTransportBar extends StatelessWidget {
                 goal: goal,
                 currentSessionElapsedMs: controller.activeSessionElapsedMs,
               ),
+            if (layoutCompatibility case final compatibility?)
+              LayoutCompatibilityIndicator(compatibility: compatibility),
           ],
         ),
       ),

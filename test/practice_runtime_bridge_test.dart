@@ -7,11 +7,13 @@ import 'package:taal/src/rust/frb_generated.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() async {
+    await RustLib.init();
+  });
+
   test(
     'Dart bridge submits touch and MIDI hits into one Rust session',
     () async {
-      await RustLib.init();
-
       final start = startPracticeRuntimeSession(
         request: const PracticeRuntimeStartRequest(
           lessonJson: _lessonJson,
@@ -28,6 +30,10 @@ void main() {
       final sessionId = start.sessionId!;
       final timeline = jsonDecode(start.timelineJson!) as Map<String, Object?>;
       expect(timeline['total_duration_ms'], 2000);
+      expect(
+        (timeline['layout_compatibility']! as Map<String, Object?>)['status'],
+        'full',
+      );
 
       final touch = practiceRuntimeSubmitTouchHit(
         sessionId: sessionId,
@@ -62,6 +68,66 @@ void main() {
       final summary = jsonDecode(stopped.summaryJson!) as Map<String, Object?>;
       expect(summary['score_total'], 100.0);
       expect(summary['hit_rate_pct'], 100.0);
+
+      final disposed = practiceRuntimeDispose(sessionId: sessionId);
+      expect(disposed.error, isNull);
+    },
+  );
+
+  test(
+    'Dart bridge leaves optional missing lanes visible but excludes them from scoring',
+    () async {
+      final start = startPracticeRuntimeSession(
+        request: const PracticeRuntimeStartRequest(
+          lessonJson: _optionalCowbellLessonJson,
+          layoutJson: _optionalCowbellLayoutJson,
+          scoringProfileJson: _scoringJson,
+          deviceProfileJson: _deviceProfileJson,
+          mode: PracticeRuntimeModeDto.play,
+          bpm: 120,
+          startTimeNs: _startNs,
+          lookaheadMs: 250,
+        ),
+      );
+      expect(start.error, isNull);
+      final sessionId = start.sessionId!;
+      final timeline = jsonDecode(start.timelineJson!) as Map<String, Object?>;
+      final compatibility =
+          timeline['layout_compatibility']! as Map<String, Object?>;
+      expect(compatibility['status'], 'optional_missing');
+      expect(compatibility['missing_optional_lanes'], ['cowbell']);
+      expect(
+        (timeline['notes']! as List<Object?>)
+            .whereType<Map<String, Object?>>()
+            .map((note) => note['lane_id']),
+        contains('cowbell'),
+      );
+
+      final kick = practiceRuntimeSubmitTouchHit(
+        sessionId: sessionId,
+        laneId: 'kick',
+        velocity: 96,
+        timestampNs: _timestampMs(5),
+      );
+      expect(kick.error, isNull);
+
+      final snare = practiceRuntimeSubmitMidiNoteOn(
+        sessionId: sessionId,
+        channel: 9,
+        note: 38,
+        velocity: 100,
+        timestampNs: _timestampMs(505),
+      );
+      expect(snare.error, isNull);
+
+      final stopped = practiceRuntimeStop(sessionId: sessionId);
+      expect(stopped.error, isNull);
+      final summary = jsonDecode(stopped.summaryJson!) as Map<String, Object?>;
+      expect(summary['hit_rate_pct'], 100.0);
+      expect(
+        (summary['lane_stats']! as Map<String, Object?>).keys,
+        isNot(contains('cowbell')),
+      );
 
       final disposed = practiceRuntimeDispose(sessionId: sessionId);
       expect(disposed.error, isNull);
@@ -156,6 +222,99 @@ const _layoutJson = r'''
 }
 ''';
 
+const _optionalCowbellLessonJson = r'''
+{
+  "schema_version": "1.0",
+  "id": "550e8400-e29b-41d4-a716-446655440233",
+  "revision": "1.0.0",
+  "title": "Runtime Cowbell Fixture",
+  "instrument": {
+    "family": "drums",
+    "variant": "kit",
+    "layout_id": "std-cowbell-v1"
+  },
+  "timing": {
+    "time_signature": { "num": 4, "den": 4 },
+    "ticks_per_beat": 480,
+    "tempo_map": [
+      { "pos": { "bar": 1, "beat": 1, "tick": 0 }, "bpm": 120.0 }
+    ]
+  },
+  "lanes": [
+    {
+      "lane_id": "kick",
+      "events": [
+        { "event_id": "kick-1", "pos": { "bar": 1, "beat": 1, "tick": 0 }, "duration_ticks": 0,
+          "payload": { "type": "hit", "velocity": 90, "articulation": "normal" } }
+      ]
+    },
+    {
+      "lane_id": "snare",
+      "events": [
+        { "event_id": "snare-1", "pos": { "bar": 1, "beat": 2, "tick": 0 }, "duration_ticks": 0,
+          "payload": { "type": "hit", "velocity": 95, "articulation": "normal" } }
+      ]
+    },
+    {
+      "lane_id": "cowbell",
+      "events": [
+        { "event_id": "cowbell-1", "pos": { "bar": 1, "beat": 3, "tick": 0 }, "duration_ticks": 0,
+          "payload": { "type": "hit", "velocity": 70, "articulation": "normal" } }
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "section_id": "main",
+      "label": "Main",
+      "range": {
+        "start": { "bar": 1, "beat": 1, "tick": 0 },
+        "end": { "bar": 2, "beat": 1, "tick": 0 }
+      },
+      "loopable": true
+    }
+  ],
+  "practice": {
+    "modes_supported": ["practice", "play"],
+    "count_in_bars": 1,
+    "metronome_enabled": true,
+    "start_tempo_bpm": 120.0,
+    "tempo_floor_bpm": 60.0
+  },
+  "metadata": {
+    "difficulty": "beginner",
+    "tags": [],
+    "skills": [],
+    "objectives": [],
+    "prerequisites": [],
+    "estimated_minutes": 1
+  },
+  "optional_lanes": ["cowbell"],
+  "scoring_profile_id": "score-runtime-v1"
+}
+''';
+
+const _optionalCowbellLayoutJson = r'''
+{
+  "schema_version": "1.0",
+  "id": "std-cowbell-v1",
+  "family": "drums",
+  "variant": "kit",
+  "visual": {
+    "lane_slots": [
+      { "lane_id": "kick", "slot_id": "kick" },
+      { "lane_id": "snare", "slot_id": "snare" },
+      { "lane_id": "cowbell", "slot_id": "cowbell" }
+    ]
+  },
+  "lanes": [
+    { "lane_id": "kick", "label": "Kick", "midi_hints": [{ "hint_type": "note", "values": [36] }] },
+    { "lane_id": "snare", "label": "Snare", "midi_hints": [{ "hint_type": "note", "values": [38] }] },
+    { "lane_id": "cowbell", "label": "Cowbell", "midi_hints": [{ "hint_type": "note", "values": [56] }] }
+  ]
+}
+''';
+
 const _scoringJson = r'''
 {
   "id": "score-runtime-v1",
@@ -193,6 +352,13 @@ const _deviceProfileJson = r'''
   "transport": "usb",
   "midi_channel": 9,
   "note_map": [
+    {
+      "midi_note": 36,
+      "lane_id": "kick",
+      "articulation": "normal",
+      "min_velocity": 1,
+      "max_velocity": 127
+    },
     {
       "midi_note": 38,
       "lane_id": "snare",

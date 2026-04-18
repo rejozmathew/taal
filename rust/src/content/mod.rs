@@ -1,3 +1,4 @@
+pub mod compatibility;
 pub mod compile;
 pub mod error;
 pub mod layout;
@@ -6,6 +7,10 @@ pub mod scoring;
 
 use serde::de::DeserializeOwned;
 
+pub use compatibility::{
+    compiled_lesson_for_scoring, evaluate_layout_compatibility, mapped_lanes_from_device_profile,
+    LayoutCompatibility, LayoutCompatibilityStatus,
+};
 pub use compile::{compile_lesson, CompileError, CompiledEvent, CompiledLesson, CompiledSection};
 pub use error::ContentError;
 pub use layout::{

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taal/features/player/drum_kit/drum_kit.dart';
+import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/notation/notation_view.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/practice_mode/practice_mode_screen.dart';
@@ -213,6 +214,7 @@ class PlayModeScreen extends StatefulWidget {
     this.onRetry,
     this.onNextLesson,
     this.onBackToLibrary,
+    this.layoutCompatibility,
   });
 
   final PlayModeController controller;
@@ -224,6 +226,7 @@ class PlayModeScreen extends StatefulWidget {
   final VoidCallback? onRetry;
   final VoidCallback? onNextLesson;
   final VoidCallback? onBackToLibrary;
+  final LayoutCompatibilitySnapshot? layoutCompatibility;
 
   @override
   State<PlayModeScreen> createState() => _PlayModeScreenState();
@@ -264,6 +267,7 @@ class _PlayModeScreenState extends State<PlayModeScreen> {
       return PostLessonReviewScreen(
         summary: summary,
         courseProgressLabel: widget.courseProgressLabel,
+        layoutCompatibility: widget.layoutCompatibility,
         onRetry: widget.onRetry,
         onNextLesson: widget.onNextLesson,
         onBackToLibrary: widget.onBackToLibrary,
@@ -272,7 +276,19 @@ class _PlayModeScreenState extends State<PlayModeScreen> {
 
     return Column(
       children: [
-        _PlayModeTopBar(controller: widget.controller),
+        _PlayModeTopBar(
+          controller: widget.controller,
+          layoutCompatibility: widget.layoutCompatibility,
+        ),
+        if (widget.layoutCompatibility case final compatibility?
+            when compatibility.hasExcludedLanes)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: LayoutCompatibilityBanner(
+              compatibility: compatibility,
+              mode: LayoutCompatibilityBannerMode.play,
+            ),
+          ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -300,9 +316,13 @@ class _PlayModeScreenState extends State<PlayModeScreen> {
 }
 
 class _PlayModeTopBar extends StatelessWidget {
-  const _PlayModeTopBar({required this.controller});
+  const _PlayModeTopBar({
+    required this.controller,
+    required this.layoutCompatibility,
+  });
 
   final PlayModeController controller;
+  final LayoutCompatibilitySnapshot? layoutCompatibility;
 
   @override
   Widget build(BuildContext context) {
@@ -356,6 +376,8 @@ class _PlayModeTopBar extends StatelessWidget {
             ),
             if (controller.persistenceError case final error?)
               Text(error, style: TextStyle(color: scheme.error)),
+            if (layoutCompatibility case final compatibility?)
+              LayoutCompatibilityIndicator(compatibility: compatibility),
           ],
         ),
       ),

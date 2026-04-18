@@ -4,8 +4,9 @@ use serde::Serialize;
 
 use crate::api::simple::monotonic_now_ns;
 use crate::content::{
-    compile_lesson, load_layout, load_lesson, load_scoring_profile, CompiledLesson, EventPayload,
-    InstrumentLayout, PracticeMode,
+    compile_lesson, compiled_lesson_for_scoring, evaluate_layout_compatibility, load_layout,
+    load_lesson, load_scoring_profile, mapped_lanes_from_device_profile, CompiledLesson,
+    EventPayload, InstrumentLayout, LayoutCompatibility, LayoutCompatibilityStatus, PracticeMode,
 };
 use crate::midi::{load_device_profile, MappingResult, MidiMapper, RawMidiEvent, RawMidiEventType};
 use crate::runtime::practice_runtime::{
@@ -218,15 +219,32 @@ fn start_session_impl(request: &PracticeRuntimeStartRequest) -> Result<(u32, Str
     let scoring =
         load_scoring_profile(&request.scoring_profile_json).map_err(|error| error.to_string())?;
     let compiled = compile_lesson(&lesson, &layout, &scoring).map_err(|error| error.to_string())?;
-    let timeline_json = timeline_json(&compiled, &layout, request.mode, request.bpm)?;
-
-    let mapper = match request.device_profile_json.as_deref() {
+    let device_profile = match request.device_profile_json.as_deref() {
         Some(json) if !json.trim().is_empty() => {
-            let profile = load_device_profile(json).map_err(|error| error.to_string())?;
-            Some(MidiMapper::new(profile).map_err(|error| error.to_string())?)
+            Some(load_device_profile(json).map_err(|error| error.to_string())?)
         }
         _ => None,
     };
+    let compatibility = match device_profile.as_ref() {
+        Some(profile) => {
+            let mapped_lanes = mapped_lanes_from_device_profile(Some(profile));
+            evaluate_layout_compatibility(&compiled, &lesson.optional_lanes, &mapped_lanes)
+        }
+        None => LayoutCompatibility::full_for_lesson(&compiled),
+    };
+    let timeline_json = timeline_json(
+        &compiled,
+        &layout,
+        request.mode,
+        request.bpm,
+        &compatibility,
+    )?;
+    let scoring_compiled = compiled_lesson_for_scoring(&compiled, &compatibility);
+
+    let mapper = device_profile
+        .map(MidiMapper::new)
+        .transpose()
+        .map_err(|error| error.to_string())?;
 
     let mut opts = SessionOpts::new(
         request.mode.into(),
@@ -234,7 +252,7 @@ fn start_session_impl(request: &PracticeRuntimeStartRequest) -> Result<(u32, Str
         i128::from(request.start_time_ns),
     );
     opts.lookahead_ms = request.lookahead_ms;
-    let session = session_start(&compiled, opts);
+    let session = session_start(&scoring_compiled, opts);
 
     let session_id = insert_runtime_session(PracticeRuntimeSession { session, mapper })?;
     Ok((session_id, timeline_json))
@@ -305,6 +323,7 @@ fn timeline_json(
     layout: &InstrumentLayout,
     mode: PracticeRuntimeModeDto,
     bpm: f32,
+    compatibility: &LayoutCompatibility,
 ) -> Result<String, String> {
     let slot_by_lane = layout
         .visual
@@ -362,6 +381,7 @@ fn timeline_json(
         lanes,
         notes,
         sections,
+        layout_compatibility: LayoutCompatibilityDto::from(compatibility),
     })
     .map_err(|error| error.to_string())
 }
@@ -410,6 +430,7 @@ struct PracticeRuntimeTimelineDto {
     lanes: Vec<TimelineLaneDto>,
     notes: Vec<TimelineNoteDto>,
     sections: Vec<TimelineSectionDto>,
+    layout_compatibility: LayoutCompatibilityDto,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -434,6 +455,33 @@ struct TimelineSectionDto {
     start_ms: i64,
     end_ms: i64,
     loopable: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct LayoutCompatibilityDto {
+    status: &'static str,
+    lesson_lanes: Vec<String>,
+    required_lanes: Vec<String>,
+    optional_lanes: Vec<String>,
+    mapped_lanes: Vec<String>,
+    missing_required_lanes: Vec<String>,
+    missing_optional_lanes: Vec<String>,
+    excluded_lanes: Vec<String>,
+}
+
+impl From<&LayoutCompatibility> for LayoutCompatibilityDto {
+    fn from(value: &LayoutCompatibility) -> Self {
+        Self {
+            status: layout_compatibility_status_as_str(value.status),
+            lesson_lanes: value.lesson_lanes.clone(),
+            required_lanes: value.required_lanes.clone(),
+            optional_lanes: value.optional_lanes.clone(),
+            mapped_lanes: value.mapped_lanes.clone(),
+            missing_required_lanes: value.missing_required_lanes.clone(),
+            missing_optional_lanes: value.missing_optional_lanes.clone(),
+            excluded_lanes: value.excluded_lanes.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -538,5 +586,13 @@ fn grade_as_str(grade: Grade) -> &'static str {
         Grade::Early => "early",
         Grade::Late => "late",
         Grade::Miss => "miss",
+    }
+}
+
+fn layout_compatibility_status_as_str(status: LayoutCompatibilityStatus) -> &'static str {
+    match status {
+        LayoutCompatibilityStatus::Full => "full",
+        LayoutCompatibilityStatus::OptionalMissing => "optional_missing",
+        LayoutCompatibilityStatus::RequiredMissing => "required_missing",
     }
 }

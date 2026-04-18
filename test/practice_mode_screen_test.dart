@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taal/features/player/drum_kit/drum_kit.dart';
+import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/notation/notation_view.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/practice_mode/practice_mode_screen.dart';
@@ -301,6 +302,37 @@ void main() {
     expect(hits.single.laneId, 'kick');
     expect(find.byKey(const ValueKey('tap-pad-ride')), findsNothing);
   });
+
+  testWidgets('practice screen warns when lesson lanes are unavailable', (
+    tester,
+  ) async {
+    final controller = _controller();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PracticeModeScreen(
+            controller: controller,
+            lanes: _lanes,
+            notes: _notes,
+            layoutCompatibility: _optionalMissingCompatibility,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Optional lanes missing'), findsOneWidget);
+    expect(
+      find.text(
+        'Missing lanes on this kit: Cowbell. They stay visible but are not scored.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('layout-compatibility-banner')),
+      findsOneWidget,
+    );
+  });
 }
 
 PracticeModeController _controller() {
@@ -343,6 +375,17 @@ const _feedback = [
     grade: NoteHighwayGrade.perfect,
   ),
 ];
+
+const _optionalMissingCompatibility = LayoutCompatibilitySnapshot(
+  status: LayoutCompatibilityStatus.optionalMissing,
+  lessonLanes: ['kick', 'snare', 'cowbell'],
+  requiredLanes: ['kick', 'snare'],
+  optionalLanes: ['cowbell'],
+  mappedLanes: ['kick', 'snare'],
+  missingRequiredLanes: [],
+  missingOptionalLanes: ['cowbell'],
+  excludedLanes: ['cowbell'],
+);
 
 class _FakeMetronomeAudioOutput implements MetronomeAudioOutput {
   int? sessionStartTimeNs;

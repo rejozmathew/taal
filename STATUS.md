@@ -4,9 +4,9 @@
 - Name: Taal
 - Repository: taal (fresh repo; legacy prototype archived as taal-legacy)
 - PRD version: 1.9
-- Current phase: Phase 1 in progress (P1-00 through P1-06, P1-16, P1-08, P1-19, P1-18, P1-15, P1-07, P1-09, P1-10, P1-11, P1-12, P1-14, P1-21, P1-13, P1-22, P1-20, P1-23, P1-24, P1-25, P1-26, and P1-17 complete)
-- Current task: P1-27 Layout Compatibility Check + Missing-Lane Handling
-- Overall status: Phase 0 completed with conditional go via CR-001, and P1-00 resolved the required Android Native-to-Rust jitter follow-up. Phase 1 remains in progress with P1-00 through P1-06, P1-16, P1-08, P1-19, P1-18, P1-15, P1-07, P1-09, P1-10, P1-11, P1-12, P1-14, P1-21, P1-13, P1-22, P1-20, P1-23, P1-24, P1-25, P1-26, and P1-17 complete. CR-002 through CR-008 are applied. P1-17 added a first-run onboarding flow that creates the first local profile, chooses experience-based starter content, handles MIDI/no-kit setup, and starts a Rust-runtime-backed first lesson with tap-pad or MIDI feedback. The next dependency-order task is P1-27.
+- Current phase: Phase 1 complete (28/28 tasks complete); Phase 2 not started
+- Current task: No remaining Phase 1 task. Next work requires a Phase 2 execution contract.
+- Overall status: Phase 0 completed with conditional go via CR-001, and P1-00 resolved the required Android Native-to-Rust jitter follow-up. Phase 1 is complete with P1-00 through P1-27 complete. CR-002 through CR-008 are applied. P1-27 added runtime layout compatibility checks that keep missing-lane notes visible, exclude unavailable lanes from scoring, surface Practice/Play warnings, and flag required-lane Play results as partial compatibility.
 
 ## Release Boundary
 - **MVP (Phases 0-2):** Playable + creatable + course runtime. Not yet distributed.
@@ -14,7 +14,7 @@
 
 ## Phase Gates
 - [x] Phase 0: Foundation + Latency Spike (9 tasks; conditional go via CR-001)
-- [ ] Phase 1: Core Practice Loop (27/28 tasks complete)
+- [x] Phase 1: Core Practice Loop (28/28 tasks complete)
 - [ ] Phase 2: Creator Studio + Content System + Course Runtime (18 tasks)
 - [ ] Phase 3: Analytics + Polish + Distribution (23 tasks)
 - [ ] Phase 4: AI Coach + Marketplace Prep + Multi-Platform
@@ -50,8 +50,8 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 |----------|---------|----------------|
 | AGENTS.md | v1 | When execution rules change |
 | CLAUDE.md | v1 | Thin shim — rarely changes |
-| ARCHITECTURE.md | v25 | When components/flows/boundaries change |
-| README.md | v6 | When user-visible capabilities land |
+| ARCHITECTURE.md | v26 | When components/flows/boundaries change |
+| README.md | v7 | When user-visible capabilities land |
 | docs/prd.md | v1.9 | When scope or product rules change |
 | docs/adr/001-platform-architecture.md | v1 | Immutable (status line only) |
 | docs/specs/content-schemas.md | v1.4 | When content contracts change |
@@ -102,6 +102,7 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 - P1-25 Listen-First Playback: Practice Mode now has listen-first playback controls for the whole lesson or selected A-B/section range. Flutter schedules synthesized GM-style drum hits through the existing native metronome audio path, scales playback timing to the current tempo, advances the visual timeline while listening, and keeps scoring/session feedback inactive. Windows and Android native audio renderers now mix scheduled drum voices alongside metronome clicks. Focused Flutter tests cover listen scheduling, transport state, no-scoring session-time behavior, and channel serialization; Windows and Android debug builds compile.
 - P1-26 Auto-Pause on Player Inactivity: Practice Mode now supports configurable auto-pause using the existing `ProfileSettings.auto_pause_enabled` and `auto_pause_timeout_ms` settings. The Flutter runtime adapter watches Rust `Missed` and `HitGraded` events, pauses the Rust session and UI only during dense missed expected-note passages, ignores intentional rests by resetting across long miss gaps, shows a resume prompt, and resumes the Rust session before forwarding the next touch or MIDI hit. Focused Flutter tests cover default-off behavior, dense-pattern pause, rest handling, Practice Mode scoping, and resume-on-hit.
 - P1-17 Onboarding Flow: `lib/features/onboarding/` now provides the first-run Welcome -> Profile -> Experience -> Connect Kit -> Calibrate -> First Lesson flow. The app shell opens onboarding when no local profiles exist, experience level selects the first starter asset, Flutter bundles the starter lessons/layout/scoring assets for onboarding, no-kit users reach demo mode with tap pads, and detected MIDI devices can feed an ephemeral GM-style onboarding map into the existing Rust Practice runtime adapter for first-lesson feedback. Focused Flutter tests cover starter selection, no-MIDI tap-pad demo flow, MIDI device handoff, and app-shell first-run routing.
+- P1-27 Layout Compatibility Check + Missing-Lane Handling: `rust/src/content/compatibility.rs` now derives lesson, required, optional, mapped, missing, and excluded lanes from the compiled lesson plus active `DeviceProfile` mappings. The Practice runtime bridge returns the compatibility snapshot in timeline JSON, keeps all notes visible for rendering, and starts scoring sessions with missing-lane events filtered out of the denominator. Practice Mode and Play Mode render green/yellow/red compatibility indicators and warnings, and Review names excluded lanes while marking required-lane Play results as ineligible for personal bests. Focused Rust/Flutter tests cover optional missing lanes, required missing lanes, all-lanes-present behavior, bridge timeline JSON, score denominator adjustment, and Review messaging.
 
 ## Maintenance
 - 2026-04-17: Fixed Rust CI Clippy compatibility for newer toolchains by rewriting the metronome schedule construction loop without changing scheduling semantics.
@@ -143,9 +144,10 @@ Task IDs are identifiers, not execution order. Dependencies define sequencing. S
 - 2026-04-18: P1-25 implemented. Added Practice Mode listen-first playback controls, tempo-scaled scheduled drum-hit audio through the existing native metronome channel, visual timeline advancement while listening, focused Flutter tests, Windows/Android native audio renderer updates, and `ARCHITECTURE.md` updates for the listen playback flow.
 - 2026-04-18: P1-26 implemented. Added Practice Mode auto-pause controller state, runtime-adapter detection from Rust miss/hit events, resume-on-next-hit behavior, focused tests, and `ARCHITECTURE.md` updates for the auto-pause flow.
 - 2026-04-18: P1-17 implemented. Added first-run onboarding, starter asset loading from Flutter, no-kit tap-pad demo flow, MIDI handoff into the Practice runtime adapter, focused tests, and `ARCHITECTURE.md` updates for the onboarding flow.
+- 2026-04-18: P1-27 implemented. Added Rust layout compatibility evaluation/scoring filtering, Flutter compatibility indicators and banners, Review scoring-adjustment messaging, focused tests, and `ARCHITECTURE.md`/`README.md` updates for Phase 1 completion.
 
 ## Blockers
-- None for the current dependency-order task. P1-27 is ready to start.
+- None. Phase 1 is complete; Phase 2 has not been started.
 
 ## Operational Caveats
 - P0-08 merge blocking: CI workflow is present and locally validated, but GitHub branch protection / required status checks could not be verified from this environment (`gh` CLI unavailable; connector does not expose branch-protection settings). If not already enabled, require the CI checks in GitHub repository settings.

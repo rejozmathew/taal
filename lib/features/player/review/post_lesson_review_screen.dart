@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 
 class PostLessonReviewScreen extends StatelessWidget {
   const PostLessonReviewScreen({
@@ -10,6 +11,7 @@ class PostLessonReviewScreen extends StatelessWidget {
     this.onRetry,
     this.onNextLesson,
     this.onBackToLibrary,
+    this.layoutCompatibility,
   });
 
   final PostLessonAttemptSummary summary;
@@ -17,10 +19,12 @@ class PostLessonReviewScreen extends StatelessWidget {
   final VoidCallback? onRetry;
   final VoidCallback? onNextLesson;
   final VoidCallback? onBackToLibrary;
+  final LayoutCompatibilitySnapshot? layoutCompatibility;
 
   @override
   Widget build(BuildContext context) {
     final suggestions = summary.improvementSuggestions();
+    final compatibility = layoutCompatibility;
 
     return Scaffold(
       body: SafeArea(
@@ -41,6 +45,10 @@ class PostLessonReviewScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 18),
+              if (compatibility != null && compatibility.hasExcludedLanes) ...[
+                _CompatibilityReviewPanel(compatibility: compatibility),
+                const SizedBox(height: 18),
+              ],
               TimingHistogram(summary: summary),
               const SizedBox(height: 22),
               _LaneBreakdown(summary: summary),
@@ -76,6 +84,41 @@ class PostLessonReviewScreen extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompatibilityReviewPanel extends StatelessWidget {
+  const _CompatibilityReviewPanel({required this.compatibility});
+
+  final LayoutCompatibilitySnapshot compatibility;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      key: const ValueKey('review-layout-compatibility'),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        border: Border.all(color: scheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              compatibility.reviewAdjustmentText,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            if (compatibility.isPartialPlayResult) ...[
+              const SizedBox(height: 6),
+              Text(compatibility.personalBestText),
+            ],
+          ],
         ),
       ),
     );
