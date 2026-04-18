@@ -70,6 +70,7 @@ fn profile_settings_persist_per_player_and_validate_active_device_owner() {
                 auto_pause_timeout_ms: 4500,
                 record_practice_mode_attempts: false,
                 daily_goal_minutes: 25,
+                play_kit_hit_sounds: false,
                 active_device_profile_id: Some(first_device.id),
             },
         )
@@ -212,6 +213,7 @@ fn settings_update() -> ProfileSettingsUpdate {
         auto_pause_timeout_ms: 3000,
         record_practice_mode_attempts: true,
         daily_goal_minutes: 10,
+        play_kit_hit_sounds: false,
         active_device_profile_id: None,
     }
 }

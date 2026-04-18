@@ -164,6 +164,7 @@ pub struct ProfileSettings {
     pub auto_pause_timeout_ms: u32,
     pub record_practice_mode_attempts: bool,
     pub daily_goal_minutes: u32,
+    pub play_kit_hit_sounds: bool,
     pub active_device_profile_id: Option<Uuid>,
     pub updated_at: DateTime,
 }
@@ -180,6 +181,7 @@ pub struct ProfileSettingsUpdate {
     pub auto_pause_timeout_ms: u32,
     pub record_practice_mode_attempts: bool,
     pub daily_goal_minutes: u32,
+    pub play_kit_hit_sounds: bool,
     pub active_device_profile_id: Option<Uuid>,
 }
 
@@ -223,6 +225,7 @@ type ProfileSettingsDbRow = (
     u32,
     i64,
     u32,
+    i64,
     Option<String>,
     String,
 );
@@ -450,9 +453,10 @@ impl LocalProfileStore {
                      auto_pause_timeout_ms = ?7,
                      record_practice_mode_attempts = ?8,
                      daily_goal_minutes = ?9,
-                     active_device_profile_id = ?10,
-                     updated_at = ?11
-                 WHERE player_id = ?12",
+                     play_kit_hit_sounds = ?10,
+                     active_device_profile_id = ?11,
+                     updated_at = ?12
+                 WHERE player_id = ?13",
                 params![
                     update.theme.as_str(),
                     bool_to_db(update.reduce_motion),
@@ -463,6 +467,7 @@ impl LocalProfileStore {
                     update.auto_pause_timeout_ms,
                     bool_to_db(update.record_practice_mode_attempts),
                     update.daily_goal_minutes,
+                    bool_to_db(update.play_kit_hit_sounds),
                     update.active_device_profile_id.map(|id| id.to_string()),
                     now,
                     player_id.to_string(),
@@ -556,6 +561,9 @@ fn apply_schema(conn: &Connection) -> Result<(), ProfileStorageError> {
             ),
             daily_goal_minutes INTEGER NOT NULL DEFAULT 10 CHECK (
                 daily_goal_minutes > 0
+            ),
+            play_kit_hit_sounds INTEGER NOT NULL DEFAULT 0 CHECK (
+                play_kit_hit_sounds IN (0, 1)
             ),
             active_device_profile_id TEXT,
             created_at TEXT NOT NULL,
@@ -699,6 +707,7 @@ fn profile_settings(
         auto_pause_timeout_ms,
         record_practice_mode_attempts,
         daily_goal_minutes,
+        play_kit_hit_sounds,
         active_device_profile_text,
         updated_at,
     ): ProfileSettingsDbRow = conn.query_row(
@@ -711,6 +720,7 @@ fn profile_settings(
                     auto_pause_timeout_ms,
                     record_practice_mode_attempts,
                     daily_goal_minutes,
+                    play_kit_hit_sounds,
                     active_device_profile_id,
                     updated_at
              FROM profile_preferences
@@ -729,6 +739,7 @@ fn profile_settings(
                 row.get(8)?,
                 row.get(9)?,
                 row.get(10)?,
+                row.get(11)?,
             ))
         },
     )?;
@@ -760,6 +771,7 @@ fn profile_settings(
         auto_pause_timeout_ms,
         record_practice_mode_attempts: db_to_bool(record_practice_mode_attempts),
         daily_goal_minutes,
+        play_kit_hit_sounds: db_to_bool(play_kit_hit_sounds),
         active_device_profile_id,
         updated_at,
     })
@@ -1001,6 +1013,12 @@ fn ensure_profile_preferences_columns(conn: &Connection) -> Result<(), ProfileSt
         "profile_preferences",
         "daily_goal_minutes",
         "ALTER TABLE profile_preferences ADD COLUMN daily_goal_minutes INTEGER NOT NULL DEFAULT 10",
+    )?;
+    ensure_column(
+        conn,
+        "profile_preferences",
+        "play_kit_hit_sounds",
+        "ALTER TABLE profile_preferences ADD COLUMN play_kit_hit_sounds INTEGER NOT NULL DEFAULT 0",
     )?;
     ensure_column(
         conn,

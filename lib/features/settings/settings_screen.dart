@@ -33,7 +33,6 @@ class TaalSettingsScreen extends StatefulWidget {
 
 class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
   final _nameController = TextEditingController();
-  final _audioOutputController = TextEditingController();
 
   SettingsSnapshot? _snapshot;
   List<DeviceProfileSettings> _devices = const [];
@@ -64,7 +63,6 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _audioOutputController.dispose();
     super.dispose();
   }
 
@@ -79,7 +77,6 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
     final profile = widget.activeProfile;
     if (profile == null) {
       _nameController.clear();
-      _audioOutputController.clear();
       _snapshot = null;
       _devices = const [];
       _loading = false;
@@ -90,7 +87,6 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
       final snapshot = widget.store.loadSettings(profile.id);
       final devices = widget.store.listDeviceProfiles(profile.id);
       _nameController.text = profile.name;
-      _audioOutputController.text = snapshot.app.audioOutputDeviceId ?? '';
       _draftOffsetMs = _activeDevice(snapshot, devices)?.inputOffsetMs;
       _draftMetronomeVolume = snapshot.profile.metronomeVolume;
       _snapshot = snapshot;
@@ -163,8 +159,6 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
           const SizedBox(height: 16),
           _AudioSection(
             profile: snapshot.profile,
-            app: snapshot.app,
-            outputController: _audioOutputController,
             draftVolume: _draftMetronomeVolume,
             saving: _saving,
             onVolumeChanged: (value) => setState(() {
@@ -172,7 +166,10 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
             }),
             onVolumeChangeEnd: _changeMetronomeVolume,
             onClickSoundChanged: _changeClickSound,
-            onSaveOutputDevice: _saveAudioOutputDevice,
+            onPlayKitHitSoundsChanged: (value) => _saveProfileSettings(
+              snapshot.profile.toUpdate().copyWith(playKitHitSounds: value),
+              refreshProfiles: true,
+            ),
           ),
           const SizedBox(height: 16),
           _DisplaySection(
@@ -381,36 +378,6 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
     _saveProfileSettings(
       snapshot.profile.toUpdate().copyWith(metronomeClickSound: value),
     );
-  }
-
-  void _saveAudioOutputDevice() {
-    final snapshot = _snapshot;
-    if (snapshot == null || _saving) {
-      return;
-    }
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-    try {
-      final text = _audioOutputController.text.trim();
-      final updated = widget.store.updateAppSettings(
-        AppSettings(
-          lastActiveProfileId: snapshot.app.lastActiveProfileId,
-          audioOutputDeviceId: text.isEmpty ? null : text,
-        ),
-      );
-      setState(() {
-        _snapshot = SettingsSnapshot(app: updated, profile: snapshot.profile);
-        _audioOutputController.text = updated.audioOutputDeviceId ?? '';
-        _saving = false;
-      });
-    } on Object catch (error) {
-      setState(() {
-        _error = error.toString();
-        _saving = false;
-      });
-    }
   }
 
   void _saveProfileName(rust_profiles.PlayerProfileDto profile) {
@@ -642,25 +609,21 @@ class _MidiSection extends StatelessWidget {
 class _AudioSection extends StatelessWidget {
   const _AudioSection({
     required this.profile,
-    required this.app,
-    required this.outputController,
     required this.draftVolume,
     required this.saving,
     required this.onVolumeChanged,
     required this.onVolumeChangeEnd,
     required this.onClickSoundChanged,
-    required this.onSaveOutputDevice,
+    required this.onPlayKitHitSoundsChanged,
   });
 
   final ProfileSettings profile;
-  final AppSettings app;
-  final TextEditingController outputController;
   final double? draftVolume;
   final bool saving;
   final ValueChanged<double> onVolumeChanged;
   final ValueChanged<double> onVolumeChangeEnd;
   final ValueChanged<SettingsClickSoundPreset> onClickSoundChanged;
-  final VoidCallback onSaveOutputDevice;
+  final ValueChanged<bool> onPlayKitHitSoundsChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -699,20 +662,21 @@ class _AudioSection extends StatelessWidget {
                   },
           ),
           const SizedBox(height: 12),
-          TextField(
-            key: const ValueKey('settings-audio-output-device'),
-            controller: outputController,
-            enabled: !saving,
-            decoration: InputDecoration(
-              labelText: 'Output device',
-              hintText: app.audioOutputDeviceId ?? 'System default',
+          SwitchListTile(
+            key: const ValueKey('settings-play-kit-hit-sounds'),
+            title: const Text('Play drum sounds on kit hits'),
+            subtitle: const Text(
+              'When off, app stays silent for MIDI kit hits to avoid doubling',
             ),
+            value: profile.playKitHitSounds,
+            onChanged: saving ? null : onPlayKitHitSoundsChanged,
           ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            key: const ValueKey('settings-save-audio-output'),
-            onPressed: saving ? null : onSaveOutputDevice,
-            child: const Text('Save output'),
+          const SizedBox(height: 12),
+          ListTile(
+            key: const ValueKey('settings-audio-output-device'),
+            title: const Text('Output device'),
+            subtitle: const Text('System Default'),
+            enabled: false,
           ),
         ],
       ),

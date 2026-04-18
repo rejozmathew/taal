@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:taal/features/player/drum_kit/drum_kit.dart';
 
 class TapPadSurface extends StatefulWidget {
@@ -119,6 +120,7 @@ class _TapPadSurfaceState extends State<TapPadSurface> {
   }
 
   void _handlePadHit(VisualDrumKitPad pad) {
+    HapticFeedback.mediumImpact();
     widget.onPadHit(TapPadHit(laneId: pad.laneId, velocity: widget.velocity));
     _releaseTimers.remove(pad.laneId)?.cancel();
     setState(() {

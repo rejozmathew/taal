@@ -4,9 +4,9 @@
 - Name: Taal
 - Repository: taal
 - PRD version: 1.9
-- Current phase: Phase 1 complete. Phase 1.5 proposed (pending CR-009 approval).
-- Current task: None (awaiting CR-009 approval)
-- Overall status: Phase 1 functionally complete. User testing revealed UX quality far below PRD intent. CR-009 proposes Phase 1.5 remediation before Phase 2.
+- Current phase: Phase 1.5 — Tranche A in progress
+- Current task: P1.5-03 Audio Wiring — Complete
+- Overall status: Phase 1 functionally complete. Phase 1.5 Tranche A in progress. P1.5-03 audio wiring landed.
 
 ## Release Boundary
 - **MVP (Phases 0-2):** Playable + creatable + course runtime. Not yet distributed.
@@ -34,7 +34,7 @@
 |----|-------|------|--------|
 | P1.5-01 | Design system foundation | — | Proposed |
 | P1.5-02 | Theme switching fix | P1.5-01 | Proposed |
-| P1.5-03 | Audio wiring | — | Proposed |
+| P1.5-03 | Audio wiring | — | Complete |
 | P1.5-04 | Onboarding re-entry + profile management | — | Proposed |
 | P1.5-05 | MIDI device lifecycle | — | Proposed |
 | P1.5-06 | Error states + empty states | P1.5-01 | Proposed |

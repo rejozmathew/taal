@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:taal/features/player/layout_compatibility/layout_compatibility.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/practice_mode/practice_mode_screen.dart';
+import 'package:taal/platform/audio/metronome_audio.dart';
 import 'package:taal/src/rust/api/practice_runtime.dart' as rust;
 
 abstract class PracticeRuntimeEngine {
@@ -198,16 +199,23 @@ class RustPracticeRuntimeEngine implements PracticeRuntimeEngine {
 }
 
 class PracticeModeRuntimeAdapter extends ChangeNotifier {
-  PracticeModeRuntimeAdapter({required this.controller, required this.engine});
+  PracticeModeRuntimeAdapter({
+    required this.controller,
+    required this.engine,
+    this.audioOutput,
+  });
 
   final PracticeModeController controller;
   final PracticeRuntimeEngine engine;
+  final MetronomeAudioOutput? audioOutput;
 
   int? _sessionId;
+  int? _sessionStartTimeNs;
   PracticeRuntimeTimeline? _timeline;
   PracticeRuntimeMode? _mode;
   double? _autoPauseFirstMissMs;
   double? _autoPauseLastMissMs;
+  bool _playKitHitSounds = false;
   final List<PracticeFeedbackMarker> _feedback = [];
 
   int? get sessionId => _sessionId;
@@ -227,7 +235,9 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     required double bpm,
     int? startTimeNs,
     int lookaheadMs = 250,
+    bool playKitHitSounds = false,
   }) {
+    final effectiveStartTimeNs = startTimeNs ?? engine.clockNs();
     final start = engine.startSession(
       lessonJson: lessonJson,
       layoutJson: layoutJson,
@@ -235,12 +245,14 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
       deviceProfileJson: deviceProfileJson,
       mode: mode,
       bpm: bpm,
-      startTimeNs: startTimeNs ?? engine.clockNs(),
+      startTimeNs: effectiveStartTimeNs,
       lookaheadMs: lookaheadMs,
     );
     _sessionId = start.sessionId;
+    _sessionStartTimeNs = effectiveStartTimeNs;
     _timeline = start.timeline;
     _mode = mode;
+    _playKitHitSounds = playKitHitSounds;
     _resetAutoPauseMissWindow();
     _feedback.clear();
     controller.seekTo(0);
@@ -339,7 +351,9 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     if (id != null) {
       engine.disposeSession(id);
       _sessionId = null;
+      _sessionStartTimeNs = null;
       _mode = null;
+      _playKitHitSounds = false;
       _resetAutoPauseMissWindow();
       notifyListeners();
     }
@@ -396,8 +410,12 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
         case PracticeRuntimeEventType.expectedPulse:
         case PracticeRuntimeEventType.comboMilestone:
         case PracticeRuntimeEventType.sectionBoundary:
-        case PracticeRuntimeEventType.metronomeClick:
         case PracticeRuntimeEventType.warning:
+          break;
+        case PracticeRuntimeEventType.metronomeClick:
+          if (controller.metronomeEnabled) {
+            _scheduleMetronomeClick(event);
+          }
           break;
       }
     }
@@ -465,6 +483,51 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     _autoPauseFirstMissMs = null;
     _autoPauseLastMissMs = null;
   }
+
+  void _scheduleMetronomeClick(PracticeRuntimeEvent event) {
+    final output = audioOutput;
+    final startNs = _sessionStartTimeNs;
+    if (output == null || startNs == null) {
+      return;
+    }
+    final tMs = event.tMs;
+    if (tMs == null) {
+      return;
+    }
+    output.scheduleClicks(
+      sessionStartTimeNs: startNs,
+      clicks: [
+        ScheduledMetronomeClick(tMs: tMs.round(), accent: event.accent ?? false),
+      ],
+    );
+  }
+
+  void scheduleDrumHitSound({
+    required String laneId,
+    required int velocity,
+    String articulation = 'normal',
+  }) {
+    final output = audioOutput;
+    final startNs = _sessionStartTimeNs;
+    if (output == null || startNs == null) {
+      return;
+    }
+    final nowNs = engine.clockNs();
+    final offsetMs = ((nowNs - startNs) / 1000000).round();
+    output.scheduleDrumHits(
+      sessionStartTimeNs: startNs,
+      hits: [
+        ScheduledDrumHit(
+          tMs: offsetMs < 0 ? 0 : offsetMs,
+          laneId: laneId,
+          velocity: velocity,
+          articulation: articulation,
+        ),
+      ],
+    );
+  }
+
+  bool get playKitHitSounds => _playKitHitSounds;
 }
 
 enum PracticeRuntimeMode { practice, play, courseGate }

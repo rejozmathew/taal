@@ -215,6 +215,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
       autoPauseTimeoutMs: 3000,
       recordPracticeModeAttempts: true,
       dailyGoalMinutes: 10,
+      playKitHitSounds: false,
       activeDeviceProfileId: null,
       updatedAt: '2026-04-17T10:00:00Z',
     ),
@@ -240,6 +241,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
         recordPracticeModeAttempts:
             _snapshot.profile.recordPracticeModeAttempts,
         dailyGoalMinutes: _snapshot.profile.dailyGoalMinutes,
+        playKitHitSounds: _snapshot.profile.playKitHitSounds,
         activeDeviceProfileId: _snapshot.profile.activeDeviceProfileId,
         updatedAt: _snapshot.profile.updatedAt,
       ),
@@ -270,6 +272,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
       autoPauseTimeoutMs: update.autoPauseTimeoutMs,
       recordPracticeModeAttempts: update.recordPracticeModeAttempts,
       dailyGoalMinutes: update.dailyGoalMinutes,
+      playKitHitSounds: update.playKitHitSounds,
       activeDeviceProfileId: update.activeDeviceProfileId,
       updatedAt: '2026-04-17T10:01:00Z',
     );

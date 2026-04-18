@@ -198,6 +198,7 @@ class ProfileSettings {
     required this.autoPauseTimeoutMs,
     required this.recordPracticeModeAttempts,
     required this.dailyGoalMinutes,
+    required this.playKitHitSounds,
     required this.activeDeviceProfileId,
     required this.updatedAt,
   });
@@ -213,6 +214,7 @@ class ProfileSettings {
   final int autoPauseTimeoutMs;
   final bool recordPracticeModeAttempts;
   final int dailyGoalMinutes;
+  final bool playKitHitSounds;
   final String? activeDeviceProfileId;
   final String updatedAt;
 
@@ -233,6 +235,7 @@ class ProfileSettings {
       autoPauseTimeoutMs: json['auto_pause_timeout_ms'] as int,
       recordPracticeModeAttempts: json['record_practice_mode_attempts'] as bool,
       dailyGoalMinutes: json['daily_goal_minutes'] as int,
+      playKitHitSounds: json['play_kit_hit_sounds'] as bool,
       activeDeviceProfileId: json['active_device_profile_id'] as String?,
       updatedAt: json['updated_at'] as String,
     );
@@ -250,6 +253,7 @@ class ProfileSettings {
       autoPauseTimeoutMs: autoPauseTimeoutMs,
       recordPracticeModeAttempts: recordPracticeModeAttempts,
       dailyGoalMinutes: dailyGoalMinutes,
+      playKitHitSounds: playKitHitSounds,
       activeDeviceProfileId: activeDeviceProfileId,
     );
   }
@@ -267,6 +271,7 @@ class ProfileSettingsUpdate {
     required this.autoPauseTimeoutMs,
     required this.recordPracticeModeAttempts,
     required this.dailyGoalMinutes,
+    required this.playKitHitSounds,
     required this.activeDeviceProfileId,
   });
 
@@ -280,6 +285,7 @@ class ProfileSettingsUpdate {
   final int autoPauseTimeoutMs;
   final bool recordPracticeModeAttempts;
   final int dailyGoalMinutes;
+  final bool playKitHitSounds;
   final String? activeDeviceProfileId;
 
   ProfileSettingsUpdate copyWith({
@@ -293,6 +299,7 @@ class ProfileSettingsUpdate {
     int? autoPauseTimeoutMs,
     bool? recordPracticeModeAttempts,
     int? dailyGoalMinutes,
+    bool? playKitHitSounds,
     String? activeDeviceProfileId,
     bool clearActiveDeviceProfileId = false,
   }) {
@@ -308,6 +315,7 @@ class ProfileSettingsUpdate {
       recordPracticeModeAttempts:
           recordPracticeModeAttempts ?? this.recordPracticeModeAttempts,
       dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
+      playKitHitSounds: playKitHitSounds ?? this.playKitHitSounds,
       activeDeviceProfileId: clearActiveDeviceProfileId
           ? null
           : activeDeviceProfileId ?? this.activeDeviceProfileId,
@@ -326,6 +334,7 @@ class ProfileSettingsUpdate {
       'auto_pause_timeout_ms': autoPauseTimeoutMs,
       'record_practice_mode_attempts': recordPracticeModeAttempts,
       'daily_goal_minutes': dailyGoalMinutes,
+      'play_kit_hit_sounds': playKitHitSounds,
       'active_device_profile_id': activeDeviceProfileId,
     };
   }

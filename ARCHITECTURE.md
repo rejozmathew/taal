@@ -528,6 +528,29 @@ PracticeModeController auto-paused UI state
 Next touch/MIDI hit -> Rust practice_runtime resume(session_id) -> Session::on_hit
 ```
 
+P1.5-03 audio wiring connects three audio paths through `PracticeModeRuntimeAdapter`:
+
+1. **Metronome clicks**: Rust `session_tick()` emits `MetronomeClick` events with `t_ms` and `accent`. When `PracticeModeController.metronomeEnabled` is true, the adapter forwards these as `ScheduledMetronomeClick` values to `MetronomeAudioOutput.scheduleClicks()`.
+
+2. **Tap-pad drum sounds**: When a tap pad fires `onPadHit`, the adapter's `scheduleDrumHitSound()` sends a `ScheduledDrumHit` to the audio output at the current clock offset. Tap pads always play sounds (they are the instrument). Tap pads also trigger `HapticFeedback.mediumImpact()` on hit.
+
+3. **MIDI kit hit sounds**: Controlled by the `play_kit_hit_sounds` profile setting (default: off). When off, MIDI hits are scored but no app-side drum sound is produced, avoiding doubling with the physical kit's audio. When on, the adapter schedules drum sounds like tap pads.
+
+```
+Rust Session tick -> MetronomeClick events
+       |
+PracticeModeRuntimeAdapter (metronomeEnabled check)
+       -> MetronomeAudioOutput.scheduleClicks(...)
+       |
+Native audio stream (WASAPI / AAudio)
+
+Tap pad hit -> HapticFeedback + scheduleDrumHitSound()
+       -> MetronomeAudioOutput.scheduleDrumHits(...)
+
+MIDI hit -> (if playKitHitSounds) scheduleDrumHitSound()
+       -> MetronomeAudioOutput.scheduleDrumHits(...)
+```
+
 ## Layout Compatibility and Missing Lanes
 
 P1-27 adds a runtime compatibility check before a Practice or Play session starts. The check is derived in Rust from the compiled lesson events, `Lesson.optional_lanes`, and the active `DeviceProfile.note_map`. It is not stored in lesson JSON and does not widen frozen engine events.

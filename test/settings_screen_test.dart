@@ -71,18 +71,11 @@ void main() {
 
     expect(store.device.inputOffsetMs, 14.5);
 
-    await tester.enterText(
+    // Audio output device is now static "System Default" text — no user input.
+    expect(
       find.byKey(const ValueKey('settings-audio-output-device')),
-      'wasapi:headphones',
+      findsOneWidget,
     );
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('settings-save-audio-output')),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('settings-save-audio-output')));
-    await tester.pumpAndSettle();
-
-    expect(store.appSettings.audioOutputDeviceId, 'wasapi:headphones');
 
     final goalSlider = tester.widget<Slider>(
       find.byKey(const ValueKey('settings-daily-goal-minutes')),
@@ -140,6 +133,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
     autoPauseTimeoutMs: 3000,
     recordPracticeModeAttempts: true,
     dailyGoalMinutes: 10,
+    playKitHitSounds: false,
     activeDeviceProfileId: 'device-1',
     updatedAt: '2026-04-17T10:00:00Z',
   );
@@ -180,6 +174,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
       autoPauseTimeoutMs: update.autoPauseTimeoutMs,
       recordPracticeModeAttempts: update.recordPracticeModeAttempts,
       dailyGoalMinutes: update.dailyGoalMinutes,
+      playKitHitSounds: update.playKitHitSounds,
       activeDeviceProfileId: update.activeDeviceProfileId,
       updatedAt: '2026-04-17T10:01:00Z',
     );

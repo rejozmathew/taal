@@ -23,6 +23,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - App shell with home, Practice, Library, Studio, Insights, and Settings navigation plus profile switching from home and settings.
 - Settings screen for profile, MIDI kit profile, manual latency, velocity curve, metronome, output device, display, auto-pause, and Practice Mode history preferences, backed by local Rust-owned persistence.
 - On-screen drum pads for no-kit practice, with touch and MIDI hits routed through the same Rust scoring session and feedback stream.
+- Tap pad haptic feedback on hit.
+- Metronome clicks scheduled through the native audio output during practice sessions when the metronome is enabled.
+- "Play drum sounds on kit hits" setting (off by default for MIDI kit users) with per-profile persistence and settings toggle.
+- Runtime adapter exposes `scheduleDrumHitSound()` for tap-pad and MIDI-originated drum hit audio, gated by the kit-hit-sounds setting.
+- Audio output device display simplified to read-only "System Default" (v1 scope).
 - Practice habit tracking with per-profile streaks, daily goal progress, rolling weekly summaries, and display-only in-session goal progress.
 - Listen-first playback in Practice Mode, with whole-lesson or selected-section drum audio preview that follows the current tempo and scrolls the visual timeline without scoring.
 - Auto-pause in Practice Mode, with default-off settings, dense-miss inactivity detection, rest-aware behavior, and resume on the next touch or MIDI hit.
