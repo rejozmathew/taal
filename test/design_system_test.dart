@@ -45,21 +45,12 @@ void main() {
     });
 
     test('both themes apply Inter text theme', () {
-      expect(
-        TaalTheme.dark.textTheme.bodyLarge?.fontFamily,
-        'Inter',
-      );
-      expect(
-        TaalTheme.light.textTheme.bodyLarge?.fontFamily,
-        'Inter',
-      );
+      expect(TaalTheme.dark.textTheme.bodyLarge?.fontFamily, 'Inter');
+      expect(TaalTheme.light.textTheme.bodyLarge?.fontFamily, 'Inter');
     });
 
     test('dark theme scaffold background is dark', () {
-      expect(
-        TaalTheme.dark.scaffoldBackgroundColor,
-        TaalColors.darkBackground,
-      );
+      expect(TaalTheme.dark.scaffoldBackgroundColor, TaalColors.darkBackground);
     });
 
     test('light theme scaffold background is light', () {

@@ -49,13 +49,13 @@ abstract final class TaalColors {
   static const Color laneLightTeal = Color(0xFF76D7C4);
 
   static const List<Color> lanePalette = [
-    primary,      // teal
-    secondary,    // gold
-    tertiary,     // blue
-    lanePurple,   // purple
-    laneGray,     // gray
-    laneGreen,    // green
-    laneYellow,   // yellow
+    primary, // teal
+    secondary, // gold
+    tertiary, // blue
+    lanePurple, // purple
+    laneGray, // gray
+    laneGreen, // green
+    laneYellow, // yellow
     laneLightTeal, // light teal
   ];
 

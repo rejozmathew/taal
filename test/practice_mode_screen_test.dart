@@ -364,14 +364,17 @@ void main() {
     expect(controller.midiDisconnected, isFalse);
   });
 
-  test('resumeFromMidiReconnect clears flag without starting stopped session', () {
-    final controller = _controller();
-    controller.pauseForMidiDisconnect();
+  test(
+    'resumeFromMidiReconnect clears flag without starting stopped session',
+    () {
+      final controller = _controller();
+      controller.pauseForMidiDisconnect();
 
-    controller.resumeFromMidiReconnect();
-    expect(controller.midiDisconnected, isFalse);
-    expect(controller.transportState, PracticeTransportState.stopped);
-  });
+      controller.resumeFromMidiReconnect();
+      expect(controller.midiDisconnected, isFalse);
+      expect(controller.transportState, PracticeTransportState.stopped);
+    },
+  );
 }
 
 PracticeModeController _controller() {

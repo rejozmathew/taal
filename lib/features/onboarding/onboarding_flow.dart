@@ -1059,7 +1059,11 @@ const _starterLanes = [
   NoteHighwayLane(laneId: 'kick', label: 'Kick', color: TaalColors.primary),
   NoteHighwayLane(laneId: 'snare', label: 'Snare', color: TaalColors.secondary),
   NoteHighwayLane(laneId: 'hihat', label: 'Hi-Hat', color: TaalColors.tertiary),
-  NoteHighwayLane(laneId: 'crash', label: 'Crash', color: TaalColors.lanePurple),
+  NoteHighwayLane(
+    laneId: 'crash',
+    label: 'Crash',
+    color: TaalColors.lanePurple,
+  ),
 ];
 
 const _beginnerLesson = OnboardingStarterLesson(

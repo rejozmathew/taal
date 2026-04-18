@@ -30,8 +30,7 @@ void main() {
       await tester.pumpWidget(const TaalApp());
 
       // Starts dark by default.
-      final darkApp =
-          tester.widget<MaterialApp>(find.byType(MaterialApp));
+      final darkApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
       expect(darkApp.themeMode, ThemeMode.dark);
 
       // Switch to light.
@@ -39,8 +38,7 @@ void main() {
       TaalApp.setThemeMode(context, ThemeMode.light);
       await tester.pump();
 
-      final lightApp =
-          tester.widget<MaterialApp>(find.byType(MaterialApp));
+      final lightApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
       expect(lightApp.themeMode, ThemeMode.light);
     });
 

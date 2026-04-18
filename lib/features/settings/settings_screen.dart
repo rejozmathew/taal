@@ -592,7 +592,7 @@ class _MidiSection extends StatelessWidget {
               scannedMidiDevices!.isEmpty
                   ? 'No MIDI devices found.'
                   : '${scannedMidiDevices!.length} device(s) found: '
-                      '${scannedMidiDevices!.map((d) => d.name).join(', ')}',
+                        '${scannedMidiDevices!.map((d) => d.name).join(', ')}',
             ),
           ],
           const SizedBox(height: 12),

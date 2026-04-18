@@ -41,7 +41,10 @@ void main() {
 
     setUp(() {
       adapter = FakeMidiAdapter();
-      monitor = MidiDeviceMonitor(adapter, pollInterval: const Duration(milliseconds: 50));
+      monitor = MidiDeviceMonitor(
+        adapter,
+        pollInterval: const Duration(milliseconds: 50),
+      );
     });
 
     tearDown(() {
@@ -146,26 +149,32 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 120));
       monitor.stopMonitoring();
 
-      expect(changes.any((c) => c.type == MidiDeviceChangeType.connected), isTrue);
+      expect(
+        changes.any((c) => c.type == MidiDeviceChangeType.connected),
+        isTrue,
+      );
     });
 
-    test('polling detects device disconnect and updates connection state', () async {
-      adapter.devices = [_device1];
-      await monitor.scanDevices();
-      await monitor.openDevice(0);
+    test(
+      'polling detects device disconnect and updates connection state',
+      () async {
+        adapter.devices = [_device1];
+        await monitor.scanDevices();
+        await monitor.openDevice(0);
 
-      final states = <MidiConnectionState>[];
-      monitor.connectionStateChanges.listen(states.add);
+        final states = <MidiConnectionState>[];
+        monitor.connectionStateChanges.listen(states.add);
 
-      adapter.devices = [];
-      monitor.startMonitoring();
+        adapter.devices = [];
+        monitor.startMonitoring();
 
-      await Future<void>.delayed(const Duration(milliseconds: 120));
-      monitor.stopMonitoring();
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+        monitor.stopMonitoring();
 
-      expect(monitor.connectionState, MidiConnectionState.disconnected);
-      expect(states.contains(MidiConnectionState.disconnected), isTrue);
-    });
+        expect(monitor.connectionState, MidiConnectionState.disconnected);
+        expect(states.contains(MidiConnectionState.disconnected), isTrue);
+      },
+    );
 
     test('multiple device changes detected in single scan', () async {
       adapter.devices = [_device1];

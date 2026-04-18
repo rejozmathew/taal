@@ -79,9 +79,9 @@ class _TaalAppShellState extends State<TaalAppShell> {
         MidiDeviceChangeType.connected => '${change.device.name} connected',
         MidiDeviceChangeType.disconnected => 'MIDI device disconnected',
       };
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     });
 
     _connectionStateSub = monitor.connectionStateChanges.listen((state) {

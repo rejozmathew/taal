@@ -15,7 +15,7 @@ class MidiDeviceChange {
 
 class MidiDeviceMonitor {
   MidiDeviceMonitor(this._adapter, {Duration? pollInterval})
-      : _pollInterval = pollInterval ?? const Duration(seconds: 2);
+    : _pollInterval = pollInterval ?? const Duration(seconds: 2);
 
   final Phase0MidiAdapter _adapter;
   final Duration _pollInterval;
@@ -25,8 +25,9 @@ class MidiDeviceMonitor {
   MidiConnectionState _connectionState = MidiConnectionState.disconnected;
   int? _openDeviceId;
 
-  final _deviceChangeController =
-      StreamController<MidiDeviceChange>.broadcast(sync: true);
+  final _deviceChangeController = StreamController<MidiDeviceChange>.broadcast(
+    sync: true,
+  );
   final _connectionStateController =
       StreamController<MidiConnectionState>.broadcast(sync: true);
 
