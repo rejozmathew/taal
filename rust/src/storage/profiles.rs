@@ -163,6 +163,7 @@ pub struct ProfileSettings {
     pub auto_pause_enabled: bool,
     pub auto_pause_timeout_ms: u32,
     pub record_practice_mode_attempts: bool,
+    pub daily_goal_minutes: u32,
     pub active_device_profile_id: Option<Uuid>,
     pub updated_at: DateTime,
 }
@@ -178,6 +179,7 @@ pub struct ProfileSettingsUpdate {
     pub auto_pause_enabled: bool,
     pub auto_pause_timeout_ms: u32,
     pub record_practice_mode_attempts: bool,
+    pub daily_goal_minutes: u32,
     pub active_device_profile_id: Option<Uuid>,
 }
 
@@ -208,6 +210,20 @@ type ProfileDbRow = (
     String,
     String,
     String,
+    String,
+);
+
+type ProfileSettingsDbRow = (
+    String,
+    i64,
+    i64,
+    f32,
+    String,
+    i64,
+    u32,
+    i64,
+    u32,
+    Option<String>,
     String,
 );
 
@@ -433,9 +449,10 @@ impl LocalProfileStore {
                      auto_pause_enabled = ?6,
                      auto_pause_timeout_ms = ?7,
                      record_practice_mode_attempts = ?8,
-                     active_device_profile_id = ?9,
-                     updated_at = ?10
-                 WHERE player_id = ?11",
+                     daily_goal_minutes = ?9,
+                     active_device_profile_id = ?10,
+                     updated_at = ?11
+                 WHERE player_id = ?12",
                 params![
                     update.theme.as_str(),
                     bool_to_db(update.reduce_motion),
@@ -445,6 +462,7 @@ impl LocalProfileStore {
                     bool_to_db(update.auto_pause_enabled),
                     update.auto_pause_timeout_ms,
                     bool_to_db(update.record_practice_mode_attempts),
+                    update.daily_goal_minutes,
                     update.active_device_profile_id.map(|id| id.to_string()),
                     now,
                     player_id.to_string(),
@@ -535,6 +553,9 @@ fn apply_schema(conn: &Connection) -> Result<(), ProfileStorageError> {
             ),
             record_practice_mode_attempts INTEGER NOT NULL DEFAULT 1 CHECK (
                 record_practice_mode_attempts IN (0, 1)
+            ),
+            daily_goal_minutes INTEGER NOT NULL DEFAULT 10 CHECK (
+                daily_goal_minutes > 0
             ),
             active_device_profile_id TEXT,
             created_at TEXT NOT NULL,
@@ -677,20 +698,10 @@ fn profile_settings(
         auto_pause_enabled,
         auto_pause_timeout_ms,
         record_practice_mode_attempts,
+        daily_goal_minutes,
         active_device_profile_text,
         updated_at,
-    ): (
-        String,
-        i64,
-        i64,
-        f32,
-        String,
-        i64,
-        u32,
-        i64,
-        Option<String>,
-        String,
-    ) = conn.query_row(
+    ): ProfileSettingsDbRow = conn.query_row(
         "SELECT theme,
                     reduce_motion,
                     high_contrast,
@@ -699,6 +710,7 @@ fn profile_settings(
                     auto_pause_enabled,
                     auto_pause_timeout_ms,
                     record_practice_mode_attempts,
+                    daily_goal_minutes,
                     active_device_profile_id,
                     updated_at
              FROM profile_preferences
@@ -716,6 +728,7 @@ fn profile_settings(
                 row.get(7)?,
                 row.get(8)?,
                 row.get(9)?,
+                row.get(10)?,
             ))
         },
     )?;
@@ -746,6 +759,7 @@ fn profile_settings(
         auto_pause_enabled: db_to_bool(auto_pause_enabled),
         auto_pause_timeout_ms,
         record_practice_mode_attempts: db_to_bool(record_practice_mode_attempts),
+        daily_goal_minutes,
         active_device_profile_id,
         updated_at,
     })
@@ -784,6 +798,13 @@ fn validate_profile_settings_update(
     if update.auto_pause_timeout_ms == 0 {
         return Err(ProfileStorageError::InvalidRange {
             field: "auto_pause_timeout_ms",
+            message: "must be greater than 0".to_owned(),
+        });
+    }
+
+    if update.daily_goal_minutes == 0 {
+        return Err(ProfileStorageError::InvalidRange {
+            field: "daily_goal_minutes",
             message: "must be greater than 0".to_owned(),
         });
     }
@@ -974,6 +995,12 @@ fn ensure_profile_preferences_columns(conn: &Connection) -> Result<(), ProfileSt
         "profile_preferences",
         "record_practice_mode_attempts",
         "ALTER TABLE profile_preferences ADD COLUMN record_practice_mode_attempts INTEGER NOT NULL DEFAULT 1",
+    )?;
+    ensure_column(
+        conn,
+        "profile_preferences",
+        "daily_goal_minutes",
+        "ALTER TABLE profile_preferences ADD COLUMN daily_goal_minutes INTEGER NOT NULL DEFAULT 10",
     )?;
     ensure_column(
         conn,

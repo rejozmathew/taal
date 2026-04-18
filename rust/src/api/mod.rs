@@ -1,5 +1,6 @@
 pub mod device_profiles;
 pub mod practice_attempts;
+pub mod practice_habits;
 pub mod practice_runtime;
 pub mod profiles;
 pub mod settings;

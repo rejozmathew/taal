@@ -209,6 +209,11 @@ class _TaalSettingsScreenState extends State<TaalSettingsScreen> {
                 recordPracticeModeAttempts: value,
               ),
             ),
+            onDailyGoalChanged: (value) => _saveProfileSettings(
+              snapshot.profile.toUpdate().copyWith(
+                dailyGoalMinutes: value.round(),
+              ),
+            ),
           ),
         ],
       ],
@@ -800,6 +805,7 @@ class _PracticePreferencesSection extends StatelessWidget {
     required this.onAutoPauseChanged,
     required this.onAutoPauseTimeoutChanged,
     required this.onRecordPracticeChanged,
+    required this.onDailyGoalChanged,
   });
 
   final ProfileSettings settings;
@@ -807,6 +813,7 @@ class _PracticePreferencesSection extends StatelessWidget {
   final ValueChanged<bool> onAutoPauseChanged;
   final ValueChanged<double> onAutoPauseTimeoutChanged;
   final ValueChanged<bool> onRecordPracticeChanged;
+  final ValueChanged<double> onDailyGoalChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -843,6 +850,20 @@ class _PracticePreferencesSection extends StatelessWidget {
             title: const Text('Save Practice Mode attempts'),
             value: settings.recordPracticeModeAttempts,
             onChanged: saving ? null : onRecordPracticeChanged,
+          ),
+          const SizedBox(height: 8),
+          Text('Daily goal: ${settings.dailyGoalMinutes} min'),
+          Slider(
+            key: const ValueKey('settings-daily-goal-minutes'),
+            min: 1,
+            max: 120,
+            divisions: 119,
+            value: settings.dailyGoalMinutes
+                .toDouble()
+                .clamp(1.0, 120.0)
+                .toDouble(),
+            label: '${settings.dailyGoalMinutes} min',
+            onChanged: saving ? null : onDailyGoalChanged,
           ),
         ],
       ),

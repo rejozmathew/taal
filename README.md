@@ -17,7 +17,7 @@ Play along with drum lessons in two views: a note-highway (Guitar Hero-style) or
 Author drum lessons on a multi-lane timeline editor. Set tempo, sections, and difficulty. Mark lanes as required or optional for different kit sizes. Build guided courses with progression gates. Export and share as portable `.taalpack` files.
 
 ### Progress Tracking
-Daily practice streaks, timing trend analysis, and lane-specific accuracy heatmaps. Performance theme detection identifies your weak spots and recommends lessons to address them.
+Local practice history, daily practice streaks, configurable daily goals, and rolling weekly summaries. Later analytics add timing trends, lane-specific accuracy heatmaps, weak-spot detection, and lesson recommendations.
 
 ### Backing Tracks
 Load your own audio files, sync them to lessons with beatmap authoring, and practice with a full band mix.

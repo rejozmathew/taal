@@ -15,6 +15,7 @@ class PracticeModeScreen extends StatefulWidget {
     this.feedback = const [],
     this.kitPads = standardFivePieceDrumKitPads,
     this.tapPadInput,
+    this.dailyGoalProgress,
   });
 
   final PracticeModeController controller;
@@ -23,6 +24,7 @@ class PracticeModeScreen extends StatefulWidget {
   final List<PracticeFeedbackMarker> feedback;
   final List<VisualDrumKitPad> kitPads;
   final PracticeTapPadInput? tapPadInput;
+  final DailyGoalProgress? dailyGoalProgress;
 
   @override
   State<PracticeModeScreen> createState() => _PracticeModeScreenState();
@@ -63,7 +65,10 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
 
     return Column(
       children: [
-        _PracticeTransportBar(controller: controller),
+        _PracticeTransportBar(
+          controller: controller,
+          dailyGoalProgress: widget.dailyGoalProgress,
+        ),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -111,6 +116,27 @@ class PracticeTapPadInput {
   final Set<String>? enabledLaneIds;
   final int velocity;
   final ValueChanged<TapPadHit> onPadHit;
+}
+
+class DailyGoalProgress {
+  const DailyGoalProgress({
+    required this.persistedTodayMinutesCompleted,
+    required this.dailyGoalMinutes,
+  }) : assert(dailyGoalMinutes > 0, 'dailyGoalMinutes must be positive');
+
+  final double persistedTodayMinutesCompleted;
+  final int dailyGoalMinutes;
+
+  double completedMinutesWithSession(double currentSessionElapsedMs) {
+    return persistedTodayMinutesCompleted + currentSessionElapsedMs / 60000.0;
+  }
+
+  double progressWithSession(double currentSessionElapsedMs) {
+    return (completedMinutesWithSession(currentSessionElapsedMs) /
+            dailyGoalMinutes)
+        .clamp(0.0, 1.0)
+        .toDouble();
+  }
 }
 
 class PracticeTimelineNote {
@@ -199,6 +225,7 @@ class PracticeModeController extends ChangeNotifier {
   late double _loopEndMs;
   int _combo = 0;
   String? _encouragementText;
+  double _activeSessionElapsedMs = 0;
 
   PracticeTransportState get transportState => _transportState;
 
@@ -229,6 +256,8 @@ class PracticeModeController extends ChangeNotifier {
   String? get encouragementText => _encouragementText;
 
   List<PracticeSection> get sections => _sections;
+
+  double get activeSessionElapsedMs => _activeSessionElapsedMs;
 
   bool get isRunning => _transportState == PracticeTransportState.running;
 
@@ -348,6 +377,7 @@ class PracticeModeController extends ChangeNotifier {
 
     final scaledDeltaMs =
         elapsed.inMicroseconds / 1000.0 * (_tempoBpm / baseBpm);
+    _activeSessionElapsedMs += elapsed.inMicroseconds / 1000.0;
     var nextTime = _currentTimeMs + scaledDeltaMs;
 
     if (_loopEnabled) {
@@ -382,10 +412,21 @@ extension _FirstOrNull<T> on Iterable<T> {
   }
 }
 
+String _formatMinutes(double value) {
+  if ((value - value.roundToDouble()).abs() < 0.05) {
+    return value.round().toString();
+  }
+  return value.toStringAsFixed(1);
+}
+
 class _PracticeTransportBar extends StatelessWidget {
-  const _PracticeTransportBar({required this.controller});
+  const _PracticeTransportBar({
+    required this.controller,
+    required this.dailyGoalProgress,
+  });
 
   final PracticeModeController controller;
+  final DailyGoalProgress? dailyGoalProgress;
 
   @override
   Widget build(BuildContext context) {
@@ -460,8 +501,44 @@ class _PracticeTransportBar extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+            if (dailyGoalProgress case final goal?)
+              _DailyGoalProgressChip(
+                goal: goal,
+                currentSessionElapsedMs: controller.activeSessionElapsedMs,
+              ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DailyGoalProgressChip extends StatelessWidget {
+  const _DailyGoalProgressChip({
+    required this.goal,
+    required this.currentSessionElapsedMs,
+  });
+
+  final DailyGoalProgress goal;
+  final double currentSessionElapsedMs;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = goal.completedMinutesWithSession(currentSessionElapsedMs);
+    final progress = goal.progressWithSession(currentSessionElapsedMs);
+    return SizedBox(
+      width: 220,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Daily goal ${_formatMinutes(completed)} / ${goal.dailyGoalMinutes} min',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(value: progress),
+        ],
       ),
     );
   }

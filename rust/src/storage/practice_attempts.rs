@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt::{self, Display};
 use std::path::{Path, PathBuf};
@@ -13,6 +13,49 @@ use crate::storage::device_profiles::{DeviceProfileStorageError, DeviceProfileSt
 use crate::storage::profiles::{parse_profile_id, LocalProfileStore, ProfileStorageError};
 
 pub type DateTime = String;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PracticeStreakState {
+    Active,
+    AtRisk,
+    Reset,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PracticeDaySummary {
+    pub local_day_key: String,
+    pub minutes_completed: u32,
+    pub scored_attempt_count: u32,
+    pub full_lesson_completions: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PracticeWeekSummary {
+    pub start_local_day_key: String,
+    pub end_local_day_key: String,
+    pub days_practiced: u8,
+    pub total_minutes_completed: u32,
+    pub scored_attempt_count: u32,
+    pub full_lesson_completions: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PracticeHabitSnapshot {
+    pub player_id: Uuid,
+    pub today_local_day_key: String,
+    pub daily_goal_minutes: u32,
+    pub today_minutes_completed: u32,
+    pub today_goal_met: bool,
+    pub current_streak_days: u32,
+    pub longest_streak_days: u32,
+    pub streak_state: PracticeStreakState,
+    pub streak_message: Option<String>,
+    pub milestone_message: Option<String>,
+    pub last_practice_day_key: Option<String>,
+    pub today: PracticeDaySummary,
+    pub week: PracticeWeekSummary,
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PracticeAttempt {
@@ -34,6 +77,7 @@ pub struct PracticeAttempt {
     pub lesson_tags: Vec<String>,
     pub lesson_skills: Vec<String>,
     pub started_at_utc: DateTime,
+    pub local_day_key: String,
     pub local_hour: u8,
     pub local_dow: u8,
     pub score_total: f32,
@@ -66,6 +110,7 @@ pub struct PracticeAttemptContext {
     pub lesson_tags: Vec<String>,
     pub lesson_skills: Vec<String>,
     pub started_at_utc: DateTime,
+    pub local_day_key: String,
     pub local_hour: u8,
     pub local_dow: u8,
 }
@@ -90,6 +135,10 @@ pub enum PracticeAttemptStorageError {
         field: &'static str,
         message: String,
     },
+    InvalidLocalDayKey {
+        field: &'static str,
+        value: String,
+    },
     PlayerNotFound(Uuid),
     DeviceProfileNotFound(Uuid),
     Json(String),
@@ -104,6 +153,9 @@ impl Display for PracticeAttemptStorageError {
             Self::InvalidId { field, value } => write!(f, "invalid {field}: {value}"),
             Self::InvalidContext { field, message } => {
                 write!(f, "invalid practice attempt context {field}: {message}")
+            }
+            Self::InvalidLocalDayKey { field, value } => {
+                write!(f, "invalid {field}: {value}")
             }
             Self::PlayerNotFound(id) => write!(f, "player profile not found: {id}"),
             Self::DeviceProfileNotFound(id) => write!(f, "device profile not found: {id}"),
@@ -192,6 +244,23 @@ impl PracticeAttemptStore {
         })
     }
 
+    pub fn load_practice_habit_snapshot(
+        &self,
+        player_id: Uuid,
+        today_local_day_key: String,
+    ) -> Result<PracticeHabitSnapshot, PracticeAttemptStorageError> {
+        let today = LocalDay::parse("today_local_day_key", &today_local_day_key)?;
+        let daily_goal_minutes = LocalProfileStore::open(&self.db_path)?
+            .load_settings_snapshot(player_id)?
+            .profile
+            .daily_goal_minutes;
+
+        self.with_connection(|conn| {
+            require_player(conn, player_id)?;
+            load_habit_snapshot(conn, player_id, today, daily_goal_minutes)
+        })
+    }
+
     fn with_connection<T>(
         &self,
         f: impl FnOnce(&Connection) -> Result<T, PracticeAttemptStorageError>,
@@ -223,6 +292,7 @@ impl PracticeAttempt {
             lesson_tags: context.lesson_tags,
             lesson_skills: context.lesson_skills,
             started_at_utc: context.started_at_utc.trim().to_owned(),
+            local_day_key: context.local_day_key.trim().to_owned(),
             local_hour: context.local_hour,
             local_dow: context.local_dow,
             score_total: summary.score_total,
@@ -287,6 +357,7 @@ fn apply_schema(conn: &Connection) -> Result<(), PracticeAttemptStorageError> {
             lesson_tags_json TEXT NOT NULL,
             lesson_skills_json TEXT NOT NULL,
             started_at_utc TEXT NOT NULL CHECK (length(trim(started_at_utc)) > 0),
+            local_day_key TEXT NOT NULL CHECK (length(local_day_key) = 10),
             local_hour INTEGER NOT NULL CHECK (local_hour >= 0 AND local_hour <= 23),
             local_dow INTEGER NOT NULL CHECK (local_dow >= 0 AND local_dow <= 6),
             score_total REAL NOT NULL,
@@ -317,6 +388,13 @@ fn apply_schema(conn: &Connection) -> Result<(), PracticeAttemptStorageError> {
             ON practice_attempts(player_id, course_id);
         ",
     )?;
+    ensure_practice_attempt_columns(conn)?;
+    conn.execute_batch(
+        "
+        CREATE INDEX IF NOT EXISTS idx_practice_attempts_player_day
+            ON practice_attempts(player_id, local_day_key);
+        ",
+    )?;
     Ok(())
 }
 
@@ -334,7 +412,7 @@ fn insert_attempt(
             mode, bpm, time_sig_num, time_sig_den, duration_ms, device_profile_id,
             instrument_family, lesson_title, lesson_difficulty,
             lesson_tags_json, lesson_skills_json,
-            started_at_utc, local_hour, local_dow,
+            started_at_utc, local_day_key, local_hour, local_dow,
             score_total, accuracy_pct, hit_rate_pct,
             perfect_pct, early_pct, late_pct, miss_pct, max_streak,
             mean_delta_ms, std_delta_ms, median_delta_ms, p90_abs_delta_ms,
@@ -344,11 +422,11 @@ fn insert_attempt(
             ?7, ?8, ?9, ?10, ?11, ?12,
             ?13, ?14, ?15,
             ?16, ?17,
-            ?18, ?19, ?20,
-            ?21, ?22, ?23,
-            ?24, ?25, ?26, ?27, ?28,
-            ?29, ?30, ?31, ?32,
-            ?33
+            ?18, ?19, ?20, ?21,
+            ?22, ?23, ?24,
+            ?25, ?26, ?27, ?28, ?29,
+            ?30, ?31, ?32, ?33,
+            ?34
          )",
         params![
             attempt.id.to_string(),
@@ -369,6 +447,7 @@ fn insert_attempt(
             lesson_tags_json,
             lesson_skills_json,
             &attempt.started_at_utc,
+            &attempt.local_day_key,
             i64::from(attempt.local_hour),
             i64::from(attempt.local_dow),
             attempt.score_total,
@@ -401,7 +480,7 @@ fn list_attempts(
             mode, bpm, time_sig_num, time_sig_den, duration_ms, device_profile_id,
             instrument_family, lesson_title, lesson_difficulty,
             lesson_tags_json, lesson_skills_json,
-            started_at_utc, local_hour, local_dow,
+            started_at_utc, local_day_key, local_hour, local_dow,
             score_total, accuracy_pct, hit_rate_pct,
             perfect_pct, early_pct, late_pct, miss_pct, max_streak,
             mean_delta_ms, std_delta_ms, median_delta_ms, p90_abs_delta_ms,
@@ -442,7 +521,7 @@ fn row_to_attempt(row: &rusqlite::Row<'_>) -> Result<PracticeAttempt, rusqlite::
     let device_profile_id_text: Option<String> = row.get(11)?;
     let lesson_tags_json: String = row.get(15)?;
     let lesson_skills_json: String = row.get(16)?;
-    let lane_stats_json: String = row.get(32)?;
+    let lane_stats_json: String = row.get(33)?;
 
     Ok(PracticeAttempt {
         id: parse_db_uuid("id", &id_text)?,
@@ -463,22 +542,251 @@ fn row_to_attempt(row: &rusqlite::Row<'_>) -> Result<PracticeAttempt, rusqlite::
         lesson_tags: parse_json_column("lesson_tags_json", &lesson_tags_json)?,
         lesson_skills: parse_json_column("lesson_skills_json", &lesson_skills_json)?,
         started_at_utc: row.get(17)?,
-        local_hour: parse_db_u8("local_hour", row.get(18)?)?,
-        local_dow: parse_db_u8("local_dow", row.get(19)?)?,
-        score_total: row.get(20)?,
-        accuracy_pct: row.get(21)?,
-        hit_rate_pct: row.get(22)?,
-        perfect_pct: row.get(23)?,
-        early_pct: row.get(24)?,
-        late_pct: row.get(25)?,
-        miss_pct: row.get(26)?,
-        max_streak: parse_db_u32("max_streak", row.get(27)?)?,
-        mean_delta_ms: row.get(28)?,
-        std_delta_ms: row.get(29)?,
-        median_delta_ms: row.get(30)?,
-        p90_abs_delta_ms: row.get(31)?,
+        local_day_key: row.get(18)?,
+        local_hour: parse_db_u8("local_hour", row.get(19)?)?,
+        local_dow: parse_db_u8("local_dow", row.get(20)?)?,
+        score_total: row.get(21)?,
+        accuracy_pct: row.get(22)?,
+        hit_rate_pct: row.get(23)?,
+        perfect_pct: row.get(24)?,
+        early_pct: row.get(25)?,
+        late_pct: row.get(26)?,
+        miss_pct: row.get(27)?,
+        max_streak: parse_db_u32("max_streak", row.get(28)?)?,
+        mean_delta_ms: row.get(29)?,
+        std_delta_ms: row.get(30)?,
+        median_delta_ms: row.get(31)?,
+        p90_abs_delta_ms: row.get(32)?,
         lane_stats: parse_json_column("lane_stats_json", &lane_stats_json)?,
     })
+}
+
+#[derive(Debug, Clone, Default)]
+struct DayAggregate {
+    duration_ms: u64,
+    scored_attempt_count: u32,
+    full_lesson_completions: u32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct LocalDay {
+    ordinal: i64,
+}
+
+impl LocalDay {
+    fn parse(field: &'static str, value: &str) -> Result<Self, PracticeAttemptStorageError> {
+        let trimmed = value.trim();
+        let bytes = trimmed.as_bytes();
+        if bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {
+            return Err(PracticeAttemptStorageError::InvalidLocalDayKey {
+                field,
+                value: value.to_owned(),
+            });
+        }
+        let year = parse_i32_digits(&bytes[0..4]).ok_or_else(|| {
+            PracticeAttemptStorageError::InvalidLocalDayKey {
+                field,
+                value: value.to_owned(),
+            }
+        })?;
+        let month = parse_u8_digits(&bytes[5..7]).ok_or_else(|| {
+            PracticeAttemptStorageError::InvalidLocalDayKey {
+                field,
+                value: value.to_owned(),
+            }
+        })?;
+        let day = parse_u8_digits(&bytes[8..10]).ok_or_else(|| {
+            PracticeAttemptStorageError::InvalidLocalDayKey {
+                field,
+                value: value.to_owned(),
+            }
+        })?;
+        if !(1..=12).contains(&month) || day == 0 || day > days_in_month(year, month) {
+            return Err(PracticeAttemptStorageError::InvalidLocalDayKey {
+                field,
+                value: value.to_owned(),
+            });
+        }
+        Ok(Self {
+            ordinal: days_from_civil(year, month, day),
+        })
+    }
+
+    fn add_days(self, days: i64) -> Self {
+        Self {
+            ordinal: self.ordinal + days,
+        }
+    }
+
+    fn key(self) -> String {
+        let (year, month, day) = civil_from_days(self.ordinal);
+        format!("{year:04}-{month:02}-{day:02}")
+    }
+}
+
+fn load_habit_snapshot(
+    conn: &Connection,
+    player_id: Uuid,
+    today: LocalDay,
+    daily_goal_minutes: u32,
+) -> Result<PracticeHabitSnapshot, PracticeAttemptStorageError> {
+    let week_start = today.add_days(-6);
+    let today_key = today.key();
+    let week_start_key = week_start.key();
+    let mut qualifying_days = BTreeSet::new();
+    let mut week_days: BTreeMap<i64, DayAggregate> = BTreeMap::new();
+
+    let mut stmt = conn.prepare(
+        "SELECT local_day_key, duration_ms, section_id
+         FROM practice_attempts
+         WHERE player_id = ?1
+           AND local_day_key <= ?2
+         ORDER BY local_day_key ASC, started_at_utc ASC, id ASC",
+    )?;
+    let rows = stmt.query_map(params![player_id.to_string(), &today_key], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, i64>(1)?,
+            row.get::<_, Option<String>>(2)?,
+        ))
+    })?;
+
+    for row in rows {
+        let (local_day_key, duration_ms, section_id) = row?;
+        let day = LocalDay::parse("local_day_key", &local_day_key)?;
+        qualifying_days.insert(day.ordinal);
+
+        if day.ordinal >= week_start.ordinal && day.ordinal <= today.ordinal {
+            let aggregate = week_days.entry(day.ordinal).or_default();
+            aggregate.duration_ms = aggregate
+                .duration_ms
+                .saturating_add(parse_db_u64("duration_ms", duration_ms)?);
+            aggregate.scored_attempt_count = aggregate.scored_attempt_count.saturating_add(1);
+            if section_id.is_none() {
+                aggregate.full_lesson_completions =
+                    aggregate.full_lesson_completions.saturating_add(1);
+            }
+        }
+    }
+
+    let today_aggregate = week_days.get(&today.ordinal).cloned().unwrap_or_default();
+    let today_minutes_completed = duration_ms_to_minutes(today_aggregate.duration_ms);
+    let week_duration_ms = week_days
+        .values()
+        .fold(0_u64, |total, day| total.saturating_add(day.duration_ms));
+    let week_scored_attempt_count = week_days.values().fold(0_u32, |total, day| {
+        total.saturating_add(day.scored_attempt_count)
+    });
+    let week_full_lesson_completions = week_days.values().fold(0_u32, |total, day| {
+        total.saturating_add(day.full_lesson_completions)
+    });
+
+    let has_today = qualifying_days.contains(&today.ordinal);
+    let has_yesterday = qualifying_days.contains(&(today.ordinal - 1));
+    let (streak_state, streak_anchor) = if has_today {
+        (PracticeStreakState::Active, Some(today.ordinal))
+    } else if has_yesterday {
+        (PracticeStreakState::AtRisk, Some(today.ordinal - 1))
+    } else {
+        (PracticeStreakState::Reset, None)
+    };
+    let current_streak_days = streak_anchor
+        .map(|anchor| count_streak_ending_at(&qualifying_days, anchor))
+        .unwrap_or(0);
+    let longest_streak_days = longest_streak(&qualifying_days);
+    let last_practice_day_key = qualifying_days
+        .iter()
+        .next_back()
+        .map(|day| LocalDay { ordinal: *day }.key());
+
+    Ok(PracticeHabitSnapshot {
+        player_id,
+        today_local_day_key: today_key.clone(),
+        daily_goal_minutes,
+        today_minutes_completed,
+        today_goal_met: today_minutes_completed >= daily_goal_minutes,
+        current_streak_days,
+        longest_streak_days,
+        streak_state,
+        streak_message: streak_message(streak_state, current_streak_days),
+        milestone_message: milestone_message(streak_state, current_streak_days),
+        last_practice_day_key,
+        today: PracticeDaySummary {
+            local_day_key: today_key.clone(),
+            minutes_completed: today_minutes_completed,
+            scored_attempt_count: today_aggregate.scored_attempt_count,
+            full_lesson_completions: today_aggregate.full_lesson_completions,
+        },
+        week: PracticeWeekSummary {
+            start_local_day_key: week_start_key,
+            end_local_day_key: today_key,
+            days_practiced: week_days.len() as u8,
+            total_minutes_completed: duration_ms_to_minutes(week_duration_ms),
+            scored_attempt_count: week_scored_attempt_count,
+            full_lesson_completions: week_full_lesson_completions,
+        },
+    })
+}
+
+fn count_streak_ending_at(days: &BTreeSet<i64>, anchor: i64) -> u32 {
+    let mut count = 0_u32;
+    let mut day = anchor;
+    while days.contains(&day) {
+        count = count.saturating_add(1);
+        day -= 1;
+    }
+    count
+}
+
+fn longest_streak(days: &BTreeSet<i64>) -> u32 {
+    let mut longest = 0_u32;
+    let mut current = 0_u32;
+    let mut previous: Option<i64> = None;
+
+    for day in days {
+        current = if previous == Some(day - 1) {
+            current.saturating_add(1)
+        } else {
+            1
+        };
+        longest = longest.max(current);
+        previous = Some(*day);
+    }
+
+    longest
+}
+
+fn streak_message(state: PracticeStreakState, current_streak_days: u32) -> Option<String> {
+    match state {
+        PracticeStreakState::Active if current_streak_days == 1 => {
+            Some("Nice start. One practice day logged.".to_owned())
+        }
+        PracticeStreakState::Active => {
+            Some(format!("{current_streak_days} practice days in a row."))
+        }
+        PracticeStreakState::AtRisk => Some(format!(
+            "Practice today to keep your {current_streak_days}-day streak."
+        )),
+        PracticeStreakState::Reset => {
+            Some("Start a new streak with one practice today.".to_owned())
+        }
+    }
+}
+
+fn milestone_message(state: PracticeStreakState, current_streak_days: u32) -> Option<String> {
+    if state != PracticeStreakState::Active {
+        return None;
+    }
+    match current_streak_days {
+        7 => Some("Seven days in rhythm.".to_owned()),
+        30 => Some("Thirty days of steady practice.".to_owned()),
+        100 => Some("One hundred days. That habit is real.".to_owned()),
+        _ => None,
+    }
+}
+
+fn duration_ms_to_minutes(duration_ms: u64) -> u32 {
+    (duration_ms / 60_000).min(u64::from(u32::MAX)) as u32
 }
 
 fn require_player(conn: &Connection, player_id: Uuid) -> Result<(), PracticeAttemptStorageError> {
@@ -535,6 +843,7 @@ fn validate_context(context: &PracticeAttemptContext) -> Result<(), PracticeAtte
     if context.started_at_utc.trim().is_empty() {
         return invalid_context("started_at_utc", "must not be empty");
     }
+    LocalDay::parse("local_day_key", &context.local_day_key)?;
     Ok(())
 }
 
@@ -593,6 +902,113 @@ where
     T: for<'de> Deserialize<'de>,
 {
     serde_json::from_str(value).map_err(|error| invalid_column(format!("invalid {field}: {error}")))
+}
+
+fn parse_i32_digits(bytes: &[u8]) -> Option<i32> {
+    let mut value = 0_i32;
+    for byte in bytes {
+        if !byte.is_ascii_digit() {
+            return None;
+        }
+        value = value * 10 + i32::from(*byte - b'0');
+    }
+    Some(value)
+}
+
+fn parse_u8_digits(bytes: &[u8]) -> Option<u8> {
+    let mut value = 0_u8;
+    for byte in bytes {
+        if !byte.is_ascii_digit() {
+            return None;
+        }
+        value = value.checked_mul(10)?.checked_add(*byte - b'0')?;
+    }
+    Some(value)
+}
+
+fn days_in_month(year: i32, month: u8) -> u8 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if is_leap_year(year) => 29,
+        2 => 28,
+        _ => 0,
+    }
+}
+
+fn is_leap_year(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+}
+
+fn days_from_civil(year: i32, month: u8, day: u8) -> i64 {
+    let mut y = i64::from(year);
+    let m = i64::from(month);
+    let d = i64::from(day);
+    y -= if m <= 2 { 1 } else { 0 };
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = y - era * 400;
+    let month_prime = m + if m > 2 { -3 } else { 9 };
+    let doy = (153 * month_prime + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146_097 + doe - 719_468
+}
+
+fn civil_from_days(days: i64) -> (i64, i64, i64) {
+    let z = days + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let mut y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = mp + if mp < 10 { 3 } else { -9 };
+    y += if m <= 2 { 1 } else { 0 };
+    (y, m, d)
+}
+
+fn ensure_practice_attempt_columns(conn: &Connection) -> Result<(), PracticeAttemptStorageError> {
+    ensure_column(
+        conn,
+        "practice_attempts",
+        "local_day_key",
+        "ALTER TABLE practice_attempts ADD COLUMN local_day_key TEXT NOT NULL DEFAULT '1970-01-01'",
+    )?;
+    conn.execute(
+        "UPDATE practice_attempts
+         SET local_day_key = substr(started_at_utc, 1, 10)
+         WHERE local_day_key = '1970-01-01'
+           AND length(started_at_utc) >= 10",
+        [],
+    )?;
+    Ok(())
+}
+
+fn ensure_column(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    alter_sql: &str,
+) -> Result<(), PracticeAttemptStorageError> {
+    if !column_exists(conn, table, column)? {
+        conn.execute_batch(alter_sql)?;
+    }
+    Ok(())
+}
+
+fn column_exists(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+) -> Result<bool, PracticeAttemptStorageError> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+    for row in rows {
+        if row? == column {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn invalid_column(message: String) -> rusqlite::Error {

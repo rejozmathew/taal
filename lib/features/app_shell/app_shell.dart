@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taal/features/app_shell/practice_habit_store.dart';
 import 'package:taal/features/profiles/local_profile_store.dart';
 import 'package:taal/features/settings/settings_screen.dart';
 import 'package:taal/features/settings/settings_store.dart';
@@ -8,6 +9,8 @@ typedef AppShellProfileStoreOpener = Future<AppShellProfileStore> Function();
 
 abstract class AppShellProfileStore {
   SettingsScreenStore get settingsStore;
+
+  PracticeHabitStore get habitStore;
 
   rust_profiles.LocalProfileStateDto load();
 
@@ -30,6 +33,8 @@ class _TaalAppShellState extends State<TaalAppShell> {
   int _selectedIndex = 0;
   AppShellProfileStore? _store;
   rust_profiles.LocalProfileStateDto? _profileState;
+  PracticeHabitSnapshot? _habitSnapshot;
+  String? _habitError;
   String? _error;
   bool _loading = true;
   bool _busy = false;
@@ -49,12 +54,15 @@ class _TaalAppShellState extends State<TaalAppShell> {
     try {
       final store = await widget.openProfileStore();
       final state = store.load();
+      final habit = _loadHabitForState(store, state);
       if (!mounted) {
         return;
       }
       setState(() {
         _store = store;
         _profileState = state;
+        _habitSnapshot = habit.snapshot;
+        _habitError = habit.error;
         _loading = false;
       });
     } on Object catch (error) {
@@ -81,11 +89,14 @@ class _TaalAppShellState extends State<TaalAppShell> {
 
     try {
       final state = store.switchProfile(profileId);
+      final habit = _loadHabitForState(store, state);
       if (!mounted) {
         return;
       }
       setState(() {
         _profileState = state;
+        _habitSnapshot = habit.snapshot;
+        _habitError = habit.error;
         _busy = false;
       });
     } on Object catch (error) {
@@ -190,8 +201,19 @@ class _TaalAppShellState extends State<TaalAppShell> {
     if (index == _selectedIndex) {
       return;
     }
+    final store = _store;
+    final profileState = _profileState;
+    final selectingHome =
+        _destinations[index].kind == _ShellDestinationKind.home;
+    final habit = selectingHome && store != null && profileState != null
+        ? _loadHabitForState(store, profileState)
+        : null;
     setState(() {
       _selectedIndex = index;
+      if (habit != null) {
+        _habitSnapshot = habit.snapshot;
+        _habitError = habit.error;
+      }
     });
   }
 
@@ -206,6 +228,8 @@ class _TaalAppShellState extends State<TaalAppShell> {
         return _HomeSection(
           profileState: profileState,
           activeProfile: activeProfile,
+          habitSnapshot: _habitSnapshot,
+          habitError: _habitError,
           busy: _busy,
           error: _error,
           onSwitchProfile: _switchProfile,
@@ -287,20 +311,50 @@ class _TaalAppShellState extends State<TaalAppShell> {
   }
 
   void _setProfileState(rust_profiles.LocalProfileStateDto state) {
+    final store = _store;
+    final habit = store == null ? null : _loadHabitForState(store, state);
     setState(() {
       _profileState = state;
+      if (habit != null) {
+        _habitSnapshot = habit.snapshot;
+        _habitError = habit.error;
+      }
     });
+  }
+
+  _HabitLoadResult _loadHabitForState(
+    AppShellProfileStore store,
+    rust_profiles.LocalProfileStateDto state,
+  ) {
+    final profile = _activeProfile(state);
+    if (profile == null) {
+      return const _HabitLoadResult();
+    }
+    try {
+      return _HabitLoadResult(
+        snapshot: store.habitStore.loadPracticeHabitSnapshot(
+          playerId: profile.id,
+          todayLocalDayKey: localDayKey(DateTime.now()),
+        ),
+      );
+    } on Object catch (error) {
+      return _HabitLoadResult(error: error.toString());
+    }
   }
 }
 
 class _LocalAppShellProfileStore implements AppShellProfileStore {
   _LocalAppShellProfileStore(this._delegate)
-    : settingsStore = RustSettingsStore(_delegate.databasePath);
+    : settingsStore = RustSettingsStore(_delegate.databasePath),
+      habitStore = RustPracticeHabitStore(_delegate.databasePath);
 
   final LocalProfileStore _delegate;
 
   @override
   final SettingsScreenStore settingsStore;
+
+  @override
+  final PracticeHabitStore habitStore;
 
   @override
   rust_profiles.LocalProfileStateDto load() => _delegate.load();
@@ -314,6 +368,13 @@ class _LocalAppShellProfileStore implements AppShellProfileStore {
 Future<AppShellProfileStore> _openLocalProfileStore() async {
   final store = await LocalProfileStore.open();
   return _LocalAppShellProfileStore(store);
+}
+
+class _HabitLoadResult {
+  const _HabitLoadResult({this.snapshot, this.error});
+
+  final PracticeHabitSnapshot? snapshot;
+  final String? error;
 }
 
 enum _ShellDestinationKind {
@@ -413,6 +474,8 @@ class _HomeSection extends StatelessWidget {
   const _HomeSection({
     required this.profileState,
     required this.activeProfile,
+    required this.habitSnapshot,
+    required this.habitError,
     required this.busy,
     required this.error,
     required this.onSwitchProfile,
@@ -421,6 +484,8 @@ class _HomeSection extends StatelessWidget {
 
   final rust_profiles.LocalProfileStateDto profileState;
   final rust_profiles.PlayerProfileDto? activeProfile;
+  final PracticeHabitSnapshot? habitSnapshot;
+  final String? habitError;
   final bool busy;
   final String? error;
   final ValueChanged<String> onSwitchProfile;
@@ -485,7 +550,11 @@ class _HomeSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _HomeMetricsRow(activeProfile: profile),
+        _HomeMetricsRow(
+          activeProfile: profile,
+          habitSnapshot: habitSnapshot,
+          habitError: habitError,
+        ),
         const SizedBox(height: 16),
         _ProfileSwitcherPanel(
           profileState: profileState,
@@ -603,21 +672,65 @@ class _PlaceholderSection extends StatelessWidget {
 }
 
 class _HomeMetricsRow extends StatelessWidget {
-  const _HomeMetricsRow({required this.activeProfile});
+  const _HomeMetricsRow({
+    required this.activeProfile,
+    required this.habitSnapshot,
+    required this.habitError,
+  });
 
   final rust_profiles.PlayerProfileDto? activeProfile;
+  final PracticeHabitSnapshot? habitSnapshot;
+  final String? habitError;
 
   @override
   Widget build(BuildContext context) {
+    final snapshot = habitSnapshot;
+    if (activeProfile == null) {
+      return const Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          _MetricPanel(label: 'Daily goal', value: 'No profile'),
+          _MetricPanel(label: 'Streak', value: 'No profile'),
+          _MetricPanel(label: 'Weekly summary', value: 'No profile'),
+        ],
+      );
+    }
+
+    if (snapshot == null) {
+      final value = habitError == null ? 'No attempts yet' : 'Unavailable';
+      final detail = habitError;
+      return Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          _MetricPanel(label: 'Daily goal', value: value, detail: detail),
+          const _MetricPanel(label: 'Streak', value: '0 days'),
+          _MetricPanel(label: 'Weekly summary', value: value, detail: detail),
+          _MetricPanel(
+            label: 'Preferred view',
+            value: _preferredViewLabel(activeProfile?.preferredView),
+          ),
+        ],
+      );
+    }
+
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       children: [
+        _DailyGoalPanel(snapshot: snapshot),
         _MetricPanel(
-          label: 'Recent practice',
-          value: activeProfile == null ? 'No profile' : 'No attempts yet',
+          label: 'Streak',
+          value: '${snapshot.currentStreakDays} days',
+          detail: snapshot.milestoneMessage ?? snapshot.streakMessage,
         ),
-        const _MetricPanel(label: 'Streak', value: '0 days'),
+        _MetricPanel(
+          label: 'Weekly summary',
+          value:
+              '${snapshot.week.daysPracticed} days / ${snapshot.week.totalMinutesCompleted} min / ${snapshot.week.fullLessonCompletions} lessons',
+          detail: '${snapshot.week.scoredAttemptCount} scored attempts',
+        ),
         _MetricPanel(
           label: 'Preferred view',
           value: _preferredViewLabel(activeProfile?.preferredView),
@@ -628,10 +741,11 @@ class _HomeMetricsRow extends StatelessWidget {
 }
 
 class _MetricPanel extends StatelessWidget {
-  const _MetricPanel({required this.label, required this.value});
+  const _MetricPanel({required this.label, required this.value, this.detail});
 
   final String label;
   final String value;
+  final String? detail;
 
   @override
   Widget build(BuildContext context) {
@@ -639,7 +753,55 @@ class _MetricPanel extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 180),
       child: _Panel(
         title: label,
-        child: Text(value, style: Theme.of(context).textTheme.titleLarge),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(value, style: Theme.of(context).textTheme.titleLarge),
+            if (detail != null) ...[
+              const SizedBox(height: 6),
+              Text(detail!, style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DailyGoalPanel extends StatelessWidget {
+  const _DailyGoalPanel({required this.snapshot});
+
+  final PracticeHabitSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final goal = snapshot.dailyGoalMinutes;
+    final completed = snapshot.todayMinutesCompleted;
+    final progress = goal <= 0
+        ? 0.0
+        : (completed / goal).clamp(0.0, 1.0).toDouble();
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 220),
+      child: _Panel(
+        title: 'Daily goal',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$completed / $goal min',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: progress),
+            const SizedBox(height: 6),
+            Text(
+              snapshot.todayGoalMet
+                  ? 'Goal met today.'
+                  : 'Every focused minute counts.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
       ),
     );
   }

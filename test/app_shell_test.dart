@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taal/features/app_shell/app_shell.dart';
+import 'package:taal/features/app_shell/practice_habit_store.dart';
 import 'package:taal/features/settings/settings_store.dart';
 import 'package:taal/src/rust/api/profiles.dart' as rust_profiles;
 
@@ -21,8 +22,10 @@ void main() {
     expect(find.byType(NavigationRail), findsNothing);
     expect(find.text('Welcome back, Ada.'), findsOneWidget);
     expect(find.text('Recommended next lesson'), findsOneWidget);
-    expect(find.text('Recent practice'), findsOneWidget);
+    expect(find.text('Daily goal'), findsOneWidget);
     expect(find.text('Streak'), findsOneWidget);
+    expect(find.text('Weekly summary'), findsOneWidget);
+    expect(find.text('8 / 10 min'), findsOneWidget);
 
     await _openHomeSection(
       tester,
@@ -137,12 +140,17 @@ Future<void> _returnHome(WidgetTester tester) async {
 }
 
 class _FakeProfileStore implements AppShellProfileStore {
-  _FakeProfileStore(this._state) : settingsStore = _FakeSettingsStore();
+  _FakeProfileStore(this._state)
+    : settingsStore = _FakeSettingsStore(),
+      habitStore = _FakeHabitStore();
 
   rust_profiles.LocalProfileStateDto _state;
 
   @override
   final SettingsScreenStore settingsStore;
+
+  @override
+  final PracticeHabitStore habitStore;
 
   @override
   rust_profiles.LocalProfileStateDto load() => _state;
@@ -171,6 +179,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
       autoPauseEnabled: false,
       autoPauseTimeoutMs: 3000,
       recordPracticeModeAttempts: true,
+      dailyGoalMinutes: 10,
       activeDeviceProfileId: null,
       updatedAt: '2026-04-17T10:00:00Z',
     ),
@@ -195,6 +204,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
         autoPauseTimeoutMs: _snapshot.profile.autoPauseTimeoutMs,
         recordPracticeModeAttempts:
             _snapshot.profile.recordPracticeModeAttempts,
+        dailyGoalMinutes: _snapshot.profile.dailyGoalMinutes,
         activeDeviceProfileId: _snapshot.profile.activeDeviceProfileId,
         updatedAt: _snapshot.profile.updatedAt,
       ),
@@ -224,6 +234,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
       autoPauseEnabled: update.autoPauseEnabled,
       autoPauseTimeoutMs: update.autoPauseTimeoutMs,
       recordPracticeModeAttempts: update.recordPracticeModeAttempts,
+      dailyGoalMinutes: update.dailyGoalMinutes,
       activeDeviceProfileId: update.activeDeviceProfileId,
       updatedAt: '2026-04-17T10:01:00Z',
     );
@@ -250,6 +261,47 @@ class _FakeSettingsStore implements SettingsScreenStore {
     required DeviceVelocityCurve velocityCurve,
   }) {
     throw UnimplementedError();
+  }
+}
+
+class _FakeHabitStore implements PracticeHabitStore {
+  @override
+  PracticeHabitSnapshot loadPracticeHabitSnapshot({
+    required String playerId,
+    required String todayLocalDayKey,
+  }) {
+    final ada = playerId == 'ada';
+    return PracticeHabitSnapshot(
+      playerId: playerId,
+      todayLocalDayKey: todayLocalDayKey,
+      dailyGoalMinutes: 10,
+      todayMinutesCompleted: ada ? 8 : 3,
+      todayGoalMet: false,
+      currentStreakDays: ada ? 4 : 1,
+      longestStreakDays: ada ? 6 : 2,
+      streakState: ada
+          ? PracticeStreakState.active
+          : PracticeStreakState.atRisk,
+      streakMessage: ada
+          ? '4 practice days in a row.'
+          : 'Practice today to keep your 1-day streak.',
+      milestoneMessage: null,
+      lastPracticeDayKey: ada ? todayLocalDayKey : '2026-04-17',
+      today: PracticeDaySummary(
+        localDayKey: todayLocalDayKey,
+        minutesCompleted: ada ? 8 : 3,
+        scoredAttemptCount: ada ? 2 : 1,
+        fullLessonCompletions: ada ? 1 : 0,
+      ),
+      week: PracticeWeekSummary(
+        startLocalDayKey: '2026-04-12',
+        endLocalDayKey: todayLocalDayKey,
+        daysPracticed: ada ? 4 : 1,
+        totalMinutesCompleted: ada ? 42 : 3,
+        scoredAttemptCount: ada ? 6 : 1,
+        fullLessonCompletions: ada ? 3 : 0,
+      ),
+    );
   }
 }
 

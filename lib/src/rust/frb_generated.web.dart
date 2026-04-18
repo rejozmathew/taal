@@ -8,6 +8,7 @@
 
 import 'api/device_profiles.dart';
 import 'api/practice_attempts.dart';
+import 'api/practice_habits.dart';
 import 'api/practice_runtime.dart';
 import 'api/profiles.dart';
 import 'api/settings.dart';
@@ -90,6 +91,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PracticeAttemptOperationResult dco_decode_practice_attempt_operation_result(
+    dynamic raw,
+  );
+
+  @protected
+  PracticeHabitOperationResult dco_decode_practice_habit_operation_result(
     dynamic raw,
   );
 
@@ -212,6 +218,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PracticeAttemptOperationResult sse_decode_practice_attempt_operation_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PracticeHabitOperationResult sse_decode_practice_habit_operation_result(
     SseDeserializer deserializer,
   );
 
@@ -357,6 +368,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_practice_attempt_operation_result(
     PracticeAttemptOperationResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_practice_habit_operation_result(
+    PracticeHabitOperationResult self,
     SseSerializer serializer,
   );
 

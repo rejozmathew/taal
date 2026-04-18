@@ -197,6 +197,7 @@ class ProfileSettings {
     required this.autoPauseEnabled,
     required this.autoPauseTimeoutMs,
     required this.recordPracticeModeAttempts,
+    required this.dailyGoalMinutes,
     required this.activeDeviceProfileId,
     required this.updatedAt,
   });
@@ -211,6 +212,7 @@ class ProfileSettings {
   final bool autoPauseEnabled;
   final int autoPauseTimeoutMs;
   final bool recordPracticeModeAttempts;
+  final int dailyGoalMinutes;
   final String? activeDeviceProfileId;
   final String updatedAt;
 
@@ -230,6 +232,7 @@ class ProfileSettings {
       autoPauseEnabled: json['auto_pause_enabled'] as bool,
       autoPauseTimeoutMs: json['auto_pause_timeout_ms'] as int,
       recordPracticeModeAttempts: json['record_practice_mode_attempts'] as bool,
+      dailyGoalMinutes: json['daily_goal_minutes'] as int,
       activeDeviceProfileId: json['active_device_profile_id'] as String?,
       updatedAt: json['updated_at'] as String,
     );
@@ -246,6 +249,7 @@ class ProfileSettings {
       autoPauseEnabled: autoPauseEnabled,
       autoPauseTimeoutMs: autoPauseTimeoutMs,
       recordPracticeModeAttempts: recordPracticeModeAttempts,
+      dailyGoalMinutes: dailyGoalMinutes,
       activeDeviceProfileId: activeDeviceProfileId,
     );
   }
@@ -262,6 +266,7 @@ class ProfileSettingsUpdate {
     required this.autoPauseEnabled,
     required this.autoPauseTimeoutMs,
     required this.recordPracticeModeAttempts,
+    required this.dailyGoalMinutes,
     required this.activeDeviceProfileId,
   });
 
@@ -274,6 +279,7 @@ class ProfileSettingsUpdate {
   final bool autoPauseEnabled;
   final int autoPauseTimeoutMs;
   final bool recordPracticeModeAttempts;
+  final int dailyGoalMinutes;
   final String? activeDeviceProfileId;
 
   ProfileSettingsUpdate copyWith({
@@ -286,6 +292,7 @@ class ProfileSettingsUpdate {
     bool? autoPauseEnabled,
     int? autoPauseTimeoutMs,
     bool? recordPracticeModeAttempts,
+    int? dailyGoalMinutes,
     String? activeDeviceProfileId,
     bool clearActiveDeviceProfileId = false,
   }) {
@@ -300,6 +307,7 @@ class ProfileSettingsUpdate {
       autoPauseTimeoutMs: autoPauseTimeoutMs ?? this.autoPauseTimeoutMs,
       recordPracticeModeAttempts:
           recordPracticeModeAttempts ?? this.recordPracticeModeAttempts,
+      dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
       activeDeviceProfileId: clearActiveDeviceProfileId
           ? null
           : activeDeviceProfileId ?? this.activeDeviceProfileId,
@@ -317,6 +325,7 @@ class ProfileSettingsUpdate {
       'auto_pause_enabled': autoPauseEnabled,
       'auto_pause_timeout_ms': autoPauseTimeoutMs,
       'record_practice_mode_attempts': recordPracticeModeAttempts,
+      'daily_goal_minutes': dailyGoalMinutes,
       'active_device_profile_id': activeDeviceProfileId,
     };
   }

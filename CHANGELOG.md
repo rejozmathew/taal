@@ -23,6 +23,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - App shell with home, Practice, Library, Studio, Insights, and Settings navigation plus profile switching from home and settings.
 - Settings screen for profile, MIDI kit profile, manual latency, velocity curve, metronome, output device, display, auto-pause, and Practice Mode history preferences, backed by local Rust-owned persistence.
 - On-screen drum pads for no-kit practice, with touch and MIDI hits routed through the same Rust scoring session and feedback stream.
+- Practice habit tracking with per-profile streaks, daily goal progress, rolling weekly summaries, and display-only in-session goal progress.
 
 ### Documentation
 - Complete product requirements (PRD v1.9) with 77 tasks across 4 phases

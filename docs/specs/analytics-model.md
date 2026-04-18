@@ -37,6 +37,7 @@ pub struct PracticeAttempt {
 
     // Time context (for time-of-day analytics)
     pub started_at_utc: DateTime,
+    pub local_day_key: String,            // "YYYY-MM-DD" in the player's local calendar
     pub local_hour: u8,                   // 0-23
     pub local_dow: u8,                    // 0=Sun, 6=Sat
 
@@ -89,6 +90,7 @@ pub struct PracticeAttemptContext {
 
     // Wall-clock context for history and analytics
     pub started_at_utc: DateTime,
+    pub local_day_key: String,
     pub local_hour: u8,
     pub local_dow: u8,
 }
@@ -111,11 +113,86 @@ The Practice Mode storage setting is `ProfileSettings.record_practice_mode_attem
 
 `session_stop()` must not perform SQLite I/O and must not accept persistence context. This keeps timing/session lifecycle behavior separate from post-session storage.
 
-**Indexes:** `(player_id, started_at_utc)`, `(player_id, lesson_id)`, `(player_id, local_hour)`.
+`local_day_key` is the canonical local calendar-day field for day-based habit features. It must be a zero-padded local date string in `YYYY-MM-DD` format, computed by the caller from the player's local timezone at the time the attempt is recorded. Streaks and weekly summaries must use `local_day_key`, not UTC date substrings, `local_hour`, or `local_dow`.
+
+**Indexes:** `(player_id, started_at_utc)`, `(player_id, lesson_id)`, `(player_id, local_hour)`, `(player_id, local_day_key)`.
 
 **Retention:** All attempts retained indefinitely by default. User can delete individual attempts, all history for a lesson, or all history entirely.
 
-### Raw Hit Retention (v1 decision)
+## 2. Practice Habit Snapshot (P1-24)
+
+Phase 1 habit tracking is a derived read model over scored `PracticeAttempt` rows. `PracticeAttempt` remains the source of truth. There is no authoritative streak table, no mutable streak counter, and no mid-session habit write path.
+
+```rust
+pub struct PracticeDaySummary {
+    pub local_day_key: String,
+    pub minutes_completed: u32,
+    pub scored_attempt_count: u32,
+    pub full_lesson_completions: u32,
+}
+
+pub struct PracticeWeekSummary {
+    pub start_local_day_key: String,
+    pub end_local_day_key: String,
+    pub days_practiced: u8,
+    pub total_minutes_completed: u32,
+    pub scored_attempt_count: u32,
+    pub full_lesson_completions: u32,
+}
+
+pub enum PracticeStreakState {
+    Active,  // today has at least one scored attempt
+    AtRisk,  // yesterday continues the streak, but today has no attempt yet
+    Reset,   // no qualifying attempt today or yesterday
+}
+
+pub struct PracticeHabitSnapshot {
+    pub player_id: Uuid,
+    pub today_local_day_key: String,
+    pub daily_goal_minutes: u32,
+    pub today_minutes_completed: u32,
+    pub today_goal_met: bool,
+    pub current_streak_days: u32,
+    pub longest_streak_days: u32,
+    pub streak_state: PracticeStreakState,
+    pub streak_message: Option<String>,
+    pub milestone_message: Option<String>,
+    pub last_practice_day_key: Option<String>,
+    pub today: PracticeDaySummary,
+    pub week: PracticeWeekSummary,
+}
+```
+
+A qualifying practice day is any `local_day_key` with at least one scored `PracticeAttempt` for the same `player_id`. Section-only scored attempts count toward qualifying a day, daily-goal minutes, weekly minutes, and weekly scored-attempt counts.
+
+The current streak is counted over consecutive qualifying local days. If today qualifies, the streak state is `Active` and the streak ends today. If today does not qualify but yesterday qualifies, the streak state is `AtRisk` and the displayed current streak ends yesterday. If neither today nor yesterday qualifies, the streak state is `Reset` and `current_streak_days` is `0`. Reset messaging must be encouraging, not punitive.
+
+Milestone messages are emitted when an active streak reaches exactly 7, 30, or 100 days. The message text is user-facing, short, and positive. Milestones do not change storage semantics.
+
+Weekly summary uses a rolling 7-local-day window inclusive of today: `[today - 6 days, today]`. `full_lesson_completions` counts scored attempts where `section_id == None`; section-only attempts do not increment lesson completions.
+
+Daily and weekly completed minutes are derived from summed `duration_ms` values and expressed as whole minutes after summing. Live daily-goal progress during an active session is composed in Flutter from `snapshot.today_minutes_completed` plus the in-memory current session elapsed time. It must not create mid-session SQLite writes.
+
+The storage layer must support a read API:
+
+```rust
+fn load_practice_habit_snapshot(
+    player_id: Uuid,
+    today_local_day_key: String,
+) -> Result<PracticeHabitSnapshot, StorageError>
+```
+
+The Flutter bridge may expose this as a JSON-returning operation matching the existing storage APIs:
+
+```rust
+fn load_practice_habit_snapshot(
+    database_path: String,
+    player_id: String,
+    today_local_day_key: String,
+) -> PracticeHabitOperationResult
+```
+
+## 3. Raw Hit Retention (v1 decision)
 
 **v1: raw per-hit events are NOT stored by default.** Attempt-level aggregates provide sufficient signal for all v1 analytics features.
 
@@ -139,7 +216,7 @@ pub struct HitLogEntry {
 
 ---
 
-## 2. Performance Themes (System Taxonomy)
+## 4. Performance Themes (System Taxonomy)
 
 Themes are patterns detected from practice data. They are system-internal constructs, never displayed to users directly (the UI shows human-readable summaries derived from themes).
 
@@ -210,7 +287,7 @@ pub struct ThemeEvidence {
 
 ---
 
-## 3. Learning Outcome Taxonomy (Creator-Facing)
+## 5. Learning Outcome Taxonomy (Creator-Facing)
 
 These are tags that creators attach to lessons. They are separate from performance themes.
 
@@ -231,7 +308,7 @@ Creators can add custom outcomes (prefixed `custom.`). Built-in outcomes are hig
 
 ---
 
-## 4. Theme-to-Outcome Mapping
+## 6. Theme-to-Outcome Mapping
 
 A JSON configuration file that maps detected themes to recommended learning outcomes. This is the bridge between analytics and recommendations.
 
@@ -250,7 +327,7 @@ This file is loaded at startup and can be updated without code changes.
 
 ---
 
-## 5. Recommendation Ranking
+## 7. Recommendation Ranking
 
 When themes are detected, the system recommends lessons that match the associated learning outcomes.
 
@@ -274,7 +351,7 @@ Top 5 recommendations, each with:
 
 ---
 
-## 6. Insights Dashboard Data Sources
+## 8. Insights Dashboard Data Sources
 
 | Dashboard Section | Data Source | Computation |
 |-------------------|------------|-------------|
@@ -288,7 +365,7 @@ Top 5 recommendations, each with:
 
 ---
 
-## 7. Export/Import Semantics
+## 9. Export/Import Semantics
 
 When a player profile is exported:
 - All `PracticeAttempt` records are included
@@ -303,7 +380,7 @@ When imported:
 
 ---
 
-## 8. Combo Behavior (Canonical — must match engine-api.md and visual-language.md)
+## 10. Combo Behavior (Canonical — must match engine-api.md and visual-language.md)
 
 | Hit Grade | Combo Effect |
 |-----------|-------------|

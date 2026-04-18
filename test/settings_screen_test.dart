@@ -26,6 +26,7 @@ void main() {
     expect(find.text('Audio'), findsOneWidget);
     expect(find.text('Display'), findsOneWidget);
     expect(find.text('Practice'), findsOneWidget);
+    expect(find.text('Daily goal: 10 min'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('settings-latency-slider')),
       findsOneWidget,
@@ -82,6 +83,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(store.appSettings.audioOutputDeviceId, 'wasapi:headphones');
+
+    final goalSlider = tester.widget<Slider>(
+      find.byKey(const ValueKey('settings-daily-goal-minutes')),
+    );
+    goalSlider.onChanged!(25);
+    await tester.pumpAndSettle();
+
+    expect(store.profileSettings.dailyGoalMinutes, 25);
   });
 }
 
@@ -130,6 +139,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
     autoPauseEnabled: false,
     autoPauseTimeoutMs: 3000,
     recordPracticeModeAttempts: true,
+    dailyGoalMinutes: 10,
     activeDeviceProfileId: 'device-1',
     updatedAt: '2026-04-17T10:00:00Z',
   );
@@ -169,6 +179,7 @@ class _FakeSettingsStore implements SettingsScreenStore {
       autoPauseEnabled: update.autoPauseEnabled,
       autoPauseTimeoutMs: update.autoPauseTimeoutMs,
       recordPracticeModeAttempts: update.recordPracticeModeAttempts,
+      dailyGoalMinutes: update.dailyGoalMinutes,
       activeDeviceProfileId: update.activeDeviceProfileId,
       updatedAt: '2026-04-17T10:01:00Z',
     );

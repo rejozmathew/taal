@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1665867403;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2008341737;
 
 // Section: executor
 
@@ -375,6 +375,44 @@ fn wire__crate__api__practice_attempts__list_practice_attempts_impl(
                         api_started_at_utc_from,
                         api_started_at_utc_to,
                     ))?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__practice_habits__load_practice_habit_snapshot_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "load_practice_habit_snapshot",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_database_path = <String>::sse_decode(&mut deserializer);
+            let api_player_id = <String>::sse_decode(&mut deserializer);
+            let api_today_local_day_key = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(
+                    crate::api::practice_habits::load_practice_habit_snapshot(
+                        api_database_path,
+                        api_player_id,
+                        api_today_local_day_key,
+                    ),
+                )?;
                 Ok(output_ok)
             })())
         },
@@ -1431,6 +1469,18 @@ impl SseDecode for crate::api::practice_attempts::PracticeAttemptOperationResult
     }
 }
 
+impl SseDecode for crate::api::practice_habits::PracticeHabitOperationResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_snapshotJson = <Option<String>>::sse_decode(deserializer);
+        let mut var_error = <Option<String>>::sse_decode(deserializer);
+        return crate::api::practice_habits::PracticeHabitOperationResult {
+            snapshot_json: var_snapshotJson,
+            error: var_error,
+        };
+    }
+}
+
 impl SseDecode for crate::api::practice_runtime::PracticeRuntimeModeDto {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1635,100 +1685,105 @@ fn pde_ffi_dispatcher_sync_impl(
             rust_vec_len,
             data_len,
         ),
-        10 => wire__crate__api__settings__load_settings_snapshot_impl(ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__profiles__local_profile_state_impl(ptr, rust_vec_len, data_len),
-        12 => {
+        10 => wire__crate__api__practice_habits__load_practice_habit_snapshot_impl(
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        11 => wire__crate__api__settings__load_settings_snapshot_impl(ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__profiles__local_profile_state_impl(ptr, rust_vec_len, data_len),
+        13 => {
             wire__crate__api__simple__measure_phase0_latency_hit_impl(ptr, rust_vec_len, data_len)
         }
-        13 => wire__crate__api__simple__phase0_latency_clock_ns_impl(ptr, rust_vec_len, data_len),
-        14 => wire__crate__api__practice_runtime__practice_runtime_clock_ns_impl(
+        14 => wire__crate__api__simple__phase0_latency_clock_ns_impl(ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__practice_runtime__practice_runtime_clock_ns_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        15 => wire__crate__api__practice_runtime__practice_runtime_dispose_impl(
+        16 => wire__crate__api__practice_runtime__practice_runtime_dispose_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        16 => wire__crate__api__practice_runtime__practice_runtime_drain_events_impl(
+        17 => wire__crate__api__practice_runtime__practice_runtime_drain_events_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        17 => wire__crate__api__practice_runtime__practice_runtime_pause_impl(
+        18 => wire__crate__api__practice_runtime__practice_runtime_pause_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        18 => wire__crate__api__practice_runtime__practice_runtime_resume_impl(
+        19 => wire__crate__api__practice_runtime__practice_runtime_resume_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        19 => wire__crate__api__practice_runtime__practice_runtime_stop_impl(
+        20 => wire__crate__api__practice_runtime__practice_runtime_stop_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        20 => wire__crate__api__practice_runtime__practice_runtime_submit_midi_control_change_impl(
+        21 => wire__crate__api__practice_runtime__practice_runtime_submit_midi_control_change_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        21 => wire__crate__api__practice_runtime__practice_runtime_submit_midi_note_on_impl(
+        22 => wire__crate__api__practice_runtime__practice_runtime_submit_midi_note_on_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        22 => wire__crate__api__practice_runtime__practice_runtime_submit_touch_hit_impl(
+        23 => wire__crate__api__practice_runtime__practice_runtime_submit_touch_hit_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        23 => wire__crate__api__practice_runtime__practice_runtime_tick_impl(
+        24 => wire__crate__api__practice_runtime__practice_runtime_tick_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        24 => wire__crate__api__practice_attempts__record_practice_attempt_impl(
+        25 => wire__crate__api__practice_attempts__record_practice_attempt_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        25 => {
+        26 => {
             wire__crate__api__profiles__set_active_local_profile_impl(ptr, rust_vec_len, data_len)
         }
-        26 => wire__crate__api__device_profiles__set_last_used_device_profile_impl(
+        27 => wire__crate__api__device_profiles__set_last_used_device_profile_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        27 => wire__crate__api__practice_runtime__start_practice_runtime_session_impl(
+        28 => wire__crate__api__practice_runtime__start_practice_runtime_session_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        28 => wire__crate__api__settings__update_app_settings_impl(ptr, rust_vec_len, data_len),
-        29 => wire__crate__api__device_profiles__update_device_profile_settings_impl(
+        29 => wire__crate__api__settings__update_app_settings_impl(ptr, rust_vec_len, data_len),
+        30 => wire__crate__api__device_profiles__update_device_profile_settings_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        30 => wire__crate__api__profiles__update_local_profile_preferred_view_impl(
+        31 => wire__crate__api__profiles__update_local_profile_preferred_view_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        31 => wire__crate__api__device_profiles__update_persisted_device_profile_impl(
+        32 => wire__crate__api__device_profiles__update_persisted_device_profile_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        32 => {
+        33 => {
             wire__crate__api__profiles__update_player_profile_name_impl(ptr, rust_vec_len, data_len)
         }
-        33 => wire__crate__api__settings__update_profile_settings_impl(ptr, rust_vec_len, data_len),
+        34 => wire__crate__api__settings__update_profile_settings_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1870,6 +1925,27 @@ impl
     for crate::api::practice_attempts::PracticeAttemptOperationResult
 {
     fn into_into_dart(self) -> crate::api::practice_attempts::PracticeAttemptOperationResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::practice_habits::PracticeHabitOperationResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.snapshot_json.into_into_dart().into_dart(),
+            self.error.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::practice_habits::PracticeHabitOperationResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::practice_habits::PracticeHabitOperationResult>
+    for crate::api::practice_habits::PracticeHabitOperationResult
+{
+    fn into_into_dart(self) -> crate::api::practice_habits::PracticeHabitOperationResult {
         self
     }
 }
@@ -2220,6 +2296,14 @@ impl SseEncode for crate::api::practice_attempts::PracticeAttemptOperationResult
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <Option<String>>::sse_encode(self.attempt_json, serializer);
         <Vec<String>>::sse_encode(self.attempts_json, serializer);
+        <Option<String>>::sse_encode(self.error, serializer);
+    }
+}
+
+impl SseEncode for crate::api::practice_habits::PracticeHabitOperationResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<String>>::sse_encode(self.snapshot_json, serializer);
         <Option<String>>::sse_encode(self.error, serializer);
     }
 }

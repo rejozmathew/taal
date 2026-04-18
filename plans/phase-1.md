@@ -575,6 +575,12 @@ Task IDs remain stable references. Execute Phase 1 in the order below unless a b
 - Daily goal progress updates in real-time during practice
 - Streak data is per-profile (not global)
 
+**Contract note (CR-008):**
+- P1-24 habit tracking follows the derived read-model contract in `docs/specs/analytics-model.md` §2.
+- Streaks, daily goal progress, and weekly summary are derived from player-owned `PracticeAttempt` rows using `local_day_key`; Phase 1 must not add an authoritative streak table or mutable streak counter.
+- Daily goal configuration uses `ProfileSettings.daily_goal_minutes` through the existing `update_profile_settings(...)` settings boundary from `docs/specs/engine-api.md` §10.
+- Live in-session daily-goal progress is display-only Flutter composition from the persisted snapshot plus current session elapsed time; it must not create mid-session SQLite writes.
+
 ---
 
 ### P1-25: Listen-First Playback

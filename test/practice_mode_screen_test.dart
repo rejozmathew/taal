@@ -46,6 +46,26 @@ void main() {
     expect(controller.currentTimeMs, 2200);
   });
 
+  test(
+    'daily goal progress composes persisted minutes with session elapsed',
+    () {
+      final controller = _controller()..play();
+      const goal = DailyGoalProgress(
+        persistedTodayMinutesCompleted: 8,
+        dailyGoalMinutes: 10,
+      );
+
+      controller.advanceBy(const Duration(seconds: 30));
+
+      expect(controller.activeSessionElapsedMs, 30000);
+      expect(
+        goal.completedMinutesWithSession(controller.activeSessionElapsedMs),
+        8.5,
+      );
+      expect(goal.progressWithSession(controller.activeSessionElapsedMs), 0.85);
+    },
+  );
+
   testWidgets('practice screen switches all three views without reset', (
     tester,
   ) async {
@@ -90,6 +110,10 @@ void main() {
             controller: controller,
             lanes: _lanes,
             notes: _notes,
+            dailyGoalProgress: const DailyGoalProgress(
+              persistedTodayMinutesCompleted: 8,
+              dailyGoalMinutes: 10,
+            ),
           ),
         ),
       ),
@@ -100,6 +124,11 @@ void main() {
 
     expect(controller.transportState, PracticeTransportState.running);
     expect(find.text('Pause'), findsOneWidget);
+
+    controller.advanceBy(const Duration(seconds: 30));
+    await tester.pump();
+
+    expect(find.text('Daily goal 8.5 / 10 min'), findsOneWidget);
 
     await tester.tap(find.text('Pause'));
     await tester.pump();

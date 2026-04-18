@@ -269,7 +269,7 @@ pub struct VisualSlot {
 ## 4. Scoring Profile
 
 Scoring profiles parameterize timing windows, relative grade weights, and encouragement thresholds.
-Combo accumulation/reset behavior is frozen by `docs/specs/analytics-model.md` §8 and `docs/specs/visual-language.md` C.4; the profile configures milestone thresholds, not which grades increment or reset combo.
+Combo accumulation/reset behavior is frozen by `docs/specs/analytics-model.md` §10 and `docs/specs/visual-language.md` C.4; the profile configures milestone thresholds, not which grades increment or reset combo.
 
 ```rust
 pub struct ScoringProfile {

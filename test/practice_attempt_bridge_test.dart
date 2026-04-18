@@ -46,6 +46,7 @@ void main() {
       expect(attempt['lesson_id'], _lessonId);
       expect(attempt['course_id'], _courseId);
       expect(attempt['mode'], 'play');
+      expect(attempt['local_day_key'], '2026-04-17');
       expect(attempt['score_total'], 91.5);
       expect(attempt['lesson_title'], 'Eight Beat Check');
       expect(
@@ -115,6 +116,7 @@ Map<String, Object?> _context(String playerId) {
     'lesson_tags': ['rock', 'timing'],
     'lesson_skills': ['timing.onbeat'],
     'started_at_utc': '2026-04-17T14:00:00Z',
+    'local_day_key': '2026-04-17',
     'local_hour': 9,
     'local_dow': 5,
   };

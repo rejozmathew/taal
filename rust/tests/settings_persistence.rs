@@ -34,6 +34,7 @@ fn settings_snapshot_loads_cr006_defaults() {
     assert!(!snapshot.profile.auto_pause_enabled);
     assert_eq!(snapshot.profile.auto_pause_timeout_ms, 3000);
     assert!(snapshot.profile.record_practice_mode_attempts);
+    assert_eq!(snapshot.profile.daily_goal_minutes, 10);
     assert_eq!(snapshot.profile.active_device_profile_id, None);
 
     cleanup(db_path);
@@ -68,6 +69,7 @@ fn profile_settings_persist_per_player_and_validate_active_device_owner() {
                 auto_pause_enabled: true,
                 auto_pause_timeout_ms: 4500,
                 record_practice_mode_attempts: false,
+                daily_goal_minutes: 25,
                 active_device_profile_id: Some(first_device.id),
             },
         )
@@ -86,6 +88,7 @@ fn profile_settings_persist_per_player_and_validate_active_device_owner() {
     );
     assert_eq!(snapshot.profile.auto_pause_timeout_ms, 4500);
     assert!(!snapshot.profile.record_practice_mode_attempts);
+    assert_eq!(snapshot.profile.daily_goal_minutes, 25);
 
     let wrong_owner = reopened
         .update_profile_settings(
@@ -208,6 +211,7 @@ fn settings_update() -> ProfileSettingsUpdate {
         auto_pause_enabled: false,
         auto_pause_timeout_ms: 3000,
         record_practice_mode_attempts: true,
+        daily_goal_minutes: 10,
         active_device_profile_id: None,
     }
 }

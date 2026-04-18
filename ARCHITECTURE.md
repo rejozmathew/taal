@@ -13,19 +13,20 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Component | Location | Status |
 |-----------|----------|--------|
 | PRD + specs + plans | `docs/`, `plans/` | Implemented |
-| Flutter app shell | `lib/features/app_shell/`, `lib/main.dart`, `test/app_shell_test.dart` | Implemented (P1-22 adaptive home/navigation shell with profile switcher, recommended lesson surface, recent practice/streak placeholders, safe placeholders for incomplete sections, and P1-20 Settings destination wiring) |
-| Flutter Settings screen | `lib/features/settings/`, `test/settings_*_test.dart` | Implemented (P1-20 profile, MIDI kit profile, manual latency, velocity curve, audio, display, auto-pause, and Practice Mode history preferences backed by Rust-owned persistence) |
+| Flutter app shell | `lib/features/app_shell/`, `lib/main.dart`, `test/app_shell_test.dart` | Implemented (P1-22 adaptive home/navigation shell with profile switcher, recommended lesson surface, safe placeholders for incomplete sections, P1-20 Settings destination wiring, and P1-24 habit metrics on Home) |
+| Flutter practice habit store | `lib/features/app_shell/practice_habit_store.dart`, `test/practice_habit_bridge_test.dart` | Implemented (P1-24 Dart model/store over the Rust habit snapshot bridge for streak, daily goal, and weekly summary rendering) |
+| Flutter Settings screen | `lib/features/settings/`, `test/settings_*_test.dart` | Implemented (P1-20 profile, MIDI kit profile, manual latency, velocity curve, audio, display, auto-pause, Practice Mode history preferences, and P1-24 daily goal minutes backed by Rust-owned persistence) |
 | Flutter local profile UI | `lib/features/profiles/` | Implemented (P1-16 create/switch/delete local profiles, experience/avatar selection, preferred view control) |
 | Flutter calibration wizard | `lib/features/calibration/`, `test/calibration_*_test.dart` | Implemented (P1-07 100 BPM snare calibration, median offset/jitter result, persisted device-profile offset updates) |
 | Flutter note-highway widget | `lib/features/player/note_highway/`, `test/note_highway_test.dart` | Implemented (P1-09 vertical lane painter, timeline-synced note geometry, grade-colored hit markers) |
 | Flutter notation view widget | `lib/features/player/notation/`, `test/notation_view_test.dart` | Implemented (P1-10 drum-staff painter, standard 5-piece lane placements, scrolling/page display geometry, grade-colored hit markers) |
 | Flutter visual drum kit widget | `lib/features/player/drum_kit/`, `test/drum_kit_test.dart` | Implemented (P1-11 overhead kit painter, standard 5-piece pad geometry, custom layout adaptation, grade-colored hit flashes) |
 | Flutter on-screen tap pads | `lib/features/player/tap_pads/`, `test/tap_pad_surface_test.dart` | Implemented (P1-23 touch-responsive no-kit drum-pad input surface with tablet-sized targets, lane filtering, fixed velocity, and guidance to connect a kit for the best experience) |
-| Flutter Practice Mode screen | `lib/features/player/practice_mode/`, `test/practice_mode_screen_test.dart` | Implemented (P1-12 transport, tempo, metronome/loop controls, A-B loop state, combo/encouragement display, switchable practice views) |
+| Flutter Practice Mode screen | `lib/features/player/practice_mode/`, `test/practice_mode_screen_test.dart` | Implemented (P1-12 transport, tempo, metronome/loop controls, A-B loop state, combo/encouragement display, switchable practice views; P1-24 display-only daily-goal progress from in-memory session elapsed time) |
 | Flutter Practice runtime input adapter | `lib/features/player/practice_runtime/`, `rust/src/api/practice_runtime.rs`, `test/practice_runtime_adapter_test.dart`, `test/practice_runtime_bridge_test.dart` | Implemented (P1-23 bridge/orchestration for compiled Rust sessions, source-neutral touch hits, MIDI-derived hits through `MidiMapper`, event draining, and Practice Mode feedback adaptation without Flutter-owned scoring) |
 | Flutter Play Mode screen | `lib/features/player/play_mode/`, `test/play_mode_screen_test.dart` | Implemented (P1-13 locked-tempo scored runs, count-in, review handoff, and post-run attempt recording hook) |
 | Flutter post-lesson review screen | `lib/features/player/review/`, `test/post_lesson_review_screen_test.dart` | Implemented (P1-14 score/accuracy summary, timing histogram, lane breakdown, best-stat highlight, improvement suggestions, review actions) |
-| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime session; P1-01 content parsing/validation; P1-02 time indexing/conversion; P1-03 lesson compilation; P1-04 session lifecycle; P1-05 scoring; P1-06 MIDI mapping; P1-16 local profile persistence; P1-08 device profile persistence; P1-21 practice attempt persistence; P1-20 settings persistence; P1-23 Practice runtime bridge) |
+| Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime session; P1-01 content parsing/validation; P1-02 time indexing/conversion; P1-03 lesson compilation; P1-04 session lifecycle; P1-05 scoring; P1-06 MIDI mapping; P1-16 local profile persistence; P1-08 device profile persistence; P1-21 practice attempt persistence; P1-20 settings persistence; P1-23 Practice runtime bridge; P1-24 habit snapshot read model) |
 | Rust content module | `rust/src/content/`, `rust/tests/content_validation.rs` | Implemented (P1-01 Lesson, InstrumentLayout, and ScoringProfile parsing/validation) |
 | Rust compile module | `rust/src/content/compile.rs`, `rust/tests/lesson_compile.rs` | Implemented (P1-03 Lesson + layout + scoring profile to immutable CompiledLesson timeline) |
 | Rust time module | `rust/src/time/`, `rust/tests/time_conversion.rs` | Implemented (P1-02 MusicalPos tick arithmetic and TimingIndex musical <-> millisecond conversion) |
@@ -33,9 +34,10 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Rust Practice runtime bridge | `rust/src/api/practice_runtime.rs`, `rust/src/runtime/practice_runtime.rs`, `rust/tests/practice_runtime_bridge.rs` | Implemented (P1-23 bridge-owned session registry for Flutter-held session IDs, compiled lesson/session start, optional `MidiMapper` state, touch/MIDI input submission into the same `Session`, event draining, pause/resume/stop/dispose, and timeline JSON for Practice Mode renderers) |
 | Rust scoring module | `rust/src/scoring/`, `rust/tests/scoring_behavior.rs` | Implemented (P1-05 profile-driven grades, score normalization, combos, milestones, lane stats) |
 | Rust MIDI mapping engine | `rust/src/midi/`, `rust/tests/midi_mapping.rs` | Implemented (P1-06 raw MIDI NoteOn/CC to mapped hits, hi-hat CC4 articulation, calibration offset, dedupe, unmapped-note warnings) |
-| Rust local profile storage | `rust/src/storage/profiles.rs`, `rust/tests/local_profiles.rs`, `rust/tests/settings_persistence.rs` | Implemented (P1-16 SQLite-backed player profiles, profile preferences, last-active profile state, cascade delete; P1-20 app/profile settings snapshot and update APIs) |
+| Rust local profile storage | `rust/src/storage/profiles.rs`, `rust/tests/local_profiles.rs`, `rust/tests/settings_persistence.rs` | Implemented (P1-16 SQLite-backed player profiles, profile preferences, last-active profile state, cascade delete; P1-20 app/profile settings snapshot and update APIs; P1-24 `daily_goal_minutes`) |
 | Rust device profile storage | `rust/src/storage/device_profiles.rs`, `rust/tests/device_profile_persistence.rs`, `rust/tests/settings_persistence.rs` | Implemented (P1-08 per-player device profile CRUD, last-used reconnect matching, multiple profiles per device; P1-20 manual latency and velocity-curve settings helper) |
-| Rust practice attempt storage | `rust/src/storage/practice_attempts.rs`, `rust/tests/practice_attempt_persistence.rs` | Implemented (P1-21 post-session attempt writes from `AttemptSummary + PracticeAttemptContext`, player-owned SQLite rows, history query filters) |
+| Rust practice attempt storage | `rust/src/storage/practice_attempts.rs`, `rust/tests/practice_attempt_persistence.rs` | Implemented (P1-21 post-session attempt writes from `AttemptSummary + PracticeAttemptContext`, player-owned SQLite rows, history query filters; P1-24 `local_day_key` and derived habit snapshot queries) |
+| Rust practice habit bridge | `rust/src/api/practice_habits.rs`, `lib/src/rust/api/practice_habits.dart`, `test/practice_habit_bridge_test.dart` | Implemented (P1-24 JSON bridge for loading per-profile `PracticeHabitSnapshot` from Rust-owned SQLite) |
 | Bundled standard drum layout | `assets/content/layouts/std-5pc-v1.json`, `rust/tests/bundled_layouts.rs` | Implemented (P1-19 default 5-piece drum layout with visual slots and MIDI hints) |
 | Bundled starter lessons | `assets/content/lessons/starter/`, `assets/content/scoring/score-standard-v1.json`, `rust/tests/starter_lessons.rs` | Implemented (P1-18 13 starter lessons that load and compile against the standard layout/scoring profile) |
 | Flutter↔Rust bridge | `rust/`, `lib/src/rust/`, `rust_builder/` | Implemented (Phase 0 `greet` bridge) |
@@ -45,7 +47,7 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Android latency artifact export | `android/app/src/main/kotlin/dev/taal/taal/MainActivity.kt`, `lib/platform/latency/` | Implemented (writes Phase 0 CSV/report to Android Downloads via MediaStore) |
 | CI pipeline | `.github/workflows/ci.yml` | Implemented (Rust + Flutter checks/builds, locally validated) |
 | Metronome audio output | `lib/platform/audio/`, `windows/runner/windows_metronome_audio.*`, `android/app/src/main/kotlin/dev/taal/taal/MetronomeAudioController.kt`, `android/app/src/main/cpp/` | Implemented (P1-15 scheduled native click playback through WASAPI on Windows and AAudio on Android) |
-| SQLite persistence | `rust/src/storage/` | Partial (P1-16 local profiles, P1-08 device profiles, P1-21 practice attempts, and P1-20 settings/preferences implemented) |
+| SQLite persistence | `rust/src/storage/` | Partial (P1-16 local profiles, P1-08 device profiles, P1-21 practice attempts, P1-20 settings/preferences, and P1-24 derived habit snapshots implemented) |
 | Practice views | `lib/features/player/` | Partial (P1-09 note-highway, P1-10 notation, P1-11 visual drum kit, P1-12 Practice Mode screen, P1-14 review, P1-13 Play Mode screen, and P1-23 tap pads/runtime input adapter implemented; later player capabilities still planned) |
 | Lesson Editor | `lib/features/studio/` | Planned (Phase 2) |
 | Course Designer | `lib/features/studio/` | Planned (Phase 2) |
@@ -137,13 +139,25 @@ The shell adapts navigation by available width:
 | Narrow / mobile | Bottom `NavigationBar` |
 | Wide / desktop | `NavigationRail` |
 
-The home destination shows the active profile greeting, recommended next lesson, recent-practice placeholder, streak placeholder, and profile switcher. Practice, Library, Studio, Insights, and Settings are reachable from the home surface and the top-level navigation. Studio and Insights are intentionally safe placeholders until their later phase work lands. Settings now mounts the concrete P1-20 settings screen and uses the same active profile state as the shell.
+The home destination shows the active profile greeting, recommended next lesson, a daily-goal progress indicator, streak counter, rolling weekly summary, preferred view, and profile switcher. Practice, Library, Studio, Insights, and Settings are reachable from the home surface and the top-level navigation. Studio and Insights are intentionally safe placeholders until their later phase work lands. Settings now mounts the concrete settings screen and uses the same active profile state as the shell.
+
+Home habit metrics are read through the Rust habit snapshot bridge:
+
+```
+TaalAppShell Home
+       |
+RustPracticeHabitStore -> load_practice_habit_snapshot(database, player, today_local_day_key)
+       |
+PracticeAttemptStore / LocalProfileStore -> SQLite
+```
+
+Flutter supplies `today_local_day_key` from the local calendar date. Rust derives streaks, today's completed minutes, and the weekly summary from player-owned `PracticeAttempt.local_day_key` rows and reads `ProfileSettings.daily_goal_minutes` from the existing profile settings table. There is no streak table in SQLite.
 
 Profile switching remains Rust-owned for persistence. Flutter requests `setActiveLocalProfile` through `LocalProfileStore`, updates the active profile state, and profile-specific home content changes immediately.
 
 ## Settings and Preferences
 
-The P1-20 Settings screen is a Flutter renderer over Rust-owned settings persistence. It does not own persistence semantics and does not add settings fields beyond the CR-006 model.
+The Settings screen is a Flutter renderer over Rust-owned settings persistence. It does not own persistence semantics and writes daily goals through the same profile settings update boundary as the rest of the profile preferences.
 
 ```
 TaalAppShell Settings destination
@@ -160,7 +174,7 @@ Settings are split by owner:
 | Level | Rust storage owner | Flutter behavior |
 |-------|--------------------|------------------|
 | App-level | `app_settings` key/value rows | Audio output device ID is edited in Settings; last-active profile remains driven by profile switching. |
-| Profile-level | `profile_preferences` plus `player_profiles.preferred_view/name` | Display, metronome, auto-pause defaults, Practice Mode attempt recording, active device profile, and profile name changes update through Rust and are reflected immediately in the Settings UI. |
+| Profile-level | `profile_preferences` plus `player_profiles.preferred_view/name` | Display, metronome, auto-pause defaults, Practice Mode attempt recording, daily goal minutes, active device profile, and profile name changes update through Rust and are reflected immediately in the Settings UI. |
 | Device-profile-level | `device_profiles.profile_json` | Manual latency writes the existing `DeviceProfile.input_offset_ms`; velocity curve writes the existing `DeviceProfile.velocity_curve`. |
 
 The Settings screen applies metronome volume/click-sound changes to the Flutter native-audio adapter after Rust returns the updated profile settings. Audio output device selection is persisted as `AppSettings.audio_output_device_id`; native output-device switching remains limited to what the current audio adapter exposes.
@@ -414,7 +428,7 @@ CustomPainter geometry
 
 The widget does not read MIDI directly and does not compute grade state. Parent screens feed mapped lane IDs and engine-produced grades, preserving the native/Rust/Flutter ownership split.
 
-The P1-12 Practice Mode screen is the first integrated player surface. It owns only UI transport state, view selection, tempo control state, metronome/loop toggles, A-B loop ranges, tap-pad input rendering, and display of combo/encouragement values. It does not compile lessons, map MIDI, grade hits, or compute scores.
+The P1-12 Practice Mode screen is the first integrated player surface. It owns only UI transport state, view selection, tempo control state, metronome/loop toggles, A-B loop ranges, tap-pad input rendering, display of combo/encouragement values, and P1-24 display-only daily-goal progress. It does not compile lessons, map MIDI, grade hits, compute scores, or write habit rows while a session is active.
 
 ```
 Runtime/content adapter (P1-23 for scored Practice Mode input)
@@ -434,6 +448,8 @@ PracticeModeScreen
 ```
 
 Practice Mode consumes prepared timeline notes and engine feedback markers as inputs. P1-23 implements the minimum scored Practice Mode runtime adapter and tap-pad input surface, wiring the existing Rust session and MIDI mapper into this screen without changing the practice-view widgets. This keeps Rust authoritative for scoring and timing semantics while Flutter owns rendering, touch interaction, and bridge calls.
+
+Active-session daily-goal progress is composed in Flutter from a persisted `PracticeHabitSnapshot.today_minutes_completed` value plus `PracticeModeController.activeSessionElapsedMs`. It is presentation state only; the next persisted practice minutes come from the normal post-session `PracticeAttempt` write.
 
 P1-23's runtime input adapter has two input paths that converge before scoring:
 
@@ -619,7 +635,7 @@ The implemented P1-16 storage path opens a local SQLite database from Flutter's 
 | Table | Purpose |
 |-------|---------|
 | `player_profiles` | Local `PlayerProfile` records with name, optional avatar, experience level, preferred view, and metadata timestamps |
-| `profile_preferences` | Profile-owned settings row with display, metronome, auto-pause, Practice Mode history, active-device-profile, timestamps, and foreign-key cascade on profile deletion |
+| `profile_preferences` | Profile-owned settings row with display, metronome, auto-pause, Practice Mode history, daily goal minutes, active-device-profile, timestamps, and foreign-key cascade on profile deletion |
 | `app_settings` | App-level key/value settings, currently `last_active_profile_id` and `audio_output_device_id` |
 
 The implemented P1-08 device-profile storage adds:
@@ -629,17 +645,29 @@ The implemented P1-08 device-profile storage adds:
 | `device_profiles` | Per-player persisted `DeviceProfile` records. The validated profile JSON is stored as the source payload, with indexed reconnect metadata copied into columns. |
 | `last_used_device_profiles` | Per-player last-used mapping from a device fingerprint key to the chosen profile ID. Exact `(vendor_name, model_name, platform_id)` lookup is attempted before vendor/model fallback. |
 
-P1-20 adds settings-specific updates over the existing profile/device-profile tables. `LocalProfileStore::load_settings_snapshot()` returns the app/profile settings snapshot for a player, and `update_profile_settings()` validates and persists profile-owned settings without entering the timing-sensitive session path. `DeviceProfileStore::update_device_profile_settings()` updates only the existing `input_offset_ms` and `velocity_curve` fields inside the stored `DeviceProfile` JSON and preserves all mapping/calibration contract fields.
+P1-20 adds settings-specific updates over the existing profile/device-profile tables. `LocalProfileStore::load_settings_snapshot()` returns the app/profile settings snapshot for a player, and `update_profile_settings()` validates and persists profile-owned settings without entering the timing-sensitive session path. P1-24 reuses the same `update_profile_settings()` path for `daily_goal_minutes`; there is no dedicated daily-goal write API. `DeviceProfileStore::update_device_profile_settings()` updates only the existing `input_offset_ms` and `velocity_curve` fields inside the stored `DeviceProfile` JSON and preserves all mapping/calibration contract fields.
 
 The implemented P1-21 practice-attempt storage adds:
 
 | Table | Purpose |
 |-------|---------|
-| `practice_attempts` | Per-player scored-attempt records built after `session_stop()` from `AttemptSummary + PracticeAttemptContext`. Outcome metrics are stored in queryable columns, while `lane_stats`, `lesson_tags`, and `lesson_skills` are stored as JSON columns. |
+| `practice_attempts` | Per-player scored-attempt records built after `session_stop()` from `AttemptSummary + PracticeAttemptContext`. Outcome metrics and `local_day_key` are stored in queryable columns, while `lane_stats`, `lesson_tags`, and `lesson_skills` are stored as JSON columns. |
 
 Practice-attempt persistence is post-session storage, not part of the session lifecycle hot path. Flutter or a later runtime adapter calls the Rust bridge after a successful `session_stop()`, passing the returned `AttemptSummary` and caller-owned context for player, lesson snapshot, device profile, course/section, and wall-clock fields. Rust writes and queries the SQLite rows through `PracticeAttemptStore`.
 
-Practice-attempt indexes support `(player_id, started_at_utc)`, `(player_id, lesson_id)`, `(player_id, local_hour)`, and `(player_id, course_id)` lookups. Deleting a player profile deletes its owned preference, device-profile, and practice-attempt rows through SQLite foreign-key cascade. Deleting a device profile removes last-used reconnect pointers and sets existing attempt `device_profile_id` references to null.
+P1-24 habit tracking is derived from `PracticeAttempt` rows:
+
+```
+PracticeAttempt.local_day_key + ProfileSettings.daily_goal_minutes
+       |
+PracticeAttemptStore::load_practice_habit_snapshot(player_id, today_local_day_key)
+       |
+PracticeHabitSnapshot { streak, today progress, rolling 7-day summary }
+```
+
+The derived snapshot counts any scored attempt as a qualifying practice day, counts section-only attempts toward practice minutes and attempt totals, and counts full lesson completions only when `section_id` is null. The rolling weekly window is seven local days inclusive of today. SQLite does not store streak state or mutable habit counters.
+
+Practice-attempt indexes support `(player_id, started_at_utc)`, `(player_id, lesson_id)`, `(player_id, local_hour)`, `(player_id, local_day_key)`, and `(player_id, course_id)` lookups. Deleting a player profile deletes its owned preference, device-profile, and practice-attempt rows through SQLite foreign-key cascade. Deleting a device profile removes last-used reconnect pointers and sets existing attempt `device_profile_id` references to null.
 
 ---
 
@@ -661,7 +689,7 @@ taal/
 │       ├── midi/           # P1-06 MIDI note/CC mapping to semantic hits
 │       ├── runtime/        # P1-04 compiled-lesson session lifecycle
 │       ├── scoring/        # P1-05 grade, score, combo, and summary metrics
-│       ├── storage/        # P1-16/P1-08/P1-21/P1-20 SQLite persistence
+│       ├── storage/        # P1-16/P1-08/P1-21/P1-20/P1-24 SQLite persistence/read models
 │       ├── time/           # P1-02 musical time arithmetic and TimingIndex
 │       ├── frb_generated.rs
 │       └── lib.rs

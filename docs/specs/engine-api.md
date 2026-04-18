@@ -304,6 +304,7 @@ P1-20 settings persistence is Rust-owned SQLite storage exposed to Flutter throu
 | Profile-level | `auto_pause_enabled` | `false` |
 | Profile-level | `auto_pause_timeout_ms` | `3000` |
 | Profile-level | `record_practice_mode_attempts` | `true` |
+| Profile-level | `daily_goal_minutes` | `10` |
 | Profile-level | `active_device_profile_id` | `None` until the player chooses or reconnects a device profile |
 | Device-profile-level | `input_offset_ms` | See `midi-mapping.md` |
 | Device-profile-level | `dedupe_window_ms` | See `midi-mapping.md` |
@@ -332,6 +333,7 @@ pub struct ProfileSettings {
     pub auto_pause_enabled: bool,
     pub auto_pause_timeout_ms: u32,          // milliseconds
     pub record_practice_mode_attempts: bool,
+    pub daily_goal_minutes: u32,             // positive whole minutes; default 10
     pub active_device_profile_id: Option<Uuid>,
     pub updated_at: DateTime,
 }
@@ -346,6 +348,7 @@ pub struct ProfileSettingsUpdate {
     pub auto_pause_enabled: bool,
     pub auto_pause_timeout_ms: u32,
     pub record_practice_mode_attempts: bool,
+    pub daily_goal_minutes: u32,
     pub active_device_profile_id: Option<Uuid>,
 }
 
@@ -401,3 +404,5 @@ fn update_device_profile_settings(
 ```
 
 Successful updates return the updated settings or profile/device-profile snapshot so Flutter can apply changes immediately without an app restart. Validation errors must be returned through the same result/error pattern as the existing profile and device-profile bridge APIs.
+
+P1-24 daily practice goal writes reuse `update_profile_settings(...)` with the `daily_goal_minutes` field. The settings boundary must not add a separate dedicated daily-goal write API.
