@@ -71,11 +71,189 @@ void main() {
     expect(adapter.feedback.single.expectedId, 'snare-1');
     expect(adapter.feedback.single.grade, NoteHighwayGrade.miss);
   });
+
+  test(
+    'runtime adapter auto-pauses dense missed passages and resumes on hit',
+    () {
+      final controller = PracticeModeController(
+        baseBpm: 120,
+        totalDurationMs: 3000,
+        autoPauseConfig: const PracticeAutoPauseConfig(
+          enabled: true,
+          timeoutMs: 1000,
+          activeMissGapToleranceMs: 600,
+        ),
+      );
+      final engine = _FakePracticeRuntimeEngine()
+        ..tickResponses.addAll([
+          const [
+            PracticeRuntimeEvent(
+              type: PracticeRuntimeEventType.missed,
+              expectedId: 'kick-1',
+              laneId: 'kick',
+            ),
+          ],
+          const [
+            PracticeRuntimeEvent(
+              type: PracticeRuntimeEventType.missed,
+              expectedId: 'snare-1',
+              laneId: 'snare',
+            ),
+          ],
+          const [
+            PracticeRuntimeEvent(
+              type: PracticeRuntimeEventType.missed,
+              expectedId: 'snare-2',
+              laneId: 'snare',
+            ),
+          ],
+        ]);
+      final adapter = PracticeModeRuntimeAdapter(
+        controller: controller,
+        engine: engine,
+      );
+
+      adapter.start(
+        lessonJson: '{}',
+        layoutJson: '{}',
+        scoringProfileJson: '{}',
+        bpm: 120,
+        startTimeNs: 10,
+      );
+      controller.play();
+
+      adapter.tick(nowNs: 10);
+      adapter.tick(nowNs: 500000010);
+      expect(controller.transportState, PracticeTransportState.running);
+
+      adapter.tick(nowNs: 1000000010);
+
+      expect(engine.pauseCount, 1);
+      expect(controller.transportState, PracticeTransportState.paused);
+      expect(controller.autoPauseTriggered, isTrue);
+
+      adapter.submitTouchHit(laneId: 'kick', timestampNs: 1000000020);
+
+      expect(engine.resumeCount, 1);
+      expect(controller.transportState, PracticeTransportState.running);
+      expect(controller.autoPauseTriggered, isFalse);
+      expect(engine.touchHits.single.laneId, 'kick');
+    },
+  );
+
+  test('runtime adapter does not auto-pause across intentional rests', () {
+    final controller = PracticeModeController(
+      baseBpm: 120,
+      totalDurationMs: 4000,
+      autoPauseConfig: const PracticeAutoPauseConfig(
+        enabled: true,
+        timeoutMs: 1000,
+        activeMissGapToleranceMs: 600,
+      ),
+    );
+    final engine = _FakePracticeRuntimeEngine()
+      ..tickResponses.addAll([
+        const [
+          PracticeRuntimeEvent(
+            type: PracticeRuntimeEventType.missed,
+            expectedId: 'kick-1',
+            laneId: 'kick',
+          ),
+        ],
+        const [
+          PracticeRuntimeEvent(
+            type: PracticeRuntimeEventType.missed,
+            expectedId: 'crash-1',
+            laneId: 'crash',
+          ),
+        ],
+      ]);
+    final adapter = PracticeModeRuntimeAdapter(
+      controller: controller,
+      engine: engine,
+    );
+
+    adapter.start(
+      lessonJson: '{}',
+      layoutJson: '{}',
+      scoringProfileJson: '{}',
+      bpm: 120,
+      startTimeNs: 10,
+    );
+    controller.play();
+
+    adapter.tick(nowNs: 10);
+    adapter.tick(nowNs: 2500000010);
+
+    expect(engine.pauseCount, 0);
+    expect(controller.transportState, PracticeTransportState.running);
+    expect(controller.autoPauseTriggered, isFalse);
+  });
+
+  test('runtime adapter keeps auto-pause scoped to Practice Mode', () {
+    final controller = PracticeModeController(
+      baseBpm: 120,
+      totalDurationMs: 3000,
+      autoPauseConfig: const PracticeAutoPauseConfig(
+        enabled: true,
+        timeoutMs: 1000,
+        activeMissGapToleranceMs: 600,
+      ),
+    );
+    final engine = _FakePracticeRuntimeEngine()
+      ..tickResponses.addAll([
+        const [
+          PracticeRuntimeEvent(
+            type: PracticeRuntimeEventType.missed,
+            expectedId: 'kick-1',
+            laneId: 'kick',
+          ),
+        ],
+        const [
+          PracticeRuntimeEvent(
+            type: PracticeRuntimeEventType.missed,
+            expectedId: 'snare-1',
+            laneId: 'snare',
+          ),
+        ],
+        const [
+          PracticeRuntimeEvent(
+            type: PracticeRuntimeEventType.missed,
+            expectedId: 'snare-2',
+            laneId: 'snare',
+          ),
+        ],
+      ]);
+    final adapter = PracticeModeRuntimeAdapter(
+      controller: controller,
+      engine: engine,
+    );
+
+    adapter.start(
+      lessonJson: '{}',
+      layoutJson: '{}',
+      scoringProfileJson: '{}',
+      mode: PracticeRuntimeMode.play,
+      bpm: 120,
+      startTimeNs: 10,
+    );
+    controller.play();
+
+    adapter.tick(nowNs: 10);
+    adapter.tick(nowNs: 500000010);
+    adapter.tick(nowNs: 1000000010);
+
+    expect(engine.pauseCount, 0);
+    expect(controller.transportState, PracticeTransportState.running);
+  });
 }
 
 class _FakePracticeRuntimeEngine implements PracticeRuntimeEngine {
   final touchHits = <_TouchSubmission>[];
   final midiNotes = <_MidiNoteSubmission>[];
+  final tickResponses = <List<PracticeRuntimeEvent>>[];
+  int pauseCount = 0;
+  int resumeCount = 0;
 
   @override
   int clockNs() => 10;
@@ -160,6 +338,9 @@ class _FakePracticeRuntimeEngine implements PracticeRuntimeEngine {
     required int sessionId,
     required int nowNs,
   }) {
+    if (tickResponses.isNotEmpty) {
+      return tickResponses.removeAt(0);
+    }
     return const [
       PracticeRuntimeEvent(
         type: PracticeRuntimeEventType.missed,
@@ -173,10 +354,16 @@ class _FakePracticeRuntimeEngine implements PracticeRuntimeEngine {
   List<PracticeRuntimeEvent> drainEvents(int sessionId) => const [];
 
   @override
-  List<PracticeRuntimeEvent> pause(int sessionId) => const [];
+  List<PracticeRuntimeEvent> pause(int sessionId) {
+    pauseCount += 1;
+    return const [];
+  }
 
   @override
-  List<PracticeRuntimeEvent> resume(int sessionId) => const [];
+  List<PracticeRuntimeEvent> resume(int sessionId) {
+    resumeCount += 1;
+    return const [];
+  }
 
   @override
   PracticeRuntimeStop stop(int sessionId) {
@@ -229,6 +416,18 @@ const _timeline = PracticeRuntimeTimeline(
       expectedId: 'snare-1',
       laneId: 'snare',
       tMs: 500,
+      articulation: 'normal',
+    ),
+    PracticeRuntimeNote(
+      expectedId: 'snare-2',
+      laneId: 'snare',
+      tMs: 1000,
+      articulation: 'normal',
+    ),
+    PracticeRuntimeNote(
+      expectedId: 'crash-1',
+      laneId: 'crash',
+      tMs: 2500,
       articulation: 'normal',
     ),
   ],

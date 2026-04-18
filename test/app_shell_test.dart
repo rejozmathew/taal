@@ -112,6 +112,19 @@ void main() {
     expect(find.text('Settings for Ada.'), findsOneWidget);
     expect(find.byKey(const ValueKey('profile-switch-ben')), findsOneWidget);
   });
+
+  testWidgets('first run opens onboarding when no profiles exist', (
+    tester,
+  ) async {
+    await _pumpShell(
+      tester,
+      _FakeProfileStore(const rust_profiles.LocalProfileStateDto(profiles: [])),
+    );
+
+    expect(find.byKey(const ValueKey('onboarding-flow')), findsOneWidget);
+    expect(find.text('Welcome to Taal'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+  });
 }
 
 Future<void> _pumpShell(WidgetTester tester, AppShellProfileStore store) async {
@@ -154,6 +167,28 @@ class _FakeProfileStore implements AppShellProfileStore {
 
   @override
   rust_profiles.LocalProfileStateDto load() => _state;
+
+  @override
+  rust_profiles.LocalProfileStateDto createProfile({
+    required String name,
+    required String? avatar,
+    required rust_profiles.ProfileExperienceLevelDto experienceLevel,
+  }) {
+    final profile = rust_profiles.PlayerProfileDto(
+      id: 'new-player',
+      name: name,
+      avatar: avatar,
+      experienceLevel: experienceLevel,
+      preferredView: rust_profiles.ProfilePracticeViewDto.noteHighway,
+      createdAt: '2026-04-18T10:00:00Z',
+      updatedAt: '2026-04-18T10:00:00Z',
+    );
+    _state = rust_profiles.LocalProfileStateDto(
+      profiles: [profile],
+      activeProfileId: profile.id,
+    );
+    return _state;
+  }
 
   @override
   rust_profiles.LocalProfileStateDto switchProfile(String profileId) {

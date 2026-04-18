@@ -204,6 +204,9 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
 
   int? _sessionId;
   PracticeRuntimeTimeline? _timeline;
+  PracticeRuntimeMode? _mode;
+  double? _autoPauseFirstMissMs;
+  double? _autoPauseLastMissMs;
   final List<PracticeFeedbackMarker> _feedback = [];
 
   int? get sessionId => _sessionId;
@@ -236,6 +239,8 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     );
     _sessionId = start.sessionId;
     _timeline = start.timeline;
+    _mode = mode;
+    _resetAutoPauseMissWindow();
     _feedback.clear();
     controller.seekTo(0);
     notifyListeners();
@@ -248,6 +253,7 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     int? timestampNs,
   }) {
     final id = _requireSession();
+    _resumeFromAutoPauseIfNeeded(id);
     _applyEvents(
       engine.submitTouchHit(
         sessionId: id,
@@ -265,6 +271,7 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     int? timestampNs,
   }) {
     final id = _requireSession();
+    _resumeFromAutoPauseIfNeeded(id);
     _applyEvents(
       engine.submitMidiNoteOn(
         sessionId: id,
@@ -306,18 +313,21 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
 
   void pause() {
     final id = _requireSession();
+    _resetAutoPauseMissWindow();
     _applyEvents(engine.pause(id));
     controller.pause();
   }
 
   void resume() {
     final id = _requireSession();
+    _resetAutoPauseMissWindow();
     _applyEvents(engine.resume(id));
     controller.resume();
   }
 
   PracticeRuntimeStop stop() {
     final id = _requireSession();
+    _resetAutoPauseMissWindow();
     final result = engine.stop(id);
     _applyEvents(result.events);
     return result;
@@ -328,6 +338,8 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     if (id != null) {
       engine.disposeSession(id);
       _sessionId = null;
+      _mode = null;
+      _resetAutoPauseMissWindow();
       notifyListeners();
     }
   }
@@ -342,11 +354,16 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     return id;
   }
 
-  void _applyEvents(List<PracticeRuntimeEvent> events) {
+  void _applyEvents(
+    List<PracticeRuntimeEvent> events, {
+    bool allowAutoPause = true,
+  }) {
     var changed = false;
+    var shouldAutoPause = false;
     for (final event in events) {
       switch (event.type) {
         case PracticeRuntimeEventType.hitGraded:
+          _resetAutoPauseMissWindow();
           _feedback.add(
             PracticeFeedbackMarker(
               expectedId: event.expectedId!,
@@ -368,6 +385,9 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
               grade: NoteHighwayGrade.miss,
             ),
           );
+          if (allowAutoPause && _shouldAutoPauseAfterMiss(event)) {
+            shouldAutoPause = true;
+          }
           changed = true;
         case PracticeRuntimeEventType.encouragement:
           controller.setRuntimeFeedback(encouragementText: event.text);
@@ -383,6 +403,66 @@ class PracticeModeRuntimeAdapter extends ChangeNotifier {
     if (changed) {
       notifyListeners();
     }
+    if (shouldAutoPause) {
+      _triggerAutoPause();
+    }
+  }
+
+  bool _shouldAutoPauseAfterMiss(PracticeRuntimeEvent event) {
+    final config = controller.autoPauseConfig;
+    if (!config.enabled ||
+        _mode != PracticeRuntimeMode.practice ||
+        !controller.isRunning) {
+      return false;
+    }
+
+    final expectedId = event.expectedId;
+    final missMs = expectedId == null
+        ? event.tExpectedMs
+        : _timeline?.noteTimeMs(expectedId) ?? event.tExpectedMs;
+    if (missMs == null) {
+      return false;
+    }
+
+    final lastMissMs = _autoPauseLastMissMs;
+    if (lastMissMs == null ||
+        missMs < lastMissMs ||
+        missMs - lastMissMs > config.activeMissGapToleranceMs) {
+      _autoPauseFirstMissMs = missMs;
+    }
+    _autoPauseLastMissMs = missMs;
+
+    final firstMissMs = _autoPauseFirstMissMs ?? missMs;
+    return missMs - firstMissMs >= config.timeoutMs;
+  }
+
+  void _triggerAutoPause() {
+    final id = _sessionId;
+    final config = controller.autoPauseConfig;
+    if (id == null || !config.enabled || !controller.isRunning) {
+      return;
+    }
+
+    final pauseEvents = engine.pause(id);
+    if (controller.triggerAutoPause()) {
+      _resetAutoPauseMissWindow();
+      _applyEvents(pauseEvents, allowAutoPause: false);
+    }
+  }
+
+  void _resumeFromAutoPauseIfNeeded(int sessionId) {
+    if (!controller.autoPauseTriggered) {
+      return;
+    }
+    final resumeEvents = engine.resume(sessionId);
+    controller.resume();
+    _resetAutoPauseMissWindow();
+    _applyEvents(resumeEvents, allowAutoPause: false);
+  }
+
+  void _resetAutoPauseMissWindow() {
+    _autoPauseFirstMissMs = null;
+    _autoPauseLastMissMs = null;
   }
 }
 

@@ -24,6 +24,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings screen for profile, MIDI kit profile, manual latency, velocity curve, metronome, output device, display, auto-pause, and Practice Mode history preferences, backed by local Rust-owned persistence.
 - On-screen drum pads for no-kit practice, with touch and MIDI hits routed through the same Rust scoring session and feedback stream.
 - Practice habit tracking with per-profile streaks, daily goal progress, rolling weekly summaries, and display-only in-session goal progress.
+- Listen-first playback in Practice Mode, with whole-lesson or selected-section drum audio preview that follows the current tempo and scrolls the visual timeline without scoring.
+- Auto-pause in Practice Mode, with default-off settings, dense-miss inactivity detection, rest-aware behavior, and resume on the next touch or MIDI hit.
 
 ### Documentation
 - Complete product requirements (PRD v1.9) with 77 tasks across 4 phases

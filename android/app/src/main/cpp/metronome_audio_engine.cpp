@@ -27,6 +27,14 @@ bool IsSupportedPreset(const std::string& preset) {
   return preset == "classic" || preset == "woodblock" || preset == "hihat";
 }
 
+float NoiseAt(uint64_t seed) {
+  uint32_t value = static_cast<uint32_t>(seed * 1103515245ULL + 12345ULL);
+  value ^= value << 13;
+  value ^= value >> 17;
+  value ^= value << 5;
+  return (static_cast<float>(value & 0xffff) / 32768.0f) - 1.0f;
+}
+
 jstring ToJString(JNIEnv* env, const std::string& value) {
   if (value.empty()) {
     return nullptr;
@@ -107,15 +115,83 @@ class MetronomeAudioEngine {
     return "";
   }
 
+  std::string ScheduleDrumHits(
+      int64_t session_start_time_ns,
+      const std::vector<int64_t>& hit_times_ms,
+      const std::vector<std::string>& lane_ids,
+      const std::vector<uint8_t>& velocities,
+      const std::vector<std::string>& articulations) {
+    if (hit_times_ms.size() != lane_ids.size() ||
+        hit_times_ms.size() != velocities.size() ||
+        hit_times_ms.size() != articulations.size()) {
+      return "scheduled drum hit array length mismatch.";
+    }
+    const std::string stream_error = EnsureStream();
+    if (!stream_error.empty()) {
+      return stream_error;
+    }
+
+    std::vector<ScheduledDrumHit> parsed_hits;
+    parsed_hits.reserve(hit_times_ms.size());
+    for (size_t index = 0; index < hit_times_ms.size(); ++index) {
+      const int64_t t_ms = hit_times_ms[index];
+      if (t_ms < 0) {
+        return "Scheduled drum hit t_ms must be non-negative.";
+      }
+      if (lane_ids[index].empty()) {
+        return "Scheduled drum hit lane_id must be non-empty.";
+      }
+      if (velocities[index] == 0 || velocities[index] > 127) {
+        return "Scheduled drum hit velocity must be in 1..127.";
+      }
+      if (articulations[index].empty()) {
+        return "Scheduled drum hit articulation must be non-empty.";
+      }
+      if (t_ms > std::numeric_limits<int64_t>::max() / 1'000'000) {
+        return "Scheduled drum hit timestamp overflows int64 nanoseconds.";
+      }
+      const int64_t hit_offset_ns = t_ms * 1'000'000;
+      if (session_start_time_ns >
+          std::numeric_limits<int64_t>::max() - hit_offset_ns) {
+        return "Scheduled drum hit timestamp overflows int64 nanoseconds.";
+      }
+      const int64_t target_ns = session_start_time_ns + hit_offset_ns;
+      parsed_hits.push_back(ScheduledDrumHit{
+          FrameForTimestampNs(target_ns),
+          lane_ids[index],
+          articulations[index],
+          velocities[index],
+      });
+    }
+
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    scheduled_drum_hits_.insert(scheduled_drum_hits_.end(),
+                                parsed_hits.begin(),
+                                parsed_hits.end());
+    std::sort(scheduled_drum_hits_.begin(), scheduled_drum_hits_.end(),
+              [](const ScheduledDrumHit& left, const ScheduledDrumHit& right) {
+                return left.target_frame < right.target_frame;
+              });
+    return "";
+  }
+
   void Stop() {
     std::lock_guard<std::mutex> lock(state_mutex_);
     scheduled_clicks_.clear();
+    scheduled_drum_hits_.clear();
   }
 
  private:
   struct ScheduledClick {
     uint64_t target_frame;
     bool accent;
+  };
+
+  struct ScheduledDrumHit {
+    uint64_t target_frame;
+    std::string lane_id;
+    std::string articulation;
+    uint8_t velocity;
   };
 
   static aaudio_data_callback_result_t DataCallback(
@@ -179,6 +255,7 @@ class MetronomeAudioEngine {
       std::lock_guard<std::mutex> lock(state_mutex_);
       RenderSamplesForPreset(preset_);
       scheduled_clicks_.clear();
+      scheduled_drum_hits_.clear();
     }
     rendered_frames_.store(0);
 
@@ -214,16 +291,27 @@ class MetronomeAudioEngine {
           std::remove_if(scheduled_clicks_.begin(), scheduled_clicks_.end(),
                          [start_frame, sample_length](
                              const ScheduledClick& click) {
-                           return click.target_frame + sample_length <=
-                                  start_frame;
+                          return click.target_frame + sample_length <=
+                                 start_frame;
                          }),
           scheduled_clicks_.end());
+      scheduled_drum_hits_.erase(
+          std::remove_if(scheduled_drum_hits_.begin(),
+                         scheduled_drum_hits_.end(),
+                         [this, start_frame](const ScheduledDrumHit& hit) {
+                           return hit.target_frame + DrumSampleLengthFrames(hit) <=
+                                  start_frame;
+                         }),
+          scheduled_drum_hits_.end());
 
       for (int32_t frame_offset = 0; frame_offset < num_frames; ++frame_offset) {
         const uint64_t frame = start_frame + frame_offset;
         float sample = 0.0f;
         for (const auto& click : scheduled_clicks_) {
           sample += SampleAtFrame(click, frame);
+        }
+        for (const auto& hit : scheduled_drum_hits_) {
+          sample += DrumSampleAtFrame(hit, frame);
         }
         sample = std::clamp(sample * volume_, -1.0f, 1.0f);
         for (int32_t channel = 0; channel < channel_count_; ++channel) {
@@ -298,6 +386,82 @@ class MetronomeAudioEngine {
     return sample[static_cast<size_t>(offset)];
   }
 
+  uint64_t DrumSampleLengthFrames(const ScheduledDrumHit& hit) const {
+    double seconds = 0.18;
+    if (hit.lane_id == "kick") {
+      seconds = 0.24;
+    } else if (hit.lane_id == "hihat" && hit.articulation == "open") {
+      seconds = 0.30;
+    } else if (hit.lane_id == "hihat") {
+      seconds = 0.08;
+    } else if (hit.lane_id == "ride" || hit.lane_id == "crash") {
+      seconds = hit.lane_id == "crash" ? 0.42 : 0.30;
+    }
+    return static_cast<uint64_t>(sample_rate_ * seconds);
+  }
+
+  float DrumSampleAtFrame(const ScheduledDrumHit& hit, uint64_t frame) const {
+    if (frame < hit.target_frame) {
+      return 0.0f;
+    }
+
+    const uint64_t offset = frame - hit.target_frame;
+    if (offset >= DrumSampleLengthFrames(hit)) {
+      return 0.0f;
+    }
+
+    const double t = static_cast<double>(offset) / sample_rate_;
+    const float velocity_gain =
+        std::clamp(static_cast<float>(hit.velocity) / 127.0f, 0.0f, 1.0f);
+
+    if (hit.lane_id == "kick") {
+      const double pitch = 86.0 * std::exp(-t * 14.0) + 42.0;
+      const double envelope = std::exp(-t * 18.0);
+      return static_cast<float>(
+          0.95 * velocity_gain * std::sin(2.0 * kPi * pitch * t) * envelope);
+    }
+
+    if (hit.lane_id == "snare") {
+      const double body =
+          std::sin(2.0 * kPi * 185.0 * t) * std::exp(-t * 22.0);
+      const double noise = NoiseAt(offset + 17) * std::exp(-t * 30.0);
+      const double rim_boost = hit.articulation == "rim" ? 1.18 : 1.0;
+      return static_cast<float>(
+          velocity_gain * rim_boost * (0.36 * body + 0.62 * noise));
+    }
+
+    if (hit.lane_id == "hihat") {
+      const double decay = hit.articulation == "open" ? 8.5 : 48.0;
+      const double noise = NoiseAt(offset + 29) * std::exp(-t * decay);
+      const double tick =
+          std::sin(2.0 * kPi * 6900.0 * t) * std::exp(-t * 90.0);
+      return static_cast<float>(velocity_gain * (0.42 * noise + 0.18 * tick));
+    }
+
+    if (hit.lane_id == "ride" || hit.lane_id == "crash") {
+      const double decay = hit.lane_id == "crash" ? 6.0 : 9.0;
+      const double metallic =
+          std::sin(2.0 * kPi * 2600.0 * t) +
+          0.52 * std::sin(2.0 * kPi * 4100.0 * t) +
+          0.34 * std::sin(2.0 * kPi * 5800.0 * t);
+      const double noise = NoiseAt(offset + 43);
+      return static_cast<float>(
+          velocity_gain * (0.22 * metallic + 0.24 * noise) *
+          std::exp(-t * decay));
+    }
+
+    double tom_pitch = 140.0;
+    if (hit.lane_id == "tom_high") {
+      tom_pitch = 210.0;
+    } else if (hit.lane_id == "tom_floor") {
+      tom_pitch = 105.0;
+    }
+    const double tone =
+        std::sin(2.0 * kPi * tom_pitch * t) * std::exp(-t * 13.0);
+    const double attack = NoiseAt(offset + 59) * std::exp(-t * 50.0);
+    return static_cast<float>(velocity_gain * (0.72 * tone + 0.22 * attack));
+  }
+
   AAudioStream* stream_ = nullptr;
   std::atomic<uint64_t> rendered_frames_{0};
   int32_t sample_rate_ = 48000;
@@ -309,6 +473,7 @@ class MetronomeAudioEngine {
   std::vector<float> accent_sample_;
   std::vector<float> normal_sample_;
   std::vector<ScheduledClick> scheduled_clicks_;
+  std::vector<ScheduledDrumHit> scheduled_drum_hits_;
 };
 
 extern "C" JNIEXPORT jlong JNICALL
@@ -385,6 +550,86 @@ Java_dev_taal_taal_MetronomeAudioController_nativeScheduleClicks(
                             session_start_time_ns,
                             click_times,
                             accent_values));
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_dev_taal_taal_MetronomeAudioController_nativeScheduleDrumHits(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle,
+    jlong session_start_time_ns,
+    jlongArray hit_times_ms,
+    jobjectArray lane_ids,
+    jintArray velocities,
+    jobjectArray articulations) {
+  (void)thiz;
+  auto* engine = reinterpret_cast<MetronomeAudioEngine*>(handle);
+  if (engine == nullptr) {
+    return ToJString(env, "Native audio engine is not initialized.");
+  }
+
+  const jsize hit_count = env->GetArrayLength(hit_times_ms);
+  if (hit_count != env->GetArrayLength(lane_ids) ||
+      hit_count != env->GetArrayLength(velocities) ||
+      hit_count != env->GetArrayLength(articulations)) {
+    return ToJString(env, "scheduled drum hit array length mismatch.");
+  }
+
+  std::vector<int64_t> hit_times(static_cast<size_t>(hit_count));
+  std::vector<std::string> lane_values(static_cast<size_t>(hit_count));
+  std::vector<uint8_t> velocity_values(static_cast<size_t>(hit_count));
+  std::vector<std::string> articulation_values(static_cast<size_t>(hit_count));
+  std::vector<jlong> raw_hit_times(static_cast<size_t>(hit_count));
+  std::vector<jint> raw_velocities(static_cast<size_t>(hit_count));
+  env->GetLongArrayRegion(hit_times_ms, 0, hit_count, raw_hit_times.data());
+  env->GetIntArrayRegion(velocities, 0, hit_count, raw_velocities.data());
+
+  for (jsize index = 0; index < hit_count; ++index) {
+    hit_times[static_cast<size_t>(index)] = raw_hit_times[index];
+    const jint velocity = raw_velocities[index];
+    if (velocity < 1 || velocity > 127) {
+      return ToJString(env, "Scheduled drum hit velocity must be in 1..127.");
+    }
+    velocity_values[static_cast<size_t>(index)] =
+        static_cast<uint8_t>(velocity);
+
+    auto* lane_string = static_cast<jstring>(
+        env->GetObjectArrayElement(lane_ids, index));
+    auto* articulation_string = static_cast<jstring>(
+        env->GetObjectArrayElement(articulations, index));
+    if (lane_string == nullptr || articulation_string == nullptr) {
+      if (lane_string != nullptr) {
+        env->DeleteLocalRef(lane_string);
+      }
+      if (articulation_string != nullptr) {
+        env->DeleteLocalRef(articulation_string);
+      }
+      return ToJString(env, "Scheduled drum hit strings must be non-null.");
+    }
+
+    const char* lane_chars = env->GetStringUTFChars(lane_string, nullptr);
+    const char* articulation_chars =
+        env->GetStringUTFChars(articulation_string, nullptr);
+    lane_values[static_cast<size_t>(index)] =
+        lane_chars != nullptr ? lane_chars : "";
+    articulation_values[static_cast<size_t>(index)] =
+        articulation_chars != nullptr ? articulation_chars : "";
+    if (lane_chars != nullptr) {
+      env->ReleaseStringUTFChars(lane_string, lane_chars);
+    }
+    if (articulation_chars != nullptr) {
+      env->ReleaseStringUTFChars(articulation_string, articulation_chars);
+    }
+    env->DeleteLocalRef(lane_string);
+    env->DeleteLocalRef(articulation_string);
+  }
+
+  return ToJString(env, engine->ScheduleDrumHits(
+                            session_start_time_ns,
+                            hit_times,
+                            lane_values,
+                            velocity_values,
+                            articulation_values));
 }
 
 extern "C" JNIEXPORT void JNICALL

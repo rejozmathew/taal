@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taal/features/app_shell/practice_habit_store.dart';
+import 'package:taal/features/onboarding/onboarding_flow.dart';
 import 'package:taal/features/profiles/local_profile_store.dart';
 import 'package:taal/features/settings/settings_screen.dart';
 import 'package:taal/features/settings/settings_store.dart';
@@ -13,6 +14,12 @@ abstract class AppShellProfileStore {
   PracticeHabitStore get habitStore;
 
   rust_profiles.LocalProfileStateDto load();
+
+  rust_profiles.LocalProfileStateDto createProfile({
+    required String name,
+    required String? avatar,
+    required rust_profiles.ProfileExperienceLevelDto experienceLevel,
+  });
 
   rust_profiles.LocalProfileStateDto switchProfile(String profileId);
 }
@@ -119,6 +126,21 @@ class _TaalAppShellState extends State<TaalAppShell> {
     final profileState =
         _profileState ?? const rust_profiles.LocalProfileStateDto(profiles: []);
     final activeProfile = _activeProfile(profileState);
+    final store = _store;
+
+    if (store != null && profileState.profiles.isEmpty) {
+      return OnboardingFlow(
+        onCreateProfile:
+            ({required name, required avatar, required experienceLevel}) async {
+              return store.createProfile(
+                name: name,
+                avatar: avatar,
+                experienceLevel: experienceLevel,
+              );
+            },
+        onComplete: _setProfileState,
+      );
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -358,6 +380,19 @@ class _LocalAppShellProfileStore implements AppShellProfileStore {
 
   @override
   rust_profiles.LocalProfileStateDto load() => _delegate.load();
+
+  @override
+  rust_profiles.LocalProfileStateDto createProfile({
+    required String name,
+    required String? avatar,
+    required rust_profiles.ProfileExperienceLevelDto experienceLevel,
+  }) {
+    return _delegate.createProfile(
+      name: name,
+      avatar: avatar,
+      experienceLevel: experienceLevel,
+    );
+  }
 
   @override
   rust_profiles.LocalProfileStateDto switchProfile(String profileId) {

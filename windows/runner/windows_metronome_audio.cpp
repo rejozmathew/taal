@@ -75,6 +75,14 @@ bool IsSupportedPreset(const std::string& preset) {
   return preset == "classic" || preset == "woodblock" || preset == "hihat";
 }
 
+float NoiseAt(uint64_t seed) {
+  uint32_t value = static_cast<uint32_t>(seed * 1103515245ULL + 12345ULL);
+  value ^= value << 13;
+  value ^= value >> 17;
+  value ^= value << 5;
+  return (static_cast<float>(value & 0xffff) / 32768.0f) - 1.0f;
+}
+
 }  // namespace
 
 WindowsMetronomeAudio::WindowsMetronomeAudio(
@@ -123,6 +131,21 @@ void WindowsMetronomeAudio::RegisterMethodChannel(
             return;
           }
           const std::string error = ScheduleClicks(*map);
+          if (!error.empty()) {
+            result->Error("audio_schedule_failed", error);
+            return;
+          }
+          result->Success(flutter::EncodableValue(true));
+          return;
+        }
+
+        if (call.method_name() == "scheduleDrumHits") {
+          if (!map) {
+            result->Error("invalid_argument",
+                          "scheduleDrumHits expects a map argument.");
+            return;
+          }
+          const std::string error = ScheduleDrumHits(*map);
           if (!error.empty()) {
             result->Error("audio_schedule_failed", error);
             return;
@@ -232,9 +255,93 @@ std::string WindowsMetronomeAudio::ScheduleClicks(
   return "";
 }
 
+std::string WindowsMetronomeAudio::ScheduleDrumHits(
+    const flutter::EncodableMap& arguments) {
+  const std::string stream_error = EnsureStream();
+  if (!stream_error.empty()) {
+    return stream_error;
+  }
+
+  const auto* start_value = MapValue(arguments, "session_start_time_ns");
+  int64_t session_start_time_ns = 0;
+  if (!start_value || !ValueToInt64(*start_value, &session_start_time_ns)) {
+    return "scheduleDrumHits.session_start_time_ns must be an integer.";
+  }
+
+  const auto* hits_value = MapValue(arguments, "hits");
+  const auto* hits =
+      hits_value ? std::get_if<flutter::EncodableList>(hits_value) : nullptr;
+  if (!hits) {
+    return "scheduleDrumHits.hits must be a list.";
+  }
+
+  std::vector<ScheduledDrumHit> parsed_hits;
+  parsed_hits.reserve(hits->size());
+  for (const auto& hit_value : *hits) {
+    const auto* hit = std::get_if<flutter::EncodableMap>(&hit_value);
+    if (!hit) {
+      return "Each scheduled drum hit must be a map.";
+    }
+
+    const auto* t_ms_value = MapValue(*hit, "t_ms");
+    int64_t t_ms = 0;
+    if (!t_ms_value || !ValueToInt64(*t_ms_value, &t_ms) || t_ms < 0) {
+      return "Each scheduled drum hit needs a non-negative t_ms.";
+    }
+
+    std::string lane_id;
+    const auto* lane_value = MapValue(*hit, "lane_id");
+    if (!lane_value || !ValueToString(*lane_value, &lane_id) ||
+        lane_id.empty()) {
+      return "Each scheduled drum hit needs a lane_id.";
+    }
+
+    int64_t velocity = 0;
+    const auto* velocity_value = MapValue(*hit, "velocity");
+    if (!velocity_value || !ValueToInt64(*velocity_value, &velocity) ||
+        velocity < 1 || velocity > 127) {
+      return "Each scheduled drum hit needs velocity in 1..127.";
+    }
+
+    std::string articulation = "normal";
+    if (const auto* articulation_value = MapValue(*hit, "articulation")) {
+      if (!ValueToString(*articulation_value, &articulation) ||
+          articulation.empty()) {
+        return "Scheduled drum hit articulation must be a non-empty string.";
+      }
+    }
+
+    if (t_ms > std::numeric_limits<int64_t>::max() / 1'000'000) {
+      return "Scheduled drum hit timestamp overflows int64 nanoseconds.";
+    }
+    const int64_t hit_offset_ns = t_ms * 1'000'000;
+    if (session_start_time_ns >
+        std::numeric_limits<int64_t>::max() - hit_offset_ns) {
+      return "Scheduled drum hit timestamp overflows int64 nanoseconds.";
+    }
+    const int64_t target_ns = session_start_time_ns + hit_offset_ns;
+    parsed_hits.push_back(ScheduledDrumHit{
+        FrameForTimestampNs(target_ns),
+        lane_id,
+        articulation,
+        static_cast<uint8_t>(velocity),
+    });
+  }
+
+  std::lock_guard<std::mutex> lock(state_mutex_);
+  scheduled_drum_hits_.insert(scheduled_drum_hits_.end(), parsed_hits.begin(),
+                              parsed_hits.end());
+  std::sort(scheduled_drum_hits_.begin(), scheduled_drum_hits_.end(),
+            [](const ScheduledDrumHit& left, const ScheduledDrumHit& right) {
+              return left.target_frame < right.target_frame;
+            });
+  return "";
+}
+
 void WindowsMetronomeAudio::Stop() {
   std::lock_guard<std::mutex> lock(state_mutex_);
   scheduled_clicks_.clear();
+  scheduled_drum_hits_.clear();
 }
 
 std::string WindowsMetronomeAudio::EnsureStream() {
@@ -358,6 +465,7 @@ std::string WindowsMetronomeAudio::InitializeStream() {
     std::lock_guard<std::mutex> lock(state_mutex_);
     RenderSamplesForPreset(preset_);
     scheduled_clicks_.clear();
+    scheduled_drum_hits_.clear();
   }
   rendered_frames_.store(0);
 
@@ -461,12 +569,23 @@ void WindowsMetronomeAudio::MixClickBuffer(uint8_t* buffer,
                          return click.target_frame + sample_length <= start_frame;
                        }),
         scheduled_clicks_.end());
+    scheduled_drum_hits_.erase(
+        std::remove_if(scheduled_drum_hits_.begin(),
+                       scheduled_drum_hits_.end(),
+                       [this, start_frame](const ScheduledDrumHit& hit) {
+                         return hit.target_frame + DrumSampleLengthFrames(hit) <=
+                                start_frame;
+                       }),
+        scheduled_drum_hits_.end());
 
     for (uint32_t frame_offset = 0; frame_offset < frame_count; ++frame_offset) {
       const uint64_t frame = start_frame + frame_offset;
       float sample = 0.0f;
       for (const auto& click : scheduled_clicks_) {
         sample += SampleAtFrame(click, frame);
+      }
+      for (const auto& hit : scheduled_drum_hits_) {
+        sample += DrumSampleAtFrame(hit, frame);
       }
       sample = std::clamp(sample * volume_, -1.0f, 1.0f);
 
@@ -557,4 +676,81 @@ float WindowsMetronomeAudio::SampleAtFrame(const ScheduledClick& click,
     return 0.0f;
   }
   return sample[static_cast<size_t>(offset)];
+}
+
+uint64_t WindowsMetronomeAudio::DrumSampleLengthFrames(
+    const ScheduledDrumHit& hit) const {
+  double seconds = 0.18;
+  if (hit.lane_id == "kick") {
+    seconds = 0.24;
+  } else if (hit.lane_id == "hihat" && hit.articulation == "open") {
+    seconds = 0.30;
+  } else if (hit.lane_id == "hihat") {
+    seconds = 0.08;
+  } else if (hit.lane_id == "ride" || hit.lane_id == "crash") {
+    seconds = hit.lane_id == "crash" ? 0.42 : 0.30;
+  }
+  return static_cast<uint64_t>(sample_rate_ * seconds);
+}
+
+float WindowsMetronomeAudio::DrumSampleAtFrame(
+    const ScheduledDrumHit& hit,
+    uint64_t frame) const {
+  if (frame < hit.target_frame) {
+    return 0.0f;
+  }
+
+  const uint64_t offset = frame - hit.target_frame;
+  if (offset >= DrumSampleLengthFrames(hit)) {
+    return 0.0f;
+  }
+
+  const double t = static_cast<double>(offset) / sample_rate_;
+  const float velocity_gain =
+      std::clamp(static_cast<float>(hit.velocity) / 127.0f, 0.0f, 1.0f);
+
+  if (hit.lane_id == "kick") {
+    const double pitch = 86.0 * std::exp(-t * 14.0) + 42.0;
+    const double envelope = std::exp(-t * 18.0);
+    return static_cast<float>(
+        0.95 * velocity_gain * std::sin(2.0 * kPi * pitch * t) * envelope);
+  }
+
+  if (hit.lane_id == "snare") {
+    const double body = std::sin(2.0 * kPi * 185.0 * t) * std::exp(-t * 22.0);
+    const double noise = NoiseAt(offset + 17) * std::exp(-t * 30.0);
+    const double rim_boost = hit.articulation == "rim" ? 1.18 : 1.0;
+    return static_cast<float>(
+        velocity_gain * rim_boost * (0.36 * body + 0.62 * noise));
+  }
+
+  if (hit.lane_id == "hihat") {
+    const double decay = hit.articulation == "open" ? 8.5 : 48.0;
+    const double noise = NoiseAt(offset + 29) * std::exp(-t * decay);
+    const double tick = std::sin(2.0 * kPi * 6900.0 * t) * std::exp(-t * 90.0);
+    return static_cast<float>(velocity_gain * (0.42 * noise + 0.18 * tick));
+  }
+
+  if (hit.lane_id == "ride" || hit.lane_id == "crash") {
+    const double decay = hit.lane_id == "crash" ? 6.0 : 9.0;
+    const double metallic =
+        std::sin(2.0 * kPi * 2600.0 * t) +
+        0.52 * std::sin(2.0 * kPi * 4100.0 * t) +
+        0.34 * std::sin(2.0 * kPi * 5800.0 * t);
+    const double noise = NoiseAt(offset + 43);
+    return static_cast<float>(
+        velocity_gain * (0.22 * metallic + 0.24 * noise) *
+        std::exp(-t * decay));
+  }
+
+  double tom_pitch = 140.0;
+  if (hit.lane_id == "tom_high") {
+    tom_pitch = 210.0;
+  } else if (hit.lane_id == "tom_floor") {
+    tom_pitch = 105.0;
+  }
+  const double tone =
+      std::sin(2.0 * kPi * tom_pitch * t) * std::exp(-t * 13.0);
+  const double attack = NoiseAt(offset + 59) * std::exp(-t * 50.0);
+  return static_cast<float>(velocity_gain * (0.72 * tone + 0.22 * attack));
 }

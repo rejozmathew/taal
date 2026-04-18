@@ -119,6 +119,12 @@ class _FakeMetronomeAudioOutput implements MetronomeAudioOutput {
   }
 
   @override
+  Future<void> scheduleDrumHits({
+    required int sessionStartTimeNs,
+    required List<ScheduledDrumHit> hits,
+  }) async {}
+
+  @override
   Future<void> stop() async {}
 }
 

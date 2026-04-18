@@ -60,6 +60,43 @@ void main() {
     });
   });
 
+  test('scheduleDrumHits serializes session origin and hit list', () async {
+    final output = PlatformMetronomeAudioOutput(channel: channel);
+
+    await output.scheduleDrumHits(
+      sessionStartTimeNs: 987654321,
+      hits: const [
+        ScheduledDrumHit(tMs: 0, laneId: 'kick', velocity: 110),
+        ScheduledDrumHit(
+          tMs: 250,
+          laneId: 'hihat',
+          velocity: 82,
+          articulation: 'open',
+        ),
+      ],
+    );
+
+    expect(calls, hasLength(1));
+    expect(calls.single.method, 'scheduleDrumHits');
+    expect(calls.single.arguments, {
+      'session_start_time_ns': 987654321,
+      'hits': [
+        {
+          't_ms': 0,
+          'lane_id': 'kick',
+          'velocity': 110,
+          'articulation': 'normal',
+        },
+        {
+          't_ms': 250,
+          'lane_id': 'hihat',
+          'velocity': 82,
+          'articulation': 'open',
+        },
+      ],
+    });
+  });
+
   test('configure rejects volume outside 0 to 1', () async {
     final output = PlatformMetronomeAudioOutput(channel: channel);
 

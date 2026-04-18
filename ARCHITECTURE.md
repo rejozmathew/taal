@@ -22,8 +22,8 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Flutter notation view widget | `lib/features/player/notation/`, `test/notation_view_test.dart` | Implemented (P1-10 drum-staff painter, standard 5-piece lane placements, scrolling/page display geometry, grade-colored hit markers) |
 | Flutter visual drum kit widget | `lib/features/player/drum_kit/`, `test/drum_kit_test.dart` | Implemented (P1-11 overhead kit painter, standard 5-piece pad geometry, custom layout adaptation, grade-colored hit flashes) |
 | Flutter on-screen tap pads | `lib/features/player/tap_pads/`, `test/tap_pad_surface_test.dart` | Implemented (P1-23 touch-responsive no-kit drum-pad input surface with tablet-sized targets, lane filtering, fixed velocity, and guidance to connect a kit for the best experience) |
-| Flutter Practice Mode screen | `lib/features/player/practice_mode/`, `test/practice_mode_screen_test.dart` | Implemented (P1-12 transport, tempo, metronome/loop controls, A-B loop state, combo/encouragement display, switchable practice views; P1-24 display-only daily-goal progress from in-memory session elapsed time) |
-| Flutter Practice runtime input adapter | `lib/features/player/practice_runtime/`, `rust/src/api/practice_runtime.rs`, `test/practice_runtime_adapter_test.dart`, `test/practice_runtime_bridge_test.dart` | Implemented (P1-23 bridge/orchestration for compiled Rust sessions, source-neutral touch hits, MIDI-derived hits through `MidiMapper`, event draining, and Practice Mode feedback adaptation without Flutter-owned scoring) |
+| Flutter Practice Mode screen | `lib/features/player/practice_mode/`, `test/practice_mode_screen_test.dart` | Implemented (P1-12 transport, tempo, metronome/loop controls, A-B loop state, combo/encouragement display, switchable practice views; P1-24 display-only daily-goal progress from in-memory session elapsed time; P1-25 listen-first playback controls and visual timeline advancement without scoring; P1-26 auto-pause state and resume prompt) |
+| Flutter Practice runtime input adapter | `lib/features/player/practice_runtime/`, `rust/src/api/practice_runtime.rs`, `test/practice_runtime_adapter_test.dart`, `test/practice_runtime_bridge_test.dart` | Implemented (P1-23 bridge/orchestration for compiled Rust sessions, source-neutral touch hits, MIDI-derived hits through `MidiMapper`, event draining, and Practice Mode feedback adaptation without Flutter-owned scoring; P1-26 Practice Mode auto-pause from Rust miss/hit events and resume-on-next-hit behavior) |
 | Flutter Play Mode screen | `lib/features/player/play_mode/`, `test/play_mode_screen_test.dart` | Implemented (P1-13 locked-tempo scored runs, count-in, review handoff, and post-run attempt recording hook) |
 | Flutter post-lesson review screen | `lib/features/player/review/`, `test/post_lesson_review_screen_test.dart` | Implemented (P1-14 score/accuracy summary, timing histogram, lane breakdown, best-stat highlight, improvement suggestions, review actions) |
 | Rust core engine | `rust/` | Partial (Phase 0 bridge API + runtime session; P1-01 content parsing/validation; P1-02 time indexing/conversion; P1-03 lesson compilation; P1-04 session lifecycle; P1-05 scoring; P1-06 MIDI mapping; P1-16 local profile persistence; P1-08 device profile persistence; P1-21 practice attempt persistence; P1-20 settings persistence; P1-23 Practice runtime bridge; P1-24 habit snapshot read model) |
@@ -46,9 +46,9 @@ What currently exists in this repo (updated as code lands). Status is one of: **
 | Android MIDI adapter | `android/app/src/main/kotlin/dev/taal/taal/MainActivity.kt`, `lib/platform/midi/android_midi_adapter.dart`, `native/android/` | Implemented (Phase 0 NoteOn capture and latency benchmark validated) |
 | Android latency artifact export | `android/app/src/main/kotlin/dev/taal/taal/MainActivity.kt`, `lib/platform/latency/` | Implemented (writes Phase 0 CSV/report to Android Downloads via MediaStore) |
 | CI pipeline | `.github/workflows/ci.yml` | Implemented (Rust + Flutter checks/builds, locally validated) |
-| Metronome audio output | `lib/platform/audio/`, `windows/runner/windows_metronome_audio.*`, `android/app/src/main/kotlin/dev/taal/taal/MetronomeAudioController.kt`, `android/app/src/main/cpp/` | Implemented (P1-15 scheduled native click playback through WASAPI on Windows and AAudio on Android) |
+| Metronome audio output | `lib/platform/audio/`, `windows/runner/windows_metronome_audio.*`, `android/app/src/main/kotlin/dev/taal/taal/MetronomeAudioController.kt`, `android/app/src/main/cpp/` | Implemented (P1-15 scheduled native click playback through WASAPI on Windows and AAudio on Android; P1-25 scheduled synthesized drum-hit playback for listen-first mode through the same audio stream) |
 | SQLite persistence | `rust/src/storage/` | Partial (P1-16 local profiles, P1-08 device profiles, P1-21 practice attempts, P1-20 settings/preferences, and P1-24 derived habit snapshots implemented) |
-| Practice views | `lib/features/player/` | Partial (P1-09 note-highway, P1-10 notation, P1-11 visual drum kit, P1-12 Practice Mode screen, P1-14 review, P1-13 Play Mode screen, and P1-23 tap pads/runtime input adapter implemented; later player capabilities still planned) |
+| Practice views | `lib/features/player/` | Partial (P1-09 note-highway, P1-10 notation, P1-11 visual drum kit, P1-12 Practice Mode screen, P1-14 review, P1-13 Play Mode screen, P1-23 tap pads/runtime input adapter, P1-25 listen-first playback, and P1-26 auto-pause implemented; later player capabilities still planned) |
 | Lesson Editor | `lib/features/studio/` | Planned (Phase 2) |
 | Course Designer | `lib/features/studio/` | Planned (Phase 2) |
 | Pack Builder | `lib/features/studio/` | Planned (Phase 2) |
@@ -451,6 +451,24 @@ Practice Mode consumes prepared timeline notes and engine feedback markers as in
 
 Active-session daily-goal progress is composed in Flutter from a persisted `PracticeHabitSnapshot.today_minutes_completed` value plus `PracticeModeController.activeSessionElapsedMs`. It is presentation state only; the next persisted practice minutes come from the normal post-session `PracticeAttempt` write.
 
+P1-25 listen-first playback is a Practice Mode presentation/audio path, not a Rust scoring session. Flutter derives the listen range from either the whole lesson or the selected section/manual A-B range, scales timeline note offsets by `baseBpm / currentTempoBpm`, and sends scheduled drum hits to the existing native metronome audio channel. The same `PracticeModeController` advances the note-highway or notation timeline in `listening` state, but it does not submit hits, tick a Rust session, record feedback markers, update combos, or count listen time toward the active daily-goal session timer.
+
+```
+Practice Mode timeline notes + selected listen range + current tempo
+       |
+PracticeListenPlayback
+       - builds ScheduledDrumHit values from lane_id/articulation/t_ms
+       - calls MetronomeAudioOutput.scheduleDrumHits(...)
+       |
+Native metronome audio stream
+       - Windows: WASAPI renderer mixes scheduled drum voices with clicks
+       - Android: AAudio renderer mixes scheduled drum voices with clicks
+       |
+PracticeModeController listening state
+       - advances visual timeline only
+       - no Rust Session::on_hit/tick and no scoring side effects
+```
+
 P1-23's runtime input adapter has two input paths that converge before scoring:
 
 ```
@@ -466,6 +484,23 @@ InputHit -> Rust Session::on_hit -> EngineEvent stream -> Practice Mode feedback
 ```
 
 The Rust bridge owns session handles through a bridge-local registry keyed by Flutter-held session IDs. It also owns optional `MidiMapper` state so MIDI dedupe, calibration offset, hi-hat CC state, and note-to-lane mapping stay in Rust. The Dart adapter starts/stops sessions, submits touch/MIDI input, ticks/drains events, and maps Rust event JSON into existing `PracticeFeedbackMarker` values for rendering. It does not compute grades, score, combo, misses, or attempt summaries in Flutter.
+
+P1-26 auto-pause uses the existing P1-20 profile settings fields (`auto_pause_enabled`, `auto_pause_timeout_ms`) and stays scoped to Practice Mode. The runtime adapter watches Rust `Missed` events to detect sustained inactivity only while expected notes are actually being missed. A long gap between missed expected notes resets the inactivity chain, so intentional rests do not trigger auto-pause. When the configured timeout is reached, the adapter calls the Rust runtime `pause` bridge and moves `PracticeModeController` to an auto-paused state with a "Paused - tap any pad to resume" prompt. The next touch or MIDI NoteOn resumes the Rust session before the hit is forwarded into `Session::on_hit`.
+
+```
+Rust Session tick -> EngineEvent::Missed stream
+       |
+PracticeModeRuntimeAdapter
+       - counts dense missed expected-note passages
+       - resets on HitGraded events and long miss gaps
+       - ignores non-Practice modes
+       |
+Rust practice_runtime pause(session_id)
+       |
+PracticeModeController auto-paused UI state
+       |
+Next touch/MIDI hit -> Rust practice_runtime resume(session_id) -> Session::on_hit
+```
 
 The P1-13 Play Mode screen reuses the same practice-view renderers for scored assessment runs. It removes Practice Mode's operator controls that would change assessment conditions: no pause/resume, no tempo slider, no metronome toggle, and no A-B loop controls.
 

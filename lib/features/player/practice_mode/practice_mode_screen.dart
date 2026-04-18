@@ -1,10 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:taal/features/player/drum_kit/drum_kit.dart';
 import 'package:taal/features/player/notation/notation_view.dart';
 import 'package:taal/features/player/note_highway/note_highway.dart';
 import 'package:taal/features/player/tap_pads/tap_pad_surface.dart';
+import 'package:taal/platform/audio/metronome_audio.dart';
+import 'package:taal/src/rust/api/simple.dart';
 
 class PracticeModeScreen extends StatefulWidget {
   const PracticeModeScreen({
@@ -16,6 +19,7 @@ class PracticeModeScreen extends StatefulWidget {
     this.kitPads = standardFivePieceDrumKitPads,
     this.tapPadInput,
     this.dailyGoalProgress,
+    this.listenPlayback,
   });
 
   final PracticeModeController controller;
@@ -25,16 +29,23 @@ class PracticeModeScreen extends StatefulWidget {
   final List<VisualDrumKitPad> kitPads;
   final PracticeTapPadInput? tapPadInput;
   final DailyGoalProgress? dailyGoalProgress;
+  final PracticeListenPlayback? listenPlayback;
 
   @override
   State<PracticeModeScreen> createState() => _PracticeModeScreenState();
 }
 
-class _PracticeModeScreenState extends State<PracticeModeScreen> {
+class _PracticeModeScreenState extends State<PracticeModeScreen>
+    with SingleTickerProviderStateMixin {
+  late final Ticker _ticker;
+  Duration? _lastTickElapsed;
+
   @override
   void initState() {
     super.initState();
+    _ticker = createTicker(_onTick);
     widget.controller.addListener(_onControllerChanged);
+    _syncTicker();
   }
 
   @override
@@ -43,19 +54,42 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_onControllerChanged);
       widget.controller.addListener(_onControllerChanged);
+      _syncTicker();
     }
   }
 
   @override
   void dispose() {
     widget.controller.removeListener(_onControllerChanged);
+    _ticker.dispose();
     super.dispose();
   }
 
   void _onControllerChanged() {
     if (mounted) {
+      _syncTicker();
       setState(() {});
     }
+  }
+
+  void _syncTicker() {
+    final shouldTick = widget.controller.isTimelineAdvancing;
+    if (shouldTick && !_ticker.isActive) {
+      _lastTickElapsed = null;
+      _ticker.start();
+    } else if (!shouldTick && _ticker.isActive) {
+      _ticker.stop();
+      _lastTickElapsed = null;
+    }
+  }
+
+  void _onTick(Duration elapsed) {
+    final previous = _lastTickElapsed;
+    _lastTickElapsed = elapsed;
+    if (previous == null) {
+      return;
+    }
+    widget.controller.advanceBy(elapsed - previous);
   }
 
   @override
@@ -68,6 +102,9 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
         _PracticeTransportBar(
           controller: controller,
           dailyGoalProgress: widget.dailyGoalProgress,
+          listenPlayback:
+              widget.listenPlayback ?? const PracticeListenPlayback(),
+          notes: widget.notes,
         ),
         Expanded(
           child: Padding(
@@ -100,9 +137,27 @@ class _PracticeModeScreenState extends State<PracticeModeScreen> {
   }
 }
 
-enum PracticeTransportState { stopped, running, paused }
+enum PracticeTransportState { stopped, running, paused, listening }
 
 enum PracticeDisplayView { noteHighway, notation, drumKit }
+
+enum PracticeListenScope { wholeLesson, selectedRange }
+
+class PracticeAutoPauseConfig {
+  const PracticeAutoPauseConfig({
+    this.enabled = false,
+    this.timeoutMs = 3000,
+    this.activeMissGapToleranceMs = 1000,
+  }) : assert(timeoutMs > 0, 'timeoutMs must be positive'),
+       assert(
+         activeMissGapToleranceMs > 0,
+         'activeMissGapToleranceMs must be positive',
+       );
+
+  final bool enabled;
+  final int timeoutMs;
+  final double activeMissGapToleranceMs;
+}
 
 class PracticeTapPadInput {
   const PracticeTapPadInput({
@@ -116,6 +171,86 @@ class PracticeTapPadInput {
   final Set<String>? enabledLaneIds;
   final int velocity;
   final ValueChanged<TapPadHit> onPadHit;
+}
+
+class PracticeListenRange {
+  const PracticeListenRange({required this.startMs, required this.endMs})
+    : assert(startMs >= 0, 'listen range start must be non-negative'),
+      assert(endMs > startMs, 'listen range end must be after start');
+
+  final double startMs;
+  final double endMs;
+}
+
+class PracticeListenPlayback {
+  const PracticeListenPlayback({
+    MetronomeAudioOutput? audioOutput,
+    int Function()? clockNowNs,
+  }) : _audioOutput = audioOutput,
+       _clockNowNs = clockNowNs;
+
+  final MetronomeAudioOutput? _audioOutput;
+  final int Function()? _clockNowNs;
+
+  Future<void> toggle({
+    required PracticeModeController controller,
+    required List<PracticeTimelineNote> notes,
+  }) async {
+    if (controller.isListening) {
+      await stop(controller);
+      return;
+    }
+    await start(controller: controller, notes: notes);
+  }
+
+  Future<void> start({
+    required PracticeModeController controller,
+    required List<PracticeTimelineNote> notes,
+  }) async {
+    final output = _audioOutput ?? PlatformMetronomeAudioOutput();
+    final range = controller.listenRange;
+    final startTimeNs = (_clockNowNs ?? phase0LatencyClockNs)();
+    await output.stop();
+    await output.scheduleDrumHits(
+      sessionStartTimeNs: startTimeNs,
+      hits: scheduledHitsFor(
+        notes: notes,
+        range: range,
+        baseBpm: controller.baseBpm,
+        tempoBpm: controller.tempoBpm,
+      ),
+    );
+    controller.beginListening(startMs: range.startMs, endMs: range.endMs);
+  }
+
+  Future<void> stop(PracticeModeController controller) async {
+    final output = _audioOutput ?? PlatformMetronomeAudioOutput();
+    await output.stop();
+    controller.stopListening();
+  }
+
+  static List<ScheduledDrumHit> scheduledHitsFor({
+    required List<PracticeTimelineNote> notes,
+    required PracticeListenRange range,
+    required double baseBpm,
+    required double tempoBpm,
+  }) {
+    if (baseBpm <= 0 || tempoBpm <= 0) {
+      throw ArgumentError('baseBpm and tempoBpm must be positive');
+    }
+    final tempoScale = baseBpm / tempoBpm;
+    return notes
+        .where((note) => note.tMs >= range.startMs && note.tMs < range.endMs)
+        .map(
+          (note) => ScheduledDrumHit(
+            tMs: ((note.tMs - range.startMs) * tempoScale).round(),
+            laneId: note.laneId,
+            velocity: 96,
+            articulation: note.articulation,
+          ),
+        )
+        .toList(growable: false);
+  }
 }
 
 class DailyGoalProgress {
@@ -193,12 +328,14 @@ class PracticeModeController extends ChangeNotifier {
     double? initialTempoBpm,
     double minTempoBpm = 40,
     double maxTempoBpm = 240,
+    PracticeAutoPauseConfig autoPauseConfig = const PracticeAutoPauseConfig(),
   }) : assert(baseBpm > 0, 'baseBpm must be positive'),
        assert(totalDurationMs > 0, 'totalDurationMs must be positive'),
        _sections = List.unmodifiable(sections),
        _tempoBpm = initialTempoBpm ?? baseBpm,
        _minTempoBpm = minTempoBpm,
-       _maxTempoBpm = maxTempoBpm {
+       _maxTempoBpm = maxTempoBpm,
+       _autoPauseConfig = autoPauseConfig {
     final firstSection = _sections
         .where((section) => section.loopable)
         .firstOrNull;
@@ -220,9 +357,14 @@ class PracticeModeController extends ChangeNotifier {
   double? _tempoChangeEffectiveAtMs;
   bool _metronomeEnabled = true;
   bool _loopEnabled = false;
+  PracticeListenScope _listenScope = PracticeListenScope.wholeLesson;
   String? _selectedSectionId;
   late double _loopStartMs;
   late double _loopEndMs;
+  double _listenStartMs = 0;
+  double _listenEndMs = 0;
+  PracticeAutoPauseConfig _autoPauseConfig;
+  bool _autoPauseTriggered = false;
   int _combo = 0;
   String? _encouragementText;
   double _activeSessionElapsedMs = 0;
@@ -245,11 +387,21 @@ class PracticeModeController extends ChangeNotifier {
 
   bool get loopEnabled => _loopEnabled;
 
+  PracticeListenScope get listenScope => _listenScope;
+
   String? get selectedSectionId => _selectedSectionId;
 
   double get loopStartMs => _loopStartMs;
 
   double get loopEndMs => _loopEndMs;
+
+  double get listenStartMs => _listenStartMs;
+
+  double get listenEndMs => _listenEndMs;
+
+  PracticeAutoPauseConfig get autoPauseConfig => _autoPauseConfig;
+
+  bool get autoPauseTriggered => _autoPauseTriggered;
 
   int get combo => _combo;
 
@@ -263,10 +415,27 @@ class PracticeModeController extends ChangeNotifier {
 
   bool get isPaused => _transportState == PracticeTransportState.paused;
 
+  bool get isListening => _transportState == PracticeTransportState.listening;
+
+  bool get isTimelineAdvancing => isRunning || isListening;
+
+  PracticeListenRange get listenRange {
+    switch (_listenScope) {
+      case PracticeListenScope.wholeLesson:
+        return PracticeListenRange(startMs: 0, endMs: totalDurationMs);
+      case PracticeListenScope.selectedRange:
+        return PracticeListenRange(startMs: _loopStartMs, endMs: _loopEndMs);
+    }
+  }
+
   void play() {
     if (_transportState == PracticeTransportState.running) {
       return;
     }
+    if (_transportState == PracticeTransportState.listening) {
+      return;
+    }
+    _autoPauseTriggered = false;
     _transportState = PracticeTransportState.running;
     notifyListeners();
   }
@@ -283,6 +452,7 @@ class PracticeModeController extends ChangeNotifier {
     if (_transportState != PracticeTransportState.paused) {
       return;
     }
+    _autoPauseTriggered = false;
     _transportState = PracticeTransportState.running;
     notifyListeners();
   }
@@ -290,10 +460,13 @@ class PracticeModeController extends ChangeNotifier {
   void togglePlayPause() {
     switch (_transportState) {
       case PracticeTransportState.stopped:
-      case PracticeTransportState.paused:
         play();
+      case PracticeTransportState.paused:
+        resume();
       case PracticeTransportState.running:
         pause();
+      case PracticeTransportState.listening:
+        return;
     }
   }
 
@@ -327,6 +500,22 @@ class PracticeModeController extends ChangeNotifier {
     _loopEnabled = enabled;
     if (_loopEnabled && _currentTimeMs < _loopStartMs) {
       _currentTimeMs = _loopStartMs;
+    }
+    notifyListeners();
+  }
+
+  void setListenScope(PracticeListenScope scope) {
+    if (_listenScope == scope) {
+      return;
+    }
+    _listenScope = scope;
+    notifyListeners();
+  }
+
+  void setAutoPauseConfig(PracticeAutoPauseConfig config) {
+    _autoPauseConfig = config;
+    if (!config.enabled) {
+      _autoPauseTriggered = false;
     }
     notifyListeners();
   }
@@ -370,15 +559,59 @@ class PracticeModeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void beginListening({required double startMs, required double endMs}) {
+    if (startMs < 0 || endMs > totalDurationMs || endMs <= startMs) {
+      throw RangeError('listen range must be inside the lesson and non-empty');
+    }
+    _listenStartMs = startMs;
+    _listenEndMs = endMs;
+    _currentTimeMs = startMs;
+    _autoPauseTriggered = false;
+    _transportState = PracticeTransportState.listening;
+    notifyListeners();
+  }
+
+  void stopListening() {
+    if (_transportState != PracticeTransportState.listening) {
+      return;
+    }
+    _transportState = PracticeTransportState.stopped;
+    notifyListeners();
+  }
+
+  bool triggerAutoPause() {
+    if (!_autoPauseConfig.enabled ||
+        _transportState != PracticeTransportState.running) {
+      return false;
+    }
+    _autoPauseTriggered = true;
+    _transportState = PracticeTransportState.paused;
+    notifyListeners();
+    return true;
+  }
+
   void advanceBy(Duration elapsed) {
-    if (_transportState != PracticeTransportState.running) {
+    if (!isTimelineAdvancing) {
       return;
     }
 
     final scaledDeltaMs =
         elapsed.inMicroseconds / 1000.0 * (_tempoBpm / baseBpm);
-    _activeSessionElapsedMs += elapsed.inMicroseconds / 1000.0;
+    if (_transportState == PracticeTransportState.running) {
+      _activeSessionElapsedMs += elapsed.inMicroseconds / 1000.0;
+    }
     var nextTime = _currentTimeMs + scaledDeltaMs;
+
+    if (_transportState == PracticeTransportState.listening) {
+      if (nextTime >= _listenEndMs) {
+        _currentTimeMs = _listenEndMs;
+        _transportState = PracticeTransportState.stopped;
+      } else {
+        _currentTimeMs = math.max(nextTime, _listenStartMs);
+      }
+      notifyListeners();
+      return;
+    }
 
     if (_loopEnabled) {
       final length = _loopEndMs - _loopStartMs;
@@ -423,10 +656,14 @@ class _PracticeTransportBar extends StatelessWidget {
   const _PracticeTransportBar({
     required this.controller,
     required this.dailyGoalProgress,
+    required this.listenPlayback,
+    required this.notes,
   });
 
   final PracticeModeController controller;
   final DailyGoalProgress? dailyGoalProgress;
+  final PracticeListenPlayback listenPlayback;
+  final List<PracticeTimelineNote> notes;
 
   @override
   Widget build(BuildContext context) {
@@ -441,18 +678,50 @@ class _PracticeTransportBar extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             FilledButton(
-              onPressed: controller.togglePlayPause,
+              onPressed: controller.isListening
+                  ? null
+                  : controller.togglePlayPause,
               child: Text(controller.isRunning ? 'Pause' : 'Play'),
+            ),
+            FilledButton.tonal(
+              key: const ValueKey('practice-listen-button'),
+              onPressed: controller.isRunning
+                  ? null
+                  : () => listenPlayback.toggle(
+                      controller: controller,
+                      notes: notes,
+                    ),
+              child: Text(controller.isListening ? 'Stop Listening' : 'Listen'),
+            ),
+            SegmentedButton<PracticeListenScope>(
+              segments: const [
+                ButtonSegment(
+                  value: PracticeListenScope.wholeLesson,
+                  label: Text('Whole'),
+                ),
+                ButtonSegment(
+                  value: PracticeListenScope.selectedRange,
+                  label: Text('Section'),
+                ),
+              ],
+              selected: {controller.listenScope},
+              onSelectionChanged: controller.isListening
+                  ? null
+                  : (selection) => controller.setListenScope(selection.single),
             ),
             FilterChip(
               label: const Text('Metronome'),
               selected: controller.metronomeEnabled,
-              onSelected: controller.setMetronomeEnabled,
+              onSelected: controller.isListening
+                  ? null
+                  : controller.setMetronomeEnabled,
             ),
             FilterChip(
               label: const Text('Loop'),
               selected: controller.loopEnabled,
-              onSelected: controller.setLoopEnabled,
+              onSelected: controller.isListening
+                  ? null
+                  : controller.setLoopEnabled,
             ),
             SizedBox(
               width: 260,
@@ -464,7 +733,9 @@ class _PracticeTransportBar extends StatelessWidget {
                       value: controller.tempoBpm,
                       min: controller.minTempoBpm,
                       max: controller.maxTempoBpm,
-                      onChanged: controller.setTempoBpm,
+                      onChanged: controller.isListening
+                          ? null
+                          : controller.setTempoBpm,
                     ),
                   ),
                 ],
@@ -498,6 +769,15 @@ class _PracticeTransportBar extends StatelessWidget {
                 message,
                 style: TextStyle(
                   color: scheme.secondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            if (controller.autoPauseTriggered)
+              Text(
+                'Paused - tap any pad to resume',
+                key: const ValueKey('practice-auto-pause-message'),
+                style: TextStyle(
+                  color: scheme.tertiary,
                   fontWeight: FontWeight.w700,
                 ),
               ),

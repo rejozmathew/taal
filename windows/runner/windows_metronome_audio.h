@@ -36,9 +36,17 @@ class WindowsMetronomeAudio {
     bool accent;
   };
 
+  struct ScheduledDrumHit {
+    uint64_t target_frame;
+    std::string lane_id;
+    std::string articulation;
+    uint8_t velocity;
+  };
+
   void RegisterMethodChannel(flutter::BinaryMessenger* messenger);
   std::string Configure(const flutter::EncodableMap& arguments);
   std::string ScheduleClicks(const flutter::EncodableMap& arguments);
+  std::string ScheduleDrumHits(const flutter::EncodableMap& arguments);
   void Stop();
 
   std::string EnsureStream();
@@ -52,6 +60,8 @@ class WindowsMetronomeAudio {
   uint64_t FrameForTimestampNs(int64_t timestamp_ns) const;
   void RenderSamplesForPreset(const std::string& preset);
   float SampleAtFrame(const ScheduledClick& click, uint64_t frame) const;
+  float DrumSampleAtFrame(const ScheduledDrumHit& hit, uint64_t frame) const;
+  uint64_t DrumSampleLengthFrames(const ScheduledDrumHit& hit) const;
 
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
       method_channel_;
@@ -76,6 +86,7 @@ class WindowsMetronomeAudio {
   std::vector<float> accent_sample_;
   std::vector<float> normal_sample_;
   std::vector<ScheduledClick> scheduled_clicks_;
+  std::vector<ScheduledDrumHit> scheduled_drum_hits_;
 };
 
 #endif  // RUNNER_WINDOWS_METRONOME_AUDIO_H_

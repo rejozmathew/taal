@@ -21,6 +21,30 @@ class ScheduledMetronomeClick {
   }
 }
 
+class ScheduledDrumHit {
+  const ScheduledDrumHit({
+    required this.tMs,
+    required this.laneId,
+    required this.velocity,
+    this.articulation = 'normal',
+  }) : assert(tMs >= 0, 'tMs must be non-negative'),
+       assert(velocity >= 1 && velocity <= 127, 'velocity must be 1..127');
+
+  final int tMs;
+  final String laneId;
+  final int velocity;
+  final String articulation;
+
+  Map<String, Object?> toChannelMap() {
+    return {
+      't_ms': tMs,
+      'lane_id': laneId,
+      'velocity': velocity,
+      'articulation': articulation,
+    };
+  }
+}
+
 class MetronomeAudioSettings {
   const MetronomeAudioSettings({required this.volume, required this.preset});
 
@@ -34,6 +58,11 @@ abstract class MetronomeAudioOutput {
   Future<void> scheduleClicks({
     required int sessionStartTimeNs,
     required List<ScheduledMetronomeClick> clicks,
+  });
+
+  Future<void> scheduleDrumHits({
+    required int sessionStartTimeNs,
+    required List<ScheduledDrumHit> hits,
   });
 
   Future<void> stop();
@@ -67,6 +96,17 @@ class PlatformMetronomeAudioOutput implements MetronomeAudioOutput {
       'clicks': clicks
           .map((click) => click.toChannelMap())
           .toList(growable: false),
+    });
+  }
+
+  @override
+  Future<void> scheduleDrumHits({
+    required int sessionStartTimeNs,
+    required List<ScheduledDrumHit> hits,
+  }) async {
+    await _channel.invokeMethod<void>('scheduleDrumHits', {
+      'session_start_time_ns': sessionStartTimeNs,
+      'hits': hits.map((hit) => hit.toChannelMap()).toList(growable: false),
     });
   }
 
